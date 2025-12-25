@@ -1,7 +1,6 @@
 use super::Client;
-use crate::events::Event;
 use crate::utils::{ToTT, backoff::ExponentialBackoff};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 #[derive(Debug, Clone)]
@@ -25,6 +24,7 @@ pub struct ReconnectHandler {
     pub config: ReconnectConfig,
     backoff: ExponentialBackoff,
     attempts: u32,
+    last_attempt: Option<Instant>,
 }
 
 impl ReconnectHandler {
@@ -34,20 +34,30 @@ impl ReconnectHandler {
             config,
             backoff,
             attempts: 0,
+            last_attempt: None,
         }
-    }
-
-    pub fn next_delay(&mut self) -> Option<Duration> {
-        if self.attempts >= self.config.max_attempts {
-            return None;
-        }
-        self.attempts += 1;
-        Some(self.backoff.next_delay())
     }
 
     pub fn reset(&mut self) {
         self.attempts = 0;
         self.backoff.reset();
+        self.last_attempt = None;
+    }
+
+    pub fn can_attempt(&self) -> bool {
+        if self.attempts >= self.config.max_attempts {
+            return false;
+        }
+        match self.last_attempt {
+            Some(last) => last.elapsed() >= self.backoff.current_delay(),
+            None => true,
+        }
+    }
+
+    pub fn record_attempt(&mut self) {
+        self.attempts += 1;
+        self.last_attempt = Some(Instant::now());
+        self.backoff.next_delay();
     }
 }
 
@@ -89,22 +99,18 @@ impl Client {
         self.connect(host, tcp, udp, false)
     }
 
-    pub fn handle_reconnect(
-        &self,
-        event: Event,
-        params: &ConnectParams,
-        ignore_events: &[Event],
-        handler: Option<&mut ReconnectHandler>,
-    ) -> bool {
-        if ignore_events.contains(&event) {
+    pub fn is_connected(&self) -> bool {
+        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
+        (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
+    }
+
+    pub fn handle_reconnect(&self, params: &ConnectParams, handler: &mut ReconnectHandler) -> bool {
+        if self.is_connected() {
             return false;
         }
-
-        if event.is_reconnect_needed()
-            && let Some(h) = handler
-            && let Some(delay) = h.next_delay()
-        {
-            std::thread::sleep(delay);
+        if handler.can_attempt() {
+            let _ = self.disconnect();
+            handler.record_attempt();
             return self
                 .connect(params.host, params.tcp, params.udp, params.encrypted)
                 .is_ok();

@@ -36,22 +36,25 @@ impl ExponentialBackoff {
     }
 
     pub fn next_delay(&mut self) -> Duration {
+        let delay = self.current_delay_with_jitter();
         self.attempts += 1;
+        let next_raw = self.current_delay.as_secs_f32() * self.factor;
+        self.current_delay = Duration::from_secs_f32(next_raw).min(self.max_delay);
+        delay
+    }
 
+    pub fn current_delay(&self) -> Duration {
+        self.current_delay
+    }
+
+    fn current_delay_with_jitter(&self) -> Duration {
         let jitter_range = self.current_delay.as_secs_f32() * self.jitter;
         let jitter = if jitter_range > 0.0 {
             thread_rng().gen_range(-jitter_range..jitter_range)
         } else {
             0.0
         };
-
-        let delay_with_jitter =
-            Duration::from_secs_f32((self.current_delay.as_secs_f32() + jitter).max(0.0));
-
-        let next_raw = self.current_delay.as_secs_f32() * self.factor;
-        self.current_delay = Duration::from_secs_f32(next_raw).min(self.max_delay);
-
-        delay_with_jitter
+        Duration::from_secs_f32((self.current_delay.as_secs_f32() + jitter).max(0.0))
     }
 
     pub fn reset(&mut self) {

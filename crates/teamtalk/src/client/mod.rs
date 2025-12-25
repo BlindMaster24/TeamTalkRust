@@ -104,6 +104,14 @@ impl Message {
         unsafe { Some(crate::types::User::from(self.0.__bindgen_anon_1.user)) }
     }
 
+    pub fn account(&self) -> Option<crate::types::UserAccount> {
+        unsafe {
+            Some(crate::types::UserAccount::from(
+                self.0.__bindgen_anon_1.useraccount,
+            ))
+        }
+    }
+
     pub fn raw(&self) -> &ffi::TTMessage {
         &self.0
     }
