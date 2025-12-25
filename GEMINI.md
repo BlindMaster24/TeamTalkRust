@@ -17,6 +17,14 @@ This project is a high-level, safety-first, and fully autonomous idiomatic Rust 
     - **User Management:** Detailed control over user states (Voice, Video, Desktop), Gender, and Presence.
 - **Strictly Pure Codebase:** The `src` directory is maintained 100% comment-free, adhering to the highest self-documenting code standards of modern Rust.
 
+## 💡 Developer Recommendations
+
+### Ownership & Cloning
+Starting from version 0.2.0, all major structures (`User`, `Channel`, `UserAccount`, etc.) implement the `Clone` trait.
+- **When to Clone:** Use `.clone()` when you need to store an object in a collection (like a `HashMap`) or move it into a closure/thread.
+- **When to use References:** Use references (`&User`) whenever you only need to read data (e.g., logging a nickname or checking a status). This is significantly faster as it avoids memory allocations.
+- **Note:** Manual field-by-field cloning is no longer necessary and is considered bad practice in this SDK.
+
 ## 🛠 Technologies
 
 - **Rust 2024 Edition:** Leveraging the latest language features, including strict `unsafe` blocks.
