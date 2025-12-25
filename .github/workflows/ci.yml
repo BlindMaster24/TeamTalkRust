@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: never
@@ -22,3 +27,16 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: check
         run: cargo check --workspace --all-targets
+
+  publish:
+    name: Publish to crates.io
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish teamtalk
+        run: |
+          cd crates/teamtalk
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
