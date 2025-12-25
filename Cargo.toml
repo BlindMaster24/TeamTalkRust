@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "crates/teamtalk-sys",
+    "crates/teamtalk",
+]
+resolver = "2"

@@ -1,0 +1,10 @@
+/target
+/TEAMTALK_DLL
+**/*.rs.bk
+Cargo.lock
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
