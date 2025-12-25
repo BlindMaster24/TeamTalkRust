@@ -51,6 +51,14 @@ impl ReconnectHandler {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ConnectParams<'a> {
+    pub host: &'a str,
+    pub tcp: i32,
+    pub udp: i32,
+    pub encrypted: bool,
+}
+
 impl Client {
     pub fn connect(
         &self,
@@ -84,8 +92,7 @@ impl Client {
     pub fn handle_reconnect(
         &self,
         event: Event,
-        host: &str,
-        tcp: i32,
+        params: &ConnectParams,
         ignore_events: &[Event],
         handler: Option<&mut ReconnectHandler>,
     ) -> bool {
@@ -94,10 +101,13 @@ impl Client {
         }
 
         if event.is_reconnect_needed()
-            && let Some(delay) = handler.and_then(|h| h.next_delay())
+            && let Some(h) = handler
+            && let Some(delay) = h.next_delay()
         {
             std::thread::sleep(delay);
-            return self.connect(host, tcp, tcp, false).is_ok();
+            return self
+                .connect(params.host, params.tcp, params.udp, params.encrypted)
+                .is_ok();
         }
         false
     }

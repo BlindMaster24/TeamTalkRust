@@ -16,7 +16,7 @@ pub mod system;
 pub mod users;
 pub mod video;
 
-pub use connection::{ReconnectConfig, ReconnectHandler};
+pub use connection::{ConnectParams, ReconnectConfig, ReconnectHandler};
 
 pub struct Client {
     pub name: Option<String>,
