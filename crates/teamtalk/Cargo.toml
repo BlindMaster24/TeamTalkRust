@@ -2,9 +2,11 @@
 name = "teamtalk"
 version = "0.1.0"
 edition = "2024"
+authors = ["BlindMaster24"]
 description = "TeamTalk SDK for Rust"
 license = "MIT"
 repository = "https://github.com/BlindMaster24/TeamTalkRust"
+homepage = "https://github.com/BlindMaster24/TeamTalkRust"
 
 [dependencies]
 teamtalk-sys = { version = "0.1.0", path = "../teamtalk-sys" }

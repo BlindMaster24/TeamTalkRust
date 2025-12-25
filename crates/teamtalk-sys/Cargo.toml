@@ -2,9 +2,11 @@
 name = "teamtalk-sys"
 version = "0.1.0"
 edition = "2024"
+authors = ["BlindMaster24"]
 description = "Native bindings for TeamTalk SDK"
 license = "MIT"
 repository = "https://github.com/BlindMaster24/TeamTalkRust"
+homepage = "https://github.com/BlindMaster24/TeamTalkRust"
 
 [dependencies]
 libloading = "0.8"
