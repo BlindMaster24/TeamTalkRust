@@ -1,6 +1,10 @@
+#[cfg(windows)]
 use super::Client;
+#[cfg(windows)]
 use crate::types::TT_STRLEN;
+#[cfg(windows)]
 use crate::utils::strings::tt_buf;
+#[cfg(windows)]
 use teamtalk_sys as ffi;
 
 #[cfg(windows)]
