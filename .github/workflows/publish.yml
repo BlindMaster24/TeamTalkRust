@@ -1,0 +1,17 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  crates_io:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish teamtalk
+        run: |
+          cd crates/teamtalk
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}

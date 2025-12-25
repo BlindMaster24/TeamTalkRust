@@ -629,6 +629,7 @@ impl From<ffi::ClientErrorMsg> for ErrorMessage {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct User {
     pub id: UserId,
     pub username: String,
@@ -886,6 +887,7 @@ impl AudioConfig {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Channel {
     pub id: ChannelId,
     pub parent_id: ChannelId,
@@ -1041,6 +1043,7 @@ impl Channel {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TextMessage {
     pub msg_type: ffi::TextMsgType,
     pub from_id: UserId,
@@ -1182,6 +1185,7 @@ impl From<ffi::FileTransfer> for FileTransfer {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct RemoteFile {
     pub channel_id: ChannelId,
     pub id: FileId,
@@ -1204,6 +1208,7 @@ impl From<ffi::RemoteFile> for RemoteFile {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct MediaFileInfo {
     pub status: ffi::MediaFileStatus,
     pub name: String,
@@ -1378,6 +1383,7 @@ impl ClientFlags {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct UserAccount {
     pub username: String,
     pub password: String,
@@ -1490,6 +1496,7 @@ impl From<ffi::UserAccount> for UserAccount {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct BannedUser {
     pub ip: String,
     pub channel_path: String,
