@@ -1,6 +1,6 @@
 [package]
 name = "teamtalk"
-version = "0.2.7"
+version = "0.3.0"
 edition = "2024"
 authors = ["BlindMaster24"]
 description = "TeamTalk SDK for Rust"
@@ -9,7 +9,7 @@ repository = "https://github.com/BlindMaster24/TeamTalkRust"
 homepage = "https://github.com/BlindMaster24/TeamTalkRust"
 
 [dependencies]
-teamtalk-sys = { version = "0.1.0", path = "../teamtalk-sys" }
+teamtalk-sys = { version = "0.1.0" }
 thiserror = "2.0"
 evalexpr = "13.1"
 rand = "0.8"

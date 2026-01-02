@@ -3,19 +3,20 @@ use crate::utils::{ToTT, backoff::ExponentialBackoff};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
-#[derive(Debug, Clone)]
 pub struct ReconnectConfig {
     pub max_attempts: u32,
     pub min_delay: Duration,
     pub max_delay: Duration,
+    pub stability_threshold: Duration,
 }
 
 impl Default for ReconnectConfig {
     fn default() -> Self {
         Self {
-            max_attempts: 10,
-            min_delay: Duration::from_secs(1),
-            max_delay: Duration::from_secs(30),
+            max_attempts: u32::MAX,
+            min_delay: Duration::from_millis(200),
+            max_delay: Duration::from_secs(60),
+            stability_threshold: Duration::from_secs(10),
         }
     }
 }
@@ -25,23 +26,33 @@ pub struct ReconnectHandler {
     backoff: ExponentialBackoff,
     attempts: u32,
     last_attempt: Option<Instant>,
+    connected_at: Option<Instant>,
 }
 
 impl ReconnectHandler {
     pub fn new(config: ReconnectConfig) -> Self {
-        let backoff = ExponentialBackoff::new(config.min_delay, config.max_delay, 2.0, 0.1);
+        let backoff = ExponentialBackoff::new(config.min_delay, config.max_delay, 1.6, 1.0);
         Self {
             config,
             backoff,
             attempts: 0,
             last_attempt: None,
+            connected_at: None,
         }
     }
 
-    pub fn reset(&mut self) {
-        self.attempts = 0;
-        self.backoff.reset();
-        self.last_attempt = None;
+    pub fn mark_connected(&mut self) {
+        self.connected_at = Some(Instant::now());
+    }
+
+    pub fn mark_disconnected(&mut self) {
+        if let Some(at) = self.connected_at
+            && at.elapsed() >= self.config.stability_threshold
+        {
+            self.attempts = 0;
+            self.backoff.reset();
+        }
+        self.connected_at = None;
     }
 
     pub fn can_attempt(&self) -> bool {
@@ -55,8 +66,8 @@ impl ReconnectHandler {
     }
 
     pub fn record_attempt(&mut self) {
-        self.attempts += 1;
         self.last_attempt = Some(Instant::now());
+        self.attempts += 1;
         self.backoff.next_delay();
     }
 }
@@ -104,18 +115,19 @@ impl Client {
         (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
     }
 
+    pub fn is_connecting(&self) -> bool {
+        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
+        (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
+    }
+
     pub fn handle_reconnect(&self, params: &ConnectParams, handler: &mut ReconnectHandler) -> bool {
-        if self.is_connected() {
-            return false;
-        }
         if handler.can_attempt() {
             let _ = self.disconnect();
             handler.record_attempt();
-            return self
-                .connect(params.host, params.tcp, params.udp, params.encrypted)
-                .is_ok();
+            let _ = self.connect(params.host, params.tcp, params.udp, params.encrypted);
         }
-        false
+
+        true
     }
 
     pub fn connect_sys_id(

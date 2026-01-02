@@ -138,7 +138,22 @@ impl From<ffi::ClientEvent> for Event {
 
 impl Event {
     pub fn is_reconnect_needed(&self) -> bool {
-        matches!(self, Event::ConnectionLost | Event::ConnectFailed)
+        matches!(
+            self,
+            Event::ConnectionLost | Event::ConnectFailed | Event::ConnectCryptError
+        )
+    }
+
+    pub fn is_reconnect_needed_with(&self, extra: &[Event]) -> bool {
+        if self.is_reconnect_needed() {
+            return true;
+        }
+        for extra_event in extra {
+            if std::mem::discriminant(self) == std::mem::discriminant(extra_event) {
+                return true;
+            }
+        }
+        false
     }
 }
 
