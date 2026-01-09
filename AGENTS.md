@@ -37,7 +37,7 @@
   - `crates/teamtalk/Cargo.toml` for feature flags.
   - `docs/features.md` for the feature list.
   - `README.md` only if onboarding or default usage changes.
-  - `docs/architecture.md` if module layout or behavior changes.
+  - `docs/developer.md` if module layout or behavior changes.
   - `docs/developer.md` if new tests or commands are required.
   - `docs/README.md` if new docs pages are added or removed.
 - When removing a feature or doc page, delete its entry from `docs/README.md` and `docs/features.md`.
