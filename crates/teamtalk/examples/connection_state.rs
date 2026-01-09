@@ -27,10 +27,10 @@ fn main() -> teamtalk::Result<()> {
     client.connect(&host, tcp, udp, false)?;
 
     loop {
-        if let Some((event, _)) = client.poll(100) {
-            if matches!(event, Event::ConnectionLost | Event::ConnectFailed) {
-                break;
-            }
+        if let Some((event, _)) = client.poll(100)
+            && matches!(event, Event::ConnectionLost | Event::ConnectFailed)
+        {
+            break;
         }
 
         match client.connection_state() {

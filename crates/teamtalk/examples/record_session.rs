@@ -51,13 +51,13 @@ fn main() -> teamtalk::Result<()> {
     )?;
 
     loop {
-        if let Some((event, _)) = client.poll(100) {
-            if matches!(
+        if let Some((event, _)) = client.poll(100)
+            && matches!(
                 event,
                 teamtalk::Event::ConnectionLost | teamtalk::Event::ConnectFailed
-            ) {
-                break;
-            }
+            )
+        {
+            break;
         }
     }
 
