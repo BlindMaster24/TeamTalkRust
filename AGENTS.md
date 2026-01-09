@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `crates/teamtalk/` is the high-level Rust SDK; core modules live under `src/client/`, `src/events.rs`, `src/types.rs`, and `src/utils/`.
-- `crates/teamtalk/tests/` holds integration tests; `crates/teamtalk/my/` holds local runnable examples.
+- `crates/teamtalk/tests/` holds integration tests; `crates/teamtalk/examples/` holds runnable examples.
 - `crates/teamtalk-sys/` contains bindgen-based FFI and loads `TeamTalk.h`.
 - `TEAMTALK_DLL/` stores downloaded SDK binaries and headers (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
 - `docs/` contains user guides; `README.md` links to docs and entry points.

@@ -7,6 +7,7 @@ Start here:
 - Getting Started: `docs/getting-started.md`
 - Feature Flags: `docs/features.md`
 - Configuration: `docs/configuration.md`
+- Examples: `crates/teamtalk/examples/`
 - Changelog: `docs/changelog.md`
 
 API reference:

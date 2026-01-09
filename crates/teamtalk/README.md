@@ -5,5 +5,5 @@ It provides strict typing and a pure event-driven model for performance and reli
 
 ## Links
 
-- User guides: https://github.com/BlindMaster24/TeamTalkRust/tree/main/docs
-- API reference: https://docs.rs/teamtalk
+- User guides: <https://github.com/BlindMaster24/TeamTalkRust/tree/main/docs>
+- API reference: <https://docs.rs/teamtalk>
