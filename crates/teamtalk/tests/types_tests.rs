@@ -42,6 +42,21 @@ fn subscriptions_add_remove() {
 }
 
 #[test]
+fn subscriptions_presets() {
+    let audio = Subscriptions::all_audio();
+    assert!(audio.has(Subscriptions::VOICE));
+    assert!(audio.has(Subscriptions::MEDIAFILE));
+    let text = Subscriptions::all_text();
+    assert!(text.has(Subscriptions::USER_MSG));
+    assert!(text.has(Subscriptions::CHANNEL_MSG));
+    assert!(text.has(Subscriptions::BROADCAST_MSG));
+    assert!(text.has(Subscriptions::CUSTOM_MSG));
+    let control = Subscriptions::all_control();
+    assert!(control.has(Subscriptions::DESKTOP));
+    assert!(control.has(Subscriptions::DESKTOPINPUT));
+}
+
+#[test]
 fn channel_builder_sets_fields() {
     let channel = Channel::builder("room")
         .topic("topic")

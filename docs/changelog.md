@@ -5,6 +5,13 @@
 This project follows semantic versioning. A major release indicates stable
 public API with compatibility expectations for downstream users.
 
+## Unreleased
+### Added
+- Subscription presets: `Subscriptions::all_audio`, `all_text`, `all_control`.
+- Client helpers: `poll_until`, `wait_for`, and `join_root`.
+- Recording guard: `RecordSession` for safe start/stop of channel recording.
+- Tests for subscription presets.
+
 ## 1.0.0
 
 ### Added

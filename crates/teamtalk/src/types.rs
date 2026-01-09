@@ -106,6 +106,18 @@ impl Subscriptions {
     pub fn all() -> Self {
         Self(Self::ALL)
     }
+    /// Creates a subscription mask with voice and media file streams.
+    pub fn all_audio() -> Self {
+        Self(Self::VOICE | Self::MEDIAFILE)
+    }
+    /// Creates a subscription mask with user, channel, broadcast, and custom messages.
+    pub fn all_text() -> Self {
+        Self(Self::USER_MSG | Self::CHANNEL_MSG | Self::BROADCAST_MSG | Self::CUSTOM_MSG)
+    }
+    /// Creates a subscription mask with desktop control streams.
+    pub fn all_control() -> Self {
+        Self(Self::DESKTOP | Self::DESKTOPINPUT)
+    }
     /// Creates a subscription mask from raw bits.
     pub fn from_raw(raw: u32) -> Self {
         Self(raw)

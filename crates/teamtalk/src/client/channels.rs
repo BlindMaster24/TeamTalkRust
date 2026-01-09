@@ -51,6 +51,12 @@ impl Client {
         unsafe { ffi::api().TT_DoJoinChannelByID(self.ptr, id.0, password.tt().as_ptr()) }
     }
 
+    /// Joins the root channel.
+    pub fn join_root(&self) -> i32 {
+        let root_id = self.get_root_channel_id();
+        self.join_channel(root_id, "")
+    }
+
     /// Leaves the current channel.
     pub fn leave_channel(&self) -> i32 {
         unsafe { ffi::api().TT_DoLeaveChannel(self.ptr) }

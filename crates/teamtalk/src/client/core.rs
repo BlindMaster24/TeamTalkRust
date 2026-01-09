@@ -3,6 +3,7 @@ use super::{Client, Message};
 use crate::events::Event;
 use crate::types::{ClientFlags, TT_STRLEN};
 use crate::utils::strings::tt_buf;
+use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 impl Client {
@@ -33,6 +34,42 @@ impl Client {
         } else {
             None
         }
+    }
+
+    /// Polls until the predicate matches or the timeout expires.
+    pub fn poll_until<F>(&self, timeout_ms: i32, mut predicate: F) -> Option<(Event, Message)>
+    where
+        F: FnMut(Event, &Message) -> bool,
+    {
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, msg)) = self.poll(timeout_ms)
+                    && predicate(event, &msg)
+                {
+                    return Some((event, msg));
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return None;
+            }
+            let wait_ms = remaining.as_millis().min(i32::MAX as u128) as i32;
+            if let Some((event, msg)) = self.poll(wait_ms)
+                && predicate(event, &msg)
+            {
+                return Some((event, msg));
+            }
+        }
+    }
+
+    /// Polls until a specific event arrives or the timeout expires.
+    pub fn wait_for(&self, event: Event, timeout_ms: i32) -> Option<Message> {
+        self.poll_until(timeout_ms, |incoming, _| incoming == event)
+            .map(|(_, msg)| msg)
     }
 
     /// Returns the current client flags.

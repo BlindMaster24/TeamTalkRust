@@ -18,6 +18,7 @@ pub mod mock;
 
 #[cfg(feature = "async")]
 pub use async_api::{AsyncClient, AsyncConfig};
+pub use client::recording::RecordSession;
 pub use client::{Client, Message};
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
