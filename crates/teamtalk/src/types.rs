@@ -1,135 +1,210 @@
+//! Core data structures and constants used by the SDK.
 use teamtalk_sys as ffi;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed user id.
 pub struct UserId(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed channel id.
 pub struct ChannelId(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed remote file id.
 pub struct FileId(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed transfer id.
 pub struct TransferId(pub i32);
 
+/// Reserved local user id.
 pub const LOCAL_USER_ID: UserId = UserId(0);
+/// Reserved local transmit user id.
 pub const LOCAL_TX_USER_ID: UserId = UserId(4098);
+/// Reserved muxed audio user id.
 pub const MUXED_USER_ID: UserId = UserId(4097);
 
+/// Speex narrowband minimum bitrate.
 pub const SPEEX_NB_MIN_BITRATE: i32 = 2150;
+/// Speex narrowband maximum bitrate.
 pub const SPEEX_NB_MAX_BITRATE: i32 = 24600;
+/// Speex wideband minimum bitrate.
 pub const SPEEX_WB_MIN_BITRATE: i32 = 3950;
+/// Speex wideband maximum bitrate.
 pub const SPEEX_WB_MAX_BITRATE: i32 = 42200;
+/// Speex ultra-wideband minimum bitrate.
 pub const SPEEX_UWB_MIN_BITRATE: i32 = 4150;
+/// Speex ultra-wideband maximum bitrate.
 pub const SPEEX_UWB_MAX_BITRATE: i32 = 44000;
 
+/// Opus minimum bitrate.
 pub const OPUS_MIN_BITRATE: i32 = 6000;
+/// Opus maximum bitrate.
 pub const OPUS_MAX_BITRATE: i32 = 510000;
+/// Opus minimum frame size in ms.
 pub const OPUS_MIN_FRAMESIZE: i32 = 2;
+/// Opus maximum frame size in ms.
 pub const OPUS_MAX_FRAMESIZE: i32 = 60;
 
+/// Maximum WebRTC gain value.
 pub const WEBRTC_GAIN_MAX: f32 = 49.9;
 
+/// Desktop input: left mouse button.
 pub const MOUSE_LEFT: u32 = 0x1000;
+/// Desktop input: right mouse button.
 pub const MOUSE_RIGHT: u32 = 0x1001;
+/// Desktop input: middle mouse button.
 pub const MOUSE_MIDDLE: u32 = 0x1002;
 
+/// TeamTalk fixed string length.
 pub const TT_STRLEN: usize = 512;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Subscription mask for user streams.
 pub struct Subscriptions(u32);
 
 impl Subscriptions {
+    /// No subscriptions.
     pub const NONE: u32 = 0x00000000;
+    /// User messages subscription flag.
     pub const USER_MSG: u32 = 0x00000001;
+    /// Channel messages subscription flag.
     pub const CHANNEL_MSG: u32 = 0x00000002;
+    /// Broadcast messages subscription flag.
     pub const BROADCAST_MSG: u32 = 0x00000004;
+    /// Custom messages subscription flag.
     pub const CUSTOM_MSG: u32 = 0x00000008;
+    /// Voice subscription flag.
     pub const VOICE: u32 = 0x00000010;
+    /// Video capture subscription flag.
     pub const VIDEOCAPTURE: u32 = 0x00000020;
+    /// Desktop subscription flag.
     pub const DESKTOP: u32 = 0x00000040;
+    /// Desktop input subscription flag.
     pub const DESKTOPINPUT: u32 = 0x00000080;
+    /// Media file subscription flag.
     pub const MEDIAFILE: u32 = 0x00000100;
+    /// Intercept user messages flag.
     pub const INTERCEPT_USER_MSG: u32 = 0x00010000;
+    /// Intercept channel messages flag.
     pub const INTERCEPT_CHANNEL_MSG: u32 = 0x00020000;
+    /// Intercept custom messages flag.
     pub const INTERCEPT_CUSTOM_MSG: u32 = 0x00080000;
+    /// Intercept voice streams flag.
     pub const INTERCEPT_VOICE: u32 = 0x00100000;
+    /// Intercept video capture streams flag.
     pub const INTERCEPT_VIDEOCAPTURE: u32 = 0x00200000;
+    /// Intercept desktop streams flag.
     pub const INTERCEPT_DESKTOP: u32 = 0x00400000;
+    /// Intercept media file streams flag.
     pub const INTERCEPT_MEDIAFILE: u32 = 0x01000000;
+    /// All subscription flags.
     pub const ALL: u32 = 0xFFFFFFFF;
 
+    /// Creates an empty subscription mask.
     pub fn new() -> Self {
         Self(Self::NONE)
     }
+    /// Creates a subscription mask with all flags set.
     pub fn all() -> Self {
         Self(Self::ALL)
     }
+    /// Creates a subscription mask from raw bits.
     pub fn from_raw(raw: u32) -> Self {
         Self(raw)
     }
+    /// Adds a subscription flag.
     pub fn add(&mut self, flag: u32) {
         self.0 |= flag;
     }
+    /// Removes a subscription flag.
     pub fn remove(&mut self, flag: u32) {
         self.0 &= !flag;
     }
+    /// Returns true if the flag is present.
     pub fn has(&self, flag: u32) -> bool {
         (self.0 & flag) != 0
     }
+    /// Returns the raw bitmask.
     pub fn raw(&self) -> u32 {
         self.0
     }
 }
 
+/// Bitmask of user state flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UserState(u32);
 
 impl UserState {
+    /// No user state flags set.
     pub const NONE: u32 = 0x00000000;
+    /// User is talking.
     pub const VOICE: u32 = 0x00000001;
+    /// User voice is muted.
     pub const MUTE_VOICE: u32 = 0x00000002;
+    /// User media file is muted.
     pub const MUTE_MEDIAFILE: u32 = 0x00000004;
+    /// User has desktop sharing active.
     pub const DESKTOP: u32 = 0x00000008;
+    /// User has video capture active.
     pub const VIDEOCAPTURE: u32 = 0x00000010;
+    /// User is streaming media file audio.
     pub const MEDIAFILE_AUDIO: u32 = 0x00000020;
+    /// User is streaming media file video.
     pub const MEDIAFILE_VIDEO: u32 = 0x00000040;
 
+    /// Creates a user state from raw bits.
     pub fn from_raw(raw: u32) -> Self {
         Self(raw)
     }
+    /// Returns true if the user is talking.
     pub fn is_talking(&self) -> bool {
         (self.0 & Self::VOICE) != 0
     }
+    /// Returns true if the user is muted.
     pub fn is_muted(&self) -> bool {
         (self.0 & Self::MUTE_VOICE) != 0
     }
+    /// Returns true if the user has video.
     pub fn has_video(&self) -> bool {
         (self.0 & Self::VIDEOCAPTURE) != 0
     }
+    /// Returns the raw bitmask.
     pub fn raw(&self) -> u32 {
         self.0
     }
 }
 
+/// Channel type bitmask.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ChannelType(u32);
 
 impl ChannelType {
+    /// Default channel type.
     pub const DEFAULT: u32 = 0x0000;
+    /// Permanent channel flag.
     pub const PERMANENT: u32 = 0x0001;
+    /// Solo transmit flag.
     pub const SOLO_TRANSMIT: u32 = 0x0002;
+    /// Classroom flag.
     pub const CLASSROOM: u32 = 0x0004;
+    /// Operator receive-only flag.
     pub const OPERATOR_RECVONLY: u32 = 0x0008;
+    /// Disable voice activation flag.
     pub const NO_VOICEACTIVATION: u32 = 0x0010;
+    /// Disable recording flag.
     pub const NO_RECORDING: u32 = 0x0020;
+    /// Hidden channel flag.
     pub const HIDDEN: u32 = 0x0040;
 
+    /// Creates from raw bits.
     pub fn from_raw(raw: u32) -> Self {
         Self(raw)
     }
+    /// Returns the raw bitmask.
     pub fn raw(&self) -> u32 {
         self.0
     }
 }
 
+/// Presence status of a user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UserPresence {
     #[default]
@@ -138,6 +213,7 @@ pub enum UserPresence {
     Question,
 }
 
+/// Gender metadata for a user profile.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UserGender {
     Male,
@@ -146,6 +222,7 @@ pub enum UserGender {
     Neutral,
 }
 
+/// User status flags and presence metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UserStatus {
     pub presence: UserPresence,
@@ -157,6 +234,7 @@ pub struct UserStatus {
 }
 
 impl UserStatus {
+    /// Creates a status from raw bit flags.
     pub fn from_bits(bits: u32) -> Self {
         let presence = match bits & 0xFF {
             1 => UserPresence::Away,
@@ -179,6 +257,7 @@ impl UserStatus {
             media_paused: (bits & 0x2000) != 0,
         }
     }
+    /// Converts the status into raw bit flags.
     pub fn to_bits(&self) -> u32 {
         let mut bits = match self.presence {
             UserPresence::Available => 0,
@@ -206,6 +285,7 @@ impl UserStatus {
     }
 }
 
+/// Speex DSP preprocessing settings.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SpeexDSP {
     pub enable_agc: bool,
@@ -238,6 +318,7 @@ impl From<ffi::SpeexDSP> for SpeexDSP {
 }
 
 impl SpeexDSP {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexDSP {
         ffi::SpeexDSP {
             bEnableAGC: self.enable_agc as i32,
@@ -254,6 +335,7 @@ impl SpeexDSP {
     }
 }
 
+/// WebRTC audio preprocessing settings.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WebRTCConfig {
     pub preamplifier_enable: bool,
@@ -280,6 +362,7 @@ impl From<ffi::WebRTCAudioPreprocessor> for WebRTCConfig {
 }
 
 impl WebRTCConfig {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::WebRTCAudioPreprocessor {
         let mut raw = ffi::WebRTCAudioPreprocessor::default();
         raw.preamplifier.bEnable = self.preamplifier_enable as i32;
@@ -293,6 +376,7 @@ impl WebRTCConfig {
     }
 }
 
+/// Audio preprocessing configuration.
 #[derive(Debug, Clone, Copy, Default)]
 pub enum AudioPreprocessor {
     #[default]
@@ -316,6 +400,7 @@ impl From<ffi::AudioPreprocessor> for AudioPreprocessor {
 }
 
 impl AudioPreprocessor {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioPreprocessor {
         let mut raw = ffi::AudioPreprocessor::default();
         match self {
@@ -333,6 +418,7 @@ impl AudioPreprocessor {
     }
 }
 
+/// Jitter control configuration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct JitterConfig {
     pub fixed_delay_ms: i32,
@@ -353,6 +439,7 @@ impl From<ffi::JitterConfig> for JitterConfig {
 }
 
 impl JitterConfig {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::JitterConfig {
         ffi::JitterConfig {
             nFixedDelayMSec: self.fixed_delay_ms,
@@ -363,6 +450,7 @@ impl JitterConfig {
     }
 }
 
+/// Video format configuration.
 #[derive(Debug, Clone, Copy)]
 pub struct VideoFormat {
     pub width: i32,
@@ -397,6 +485,7 @@ impl From<ffi::VideoFormat> for VideoFormat {
 }
 
 impl VideoFormat {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::VideoFormat {
         ffi::VideoFormat {
             nWidth: self.width,
@@ -408,6 +497,7 @@ impl VideoFormat {
     }
 }
 
+/// Video codec configuration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VideoCodec {
     pub bitrate: i32,
@@ -429,6 +519,7 @@ impl From<ffi::VideoCodec> for VideoCodec {
 }
 
 impl VideoCodec {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::VideoCodec {
         let mut raw = ffi::VideoCodec {
             nCodec: ffi::Codec::WEBM_VP8_CODEC,
@@ -443,6 +534,7 @@ impl VideoCodec {
     }
 }
 
+/// TLS encryption context settings.
 #[derive(Debug, Clone, Default)]
 pub struct EncryptionContext {
     pub cert_file: String,
@@ -455,6 +547,7 @@ pub struct EncryptionContext {
 }
 
 impl EncryptionContext {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::EncryptionContext {
         let mut raw = ffi::EncryptionContext::default();
         let cert = crate::utils::ToTT::tt(&self.cert_file);
@@ -478,6 +571,7 @@ impl EncryptionContext {
     }
 }
 
+/// Keep-alive configuration for client connections.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ClientKeepAlive {
     pub lost_ms: i32,
@@ -502,6 +596,7 @@ impl From<ffi::ClientKeepAlive> for ClientKeepAlive {
 }
 
 impl ClientKeepAlive {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::ClientKeepAlive {
         ffi::ClientKeepAlive {
             nConnectionLostMSec: self.lost_ms,
@@ -514,6 +609,7 @@ impl ClientKeepAlive {
     }
 }
 
+/// Abuse prevention configuration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AbusePrevention {
     pub commands_limit: i32,
@@ -530,6 +626,7 @@ impl From<ffi::AbusePrevention> for AbusePrevention {
 }
 
 impl AbusePrevention {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AbusePrevention {
         ffi::AbusePrevention {
             nCommandsLimit: self.commands_limit,
@@ -538,6 +635,7 @@ impl AbusePrevention {
     }
 }
 
+/// Audio format description.
 #[derive(Debug, Clone, Copy)]
 pub struct AudioFormat {
     pub format: ffi::AudioFileFormat,
@@ -566,6 +664,7 @@ impl From<ffi::AudioFormat> for AudioFormat {
 }
 
 impl AudioFormat {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioFormat {
         ffi::AudioFormat {
             nAudioFmt: self.format,
@@ -575,6 +674,7 @@ impl AudioFormat {
     }
 }
 
+/// Video frame metadata.
 pub struct VideoFrame {
     pub width: i32,
     pub height: i32,
@@ -597,6 +697,7 @@ impl From<ffi::VideoFrame> for VideoFrame {
     }
 }
 
+/// Audio input progress information.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AudioInputProgress {
     pub stream_id: i32,
@@ -614,6 +715,7 @@ impl From<ffi::AudioInputProgress> for AudioInputProgress {
     }
 }
 
+/// SDK error message payload.
 #[derive(Debug, Clone, Default)]
 pub struct ErrorMessage {
     pub code: i32,
@@ -629,6 +731,7 @@ impl From<ffi::ClientErrorMsg> for ErrorMessage {
     }
 }
 
+/// User state snapshot.
 #[derive(Debug, Clone, Default)]
 pub struct User {
     pub id: UserId,
@@ -695,6 +798,7 @@ impl From<ffi::User> for User {
     }
 }
 
+/// Speex audio codec configuration.
 #[derive(Debug, Clone, Copy)]
 pub struct SpeexCodec {
     pub bandmode: i32,
@@ -715,6 +819,7 @@ impl From<ffi::SpeexCodec> for SpeexCodec {
 }
 
 impl SpeexCodec {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexCodec {
         ffi::SpeexCodec {
             nBandmode: self.bandmode,
@@ -725,6 +830,7 @@ impl SpeexCodec {
     }
 }
 
+/// Speex VBR audio codec configuration.
 #[derive(Debug, Clone, Copy)]
 pub struct SpeexVBRCodec {
     pub bandmode: i32,
@@ -751,6 +857,7 @@ impl From<ffi::SpeexVBRCodec> for SpeexVBRCodec {
 }
 
 impl SpeexVBRCodec {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexVBRCodec {
         ffi::SpeexVBRCodec {
             nBandmode: self.bandmode,
@@ -764,6 +871,7 @@ impl SpeexVBRCodec {
     }
 }
 
+/// Opus audio codec configuration.
 #[derive(Debug, Clone, Copy)]
 pub struct OpusCodec {
     pub sample_rate: i32,
@@ -798,6 +906,7 @@ impl From<ffi::OpusCodec> for OpusCodec {
 }
 
 impl OpusCodec {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::OpusCodec {
         ffi::OpusCodec {
             nSampleRate: self.sample_rate,
@@ -815,6 +924,7 @@ impl OpusCodec {
     }
 }
 
+/// Audio codec selection.
 #[derive(Debug, Clone, Copy, Default)]
 pub enum AudioCodec {
     #[default]
@@ -842,6 +952,7 @@ impl From<ffi::AudioCodec> for AudioCodec {
 }
 
 impl AudioCodec {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioCodec {
         let mut raw = ffi::AudioCodec::default();
         match self {
@@ -863,6 +974,7 @@ impl AudioCodec {
     }
 }
 
+/// Audio input configuration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AudioConfig {
     pub enable_agc: bool,
@@ -879,6 +991,7 @@ impl From<ffi::AudioConfig> for AudioConfig {
 }
 
 impl AudioConfig {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioConfig {
         ffi::AudioConfig {
             bEnableAGC: self.enable_agc as i32,
@@ -887,6 +1000,7 @@ impl AudioConfig {
     }
 }
 
+/// Channel definition and configuration.
 #[derive(Debug, Clone)]
 pub struct Channel {
     pub id: ChannelId,
@@ -908,16 +1022,19 @@ pub struct Channel {
 }
 
 impl Channel {
+    /// Creates a channel builder with a name.
     pub fn builder(name: &str) -> ChannelBuilder {
         ChannelBuilder::new(name)
     }
 }
 
+/// Builder for channel configuration.
 pub struct ChannelBuilder {
     inner: Channel,
 }
 
 impl ChannelBuilder {
+    /// Creates a new builder with the channel name.
     pub fn new(name: &str) -> Self {
         Self {
             inner: Channel {
@@ -941,31 +1058,37 @@ impl ChannelBuilder {
         }
     }
 
+    /// Sets the parent channel id.
     pub fn parent(mut self, id: ChannelId) -> Self {
         self.inner.parent_id = id;
         self
     }
 
+    /// Sets the channel topic.
     pub fn topic(mut self, topic: &str) -> Self {
         self.inner.topic = topic.to_string();
         self
     }
 
+    /// Sets the channel type flags.
     pub fn channel_type(mut self, t: ChannelType) -> Self {
         self.inner.channel_type = t;
         self
     }
 
+    /// Sets the maximum number of users.
     pub fn max_users(mut self, max: i32) -> Self {
         self.inner.max_users = max;
         self
     }
 
+    /// Sets the audio codec configuration.
     pub fn codec(mut self, codec: AudioCodec) -> Self {
         self.inner.audio_codec = codec;
         self
     }
 
+    /// Builds the channel.
     pub fn build(self) -> Channel {
         self.inner
     }
@@ -1009,6 +1132,7 @@ impl From<ffi::Channel> for Channel {
 }
 
 impl Channel {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::Channel {
         let mut raw = ffi::Channel {
             nChannelID: self.id.0,
@@ -1043,6 +1167,7 @@ impl Channel {
     }
 }
 
+/// Text message payload.
 #[derive(Debug, Clone)]
 pub struct TextMessage {
     pub msg_type: ffi::TextMsgType,
@@ -1068,6 +1193,7 @@ impl From<ffi::TextMessage> for TextMessage {
     }
 }
 
+/// Destination for sending text messages.
 pub enum MessageTarget {
     User(UserId),
     Channel(ChannelId),
@@ -1090,6 +1216,7 @@ impl From<&TextMessage> for MessageTarget {
     }
 }
 
+/// Sound device description.
 pub struct SoundDevice {
     pub id: i32,
     pub name: String,
@@ -1131,6 +1258,7 @@ impl From<ffi::SoundDevice> for SoundDevice {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// File transfer status.
 pub enum FileTransferStatus {
     Closed,
     Error,
@@ -1149,6 +1277,7 @@ impl From<ffi::FileTransferStatus> for FileTransferStatus {
     }
 }
 
+/// File transfer information.
 pub struct FileTransfer {
     pub status: FileTransferStatus,
     pub id: TransferId,
@@ -1161,6 +1290,7 @@ pub struct FileTransfer {
 }
 
 impl FileTransfer {
+    /// Returns transfer progress as a 0.0-1.0 fraction.
     pub fn progress(&self) -> f32 {
         if self.size == 0 {
             0.0
@@ -1186,6 +1316,7 @@ impl From<ffi::FileTransfer> for FileTransfer {
 }
 
 #[derive(Debug, Clone, Default)]
+/// Remote file metadata.
 pub struct RemoteFile {
     pub channel_id: ChannelId,
     pub id: FileId,
@@ -1209,6 +1340,7 @@ impl From<ffi::RemoteFile> for RemoteFile {
 }
 
 #[derive(Debug, Clone)]
+/// Media file information.
 pub struct MediaFileInfo {
     pub status: ffi::MediaFileStatus,
     pub name: String,
@@ -1231,6 +1363,7 @@ impl From<ffi::MediaFileInfo> for MediaFileInfo {
     }
 }
 
+/// Server properties snapshot.
 pub struct ServerProperties {
     pub name: String,
     pub motd: String,
@@ -1282,6 +1415,7 @@ impl From<ffi::ServerProperties> for ServerProperties {
 }
 
 impl ServerProperties {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::ServerProperties {
         let mut raw = ffi::ServerProperties::default();
         let name = crate::utils::ToTT::tt(&self.name);
@@ -1310,6 +1444,7 @@ impl ServerProperties {
     }
 }
 
+/// Client statistics snapshot.
 pub struct ClientStatistics {
     pub udp_ping: i32,
     pub tcp_ping: i32,
@@ -1349,41 +1484,65 @@ impl From<ffi::ClientStatistics> for ClientStatistics {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// Client flag bitmask.
 pub struct ClientFlags(u32);
 
 impl ClientFlags {
+    /// Client is closed.
     pub const CLOSED: u32 = 0x00000000;
+    /// Sound input is ready.
     pub const SNDINPUT_READY: u32 = 0x00000001;
+    /// Sound output is ready.
     pub const SNDOUTPUT_READY: u32 = 0x00000002;
+    /// Sound input/output duplex is ready.
     pub const SNDINOUTPUT_DUPLEX: u32 = 0x00000004;
+    /// Voice activation is enabled.
     pub const SNDINPUT_VOICEACTIVATED: u32 = 0x00000008;
+    /// Voice input is active.
     pub const SNDINPUT_VOICEACTIVE: u32 = 0x00000010;
+    /// Output is muted.
     pub const SNDOUTPUT_MUTE: u32 = 0x00000020;
+    /// Auto 3D positioning is enabled.
     pub const SNDOUTPUT_AUTO3DPOSITION: u32 = 0x00000040;
+    /// Video capture is ready.
     pub const VIDEOCAPTURE_READY: u32 = 0x00000080;
+    /// Transmitting voice.
     pub const TX_VOICE: u32 = 0x00000100;
+    /// Transmitting video.
     pub const TX_VIDEOCAPTURE: u32 = 0x00000200;
+    /// Transmitting desktop.
     pub const TX_DESKTOP: u32 = 0x00000400;
+    /// Desktop sharing is active.
     pub const DESKTOP_ACTIVE: u32 = 0x00000800;
+    /// Muxing audio file.
     pub const MUX_AUDIOFILE: u32 = 0x00001000;
+    /// Currently connecting.
     pub const CONNECTING: u32 = 0x00002000;
+    /// Connected.
     pub const CONNECTED: u32 = 0x00004000;
+    /// Authorized.
     pub const AUTHORIZED: u32 = 0x00008000;
+    /// Streaming audio.
     pub const STREAM_AUDIO: u32 = 0x00010000;
+    /// Streaming video.
     pub const STREAM_VIDEO: u32 = 0x00020000;
 
+    /// Creates from raw bits.
     pub fn from_raw(raw: u32) -> Self {
         Self(raw)
     }
+    /// Returns true if the flag is present.
     pub fn has(&self, flag: u32) -> bool {
         (self.0 & flag) != 0
     }
+    /// Returns the raw bitmask.
     pub fn raw(&self) -> u32 {
         self.0
     }
 }
 
 #[derive(Debug, Clone, Default)]
+/// User account definition.
 pub struct UserAccount {
     pub username: String,
     pub password: String,
@@ -1398,16 +1557,19 @@ pub struct UserAccount {
 }
 
 impl UserAccount {
+    /// Creates a user account builder.
     pub fn builder(username: &str) -> UserAccountBuilder {
         UserAccountBuilder::new(username)
     }
 }
 
+/// Builder for user account configuration.
 pub struct UserAccountBuilder {
     inner: UserAccount,
 }
 
 impl UserAccountBuilder {
+    /// Creates a new builder with the username.
     pub fn new(username: &str) -> Self {
         Self {
             inner: UserAccount {
@@ -1425,27 +1587,32 @@ impl UserAccountBuilder {
         }
     }
 
+    /// Sets the account password.
     pub fn password(mut self, pass: &str) -> Self {
         self.inner.password = pass.to_string();
         self
     }
 
+    /// Sets the user type.
     pub fn user_type(mut self, t: u32) -> Self {
         self.inner.user_type = t;
         self
     }
 
+    /// Sets the user rights.
     pub fn rights(mut self, r: u32) -> Self {
         self.inner.user_rights = r;
         self
     }
 
+    /// Builds the user account.
     pub fn build(self) -> UserAccount {
         self.inner
     }
 }
 
 impl UserAccount {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::UserAccount {
         let mut raw = ffi::UserAccount::default();
         let u = crate::utils::ToTT::tt(&self.username);
@@ -1497,6 +1664,7 @@ impl From<ffi::UserAccount> for UserAccount {
 }
 
 #[derive(Debug, Clone, Default)]
+/// Banned user entry.
 pub struct BannedUser {
     pub ip: String,
     pub channel_path: String,
@@ -1522,6 +1690,7 @@ impl From<ffi::BannedUser> for BannedUser {
 }
 
 impl BannedUser {
+    /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::BannedUser {
         let mut raw = ffi::BannedUser::default();
         let ip = crate::utils::ToTT::tt(&self.ip);
@@ -1546,6 +1715,7 @@ impl BannedUser {
     }
 }
 
+/// User statistics snapshot.
 pub struct UserStatistics {
     pub voice_recv: i64,
     pub voice_lost: i64,
@@ -1580,6 +1750,7 @@ impl From<ffi::UserStatistics> for UserStatistics {
     }
 }
 
+/// Server statistics snapshot.
 pub struct ServerStatistics {
     pub total_tx: i64,
     pub total_rx: i64,

@@ -1,3 +1,4 @@
+//! Runtime loader for TeamTalk SDK binaries.
 use regex::Regex;
 use reqwest::blocking::Client;
 use sevenz_rust2::decompress;
@@ -5,6 +6,7 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
+/// Finds the TeamTalk SDK binaries or downloads them if missing.
 pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let dll_name = if cfg!(windows) {
         "TeamTalk5.dll"
@@ -27,6 +29,13 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         && fs::metadata(&dll_path)
             .map(|m| m.len() > 1024)
             .unwrap_or(false);
+
+    if cfg!(feature = "offline") {
+        if dll_exists {
+            return Ok(dll_path);
+        }
+        return Err("Offline mode enabled but SDK binary not found".into());
+    }
 
     if dll_exists && !current_version.is_empty() {
         let latest = get_latest_sdk_version()?;

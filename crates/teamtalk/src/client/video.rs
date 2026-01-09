@@ -1,7 +1,9 @@
+//! Video capture and transmission APIs.
 use super::Client;
 use crate::types::{UserId, VideoCodec, VideoFormat};
 use teamtalk_sys as ffi;
 
+/// Video capture device with supported formats.
 pub struct VideoCaptureDevice {
     pub id: String,
     pub name: String,
@@ -25,6 +27,7 @@ impl From<ffi::VideoCaptureDevice> for VideoCaptureDevice {
 }
 
 impl Client {
+    /// Returns available video capture devices.
     pub fn get_video_capture_devices(&self) -> Vec<VideoCaptureDevice> {
         let mut count: i32 = 0;
         unsafe {
@@ -38,24 +41,29 @@ impl Client {
         }
     }
 
+    /// Initializes a video capture device.
     pub fn init_video_capture_device(&self, device_id: &str, format: &VideoFormat) -> bool {
         let id = crate::utils::ToTT::tt(device_id);
         let raw_fmt = format.to_ffi();
         unsafe { ffi::api().TT_InitVideoCaptureDevice(self.ptr, id.as_ptr(), &raw_fmt) == 1 }
     }
 
+    /// Closes the active video capture device.
     pub fn close_video_capture_device(&self) -> bool {
         unsafe { ffi::api().TT_CloseVideoCaptureDevice(self.ptr) == 1 }
     }
 
+    /// Starts video transmission.
     pub fn start_video_transmission(&self, codec: &VideoCodec) -> bool {
         unsafe { ffi::api().TT_StartVideoCaptureTransmission(self.ptr, &codec.to_ffi()) == 1 }
     }
 
+    /// Stops video transmission.
     pub fn stop_video_transmission(&self) -> bool {
         unsafe { ffi::api().TT_StopVideoCaptureTransmission(self.ptr) == 1 }
     }
 
+    /// Acquires the latest video frame for a user.
     pub fn acquire_video_frame(&self, user_id: UserId) -> Option<*mut ffi::VideoFrame> {
         unsafe {
             let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr, user_id.0);
@@ -64,6 +72,10 @@ impl Client {
     }
 
     #[allow(clippy::missing_safety_doc)]
+    /// Releases a previously acquired video frame.
+    ///
+    /// # Safety
+    /// `frame` must be a valid pointer returned by `acquire_video_frame`.
     pub unsafe fn release_video_frame(&self, frame: *mut ffi::VideoFrame) -> bool {
         if frame.is_null() {
             return false;

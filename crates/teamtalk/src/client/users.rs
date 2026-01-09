@@ -1,3 +1,4 @@
+//! User management APIs.
 use super::Client;
 use crate::types::{
     ChannelId, MessageTarget, Subscriptions, User, UserAccount, UserId, UserStatistics, UserStatus,
@@ -6,6 +7,7 @@ use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
+    /// Logs in to the server.
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
         unsafe {
             ffi::api().TT_DoLoginEx(
@@ -18,14 +20,17 @@ impl Client {
         }
     }
 
+    /// Logs out from the server.
     pub fn logout(&self) -> i32 {
         unsafe { ffi::api().TT_DoLogout(self.ptr) }
     }
 
+    /// Returns the current user id.
     pub fn my_id(&self) -> UserId {
         UserId(unsafe { ffi::api().TT_GetMyUserID(self.ptr) })
     }
 
+    /// Returns the account of the current user.
     pub fn get_my_user_account(&self) -> Option<UserAccount> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserAccount>() };
         if unsafe { ffi::api().TT_GetMyUserAccount(self.ptr, &mut raw) } == 1 {
@@ -35,28 +40,34 @@ impl Client {
         }
     }
 
+    /// Returns the user type of the current user.
     pub fn get_my_user_type(&self) -> u32 {
         unsafe { ffi::api().TT_GetMyUserType(self.ptr) }
     }
 
+    /// Returns the user rights of the current user.
     pub fn get_my_user_rights(&self) -> u32 {
         unsafe { ffi::api().TT_GetMyUserRights(self.ptr) }
     }
 
+    /// Requests user data for the current user.
     pub fn get_my_user_data(&self) -> i32 {
         unsafe { ffi::api().TT_GetMyUserData(self.ptr) }
     }
 
+    /// Changes the current nickname.
     pub fn change_nickname(&self, nick: &str) -> i32 {
         unsafe { ffi::api().TT_DoChangeNickname(self.ptr, nick.tt().as_ptr()) }
     }
 
+    /// Sets the status and status message.
     pub fn set_status(&self, status: UserStatus, msg: &str) -> i32 {
         unsafe {
             ffi::api().TT_DoChangeStatus(self.ptr, status.to_bits() as i32, msg.tt().as_ptr())
         }
     }
 
+    /// Updates only the status message.
     pub fn set_status_message(&self, msg: &str) -> i32 {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
@@ -68,22 +79,27 @@ impl Client {
         unsafe { ffi::api().TT_DoChangeStatus(self.ptr, bits as i32, msg.tt().as_ptr()) }
     }
 
+    /// Kicks a user from a channel.
     pub fn kick_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
         unsafe { ffi::api().TT_DoKickUser(self.ptr, user_id.0, channel_id.0) }
     }
 
+    /// Bans a user from a channel.
     pub fn ban_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
         unsafe { ffi::api().TT_DoBanUser(self.ptr, user_id.0, channel_id.0) }
     }
 
+    /// Bans a user with custom ban types.
     pub fn ban_user_ex(&self, user_id: UserId, ban_types: u32) -> i32 {
         unsafe { ffi::api().TT_DoBanUserEx(self.ptr, user_id.0, ban_types) }
     }
 
+    /// Removes a ban by IP address.
     pub fn unban_user(&self, ip: &str, channel_id: ChannelId) -> i32 {
         unsafe { ffi::api().TT_DoUnBanUser(self.ptr, ip.tt().as_ptr(), channel_id.0) }
     }
 
+    /// Sends a text message to a target.
     pub fn send_text<T: Into<MessageTarget>>(&self, target: T, text: &str) -> i32 {
         let mut msg = unsafe { std::mem::zeroed::<ffi::TextMessage>() };
         match target.into() {
@@ -107,26 +123,32 @@ impl Client {
         }
     }
 
+    /// Sends a text message to a user.
     pub fn send_to_user(&self, user_id: UserId, text: &str) -> i32 {
         self.send_text(MessageTarget::User(user_id), text)
     }
 
+    /// Sends a text message to a channel.
     pub fn send_to_channel(&self, channel_id: ChannelId, text: &str) -> i32 {
         self.send_text(MessageTarget::Channel(channel_id), text)
     }
 
+    /// Sends a text message to all users.
     pub fn send_to_all(&self, text: &str) -> i32 {
         self.send_text(MessageTarget::Broadcast, text)
     }
 
+    /// Adds a user to the ban list.
     pub fn ban(&self, banned_user: &crate::types::BannedUser) -> i32 {
         unsafe { ffi::api().TT_DoBan(self.ptr, &banned_user.to_ffi()) }
     }
 
+    /// Removes a user from the ban list.
     pub fn unban_ex(&self, banned_user: &crate::types::BannedUser) -> i32 {
         unsafe { ffi::api().TT_DoUnBanUserEx(self.ptr, &banned_user.to_ffi()) }
     }
 
+    /// Returns a user by id.
     pub fn get_user(&self, user_id: UserId) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
         if unsafe { ffi::api().TT_GetUser(self.ptr, user_id.0, &mut raw) } == 1 {
@@ -136,6 +158,7 @@ impl Client {
         }
     }
 
+    /// Returns a user by username.
     pub fn get_user_by_username(&self, username: &str) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
         if unsafe { ffi::api().TT_GetUserByUsername(self.ptr, username.tt().as_ptr(), &mut raw) }
@@ -147,6 +170,7 @@ impl Client {
         }
     }
 
+    /// Returns user statistics by id.
     pub fn get_user_statistics(&self, user_id: UserId) -> Option<UserStatistics> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserStatistics>() };
         if unsafe { ffi::api().TT_GetUserStatistics(self.ptr, user_id.0, &mut raw) } == 1 {
@@ -156,30 +180,37 @@ impl Client {
         }
     }
 
+    /// Requests a list of user accounts.
     pub fn list_user_accounts(&self, index: i32, count: i32) -> i32 {
         unsafe { ffi::api().TT_DoListUserAccounts(self.ptr, index, count) }
     }
 
+    /// Creates a user account.
     pub fn create_user_account(&self, account: &UserAccount) -> i32 {
         unsafe { ffi::api().TT_DoNewUserAccount(self.ptr, &account.to_ffi()) }
     }
 
+    /// Deletes a user account by username.
     pub fn delete_user_account(&self, username: &str) -> i32 {
         unsafe { ffi::api().TT_DoDeleteUserAccount(self.ptr, username.tt().as_ptr()) }
     }
 
+    /// Subscribes to a user's streams.
     pub fn subscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
         unsafe { ffi::api().TT_DoSubscribe(self.ptr, user_id.0, mask.raw()) }
     }
 
+    /// Unsubscribes from a user's streams.
     pub fn unsubscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, user_id.0, mask.raw()) }
     }
 
+    /// Unsubscribes from all streams for a user.
     pub fn unsubscribe_all_from_user(&self, user_id: UserId) -> i32 {
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, user_id.0, Subscriptions::ALL) }
     }
 
+    /// Unsubscribes from all streams for all users.
     pub fn unsubscribe_all(&self) -> i32 {
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, 0, Subscriptions::ALL) }
     }
@@ -202,6 +233,7 @@ impl Client {
         }
     }
 
+    /// Returns the current user's subscription mask.
     pub fn my_subscriptions(&self) -> Subscriptions {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();

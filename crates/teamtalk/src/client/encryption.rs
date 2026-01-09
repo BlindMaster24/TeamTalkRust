@@ -1,8 +1,10 @@
+//! Encryption context APIs.
 use super::Client;
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
+    /// Sets the TLS certificate and private key for encrypted connections.
     pub fn set_encryption_context(&self, cert_file: &str, key_file: &str) -> bool {
         let mut ctx = unsafe { std::mem::zeroed::<ffi::EncryptionContext>() };
         let c = cert_file.tt();

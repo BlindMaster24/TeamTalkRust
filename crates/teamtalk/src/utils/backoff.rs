@@ -1,6 +1,8 @@
+//! Exponential backoff helper.
 use rand::{Rng, thread_rng};
 use std::time::Duration;
 
+/// Exponential backoff with jitter and a maximum cap.
 #[derive(Debug, Clone)]
 pub struct ExponentialBackoff {
     initial_delay: Duration,
@@ -23,6 +25,7 @@ impl Default for ExponentialBackoff {
 }
 
 impl ExponentialBackoff {
+    /// Creates a new backoff schedule.
     pub fn new(initial: Duration, max: Duration, factor: f32, _jitter: f32) -> Self {
         Self {
             initial_delay: initial,
@@ -33,6 +36,7 @@ impl ExponentialBackoff {
         }
     }
 
+    /// Returns the next delay in the schedule.
     pub fn next_delay(&mut self) -> Duration {
         if self.attempts == 0 && self.initial_delay.is_zero() {
             self.attempts += 1;
@@ -63,15 +67,18 @@ impl ExponentialBackoff {
         self.current_val
     }
 
+    /// Returns the current delay without advancing.
     pub fn current_delay(&self) -> Duration {
         self.current_val
     }
 
+    /// Resets the schedule to its initial state.
     pub fn reset(&mut self) {
         self.attempts = 0;
         self.current_val = Duration::ZERO;
     }
 
+    /// Returns the number of attempts.
     pub fn attempts(&self) -> u32 {
         self.attempts
     }

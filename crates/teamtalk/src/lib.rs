@@ -1,3 +1,4 @@
+#![doc = include_str!("../../../docs/README.md")]
 use std::path::Path;
 
 pub mod client;
@@ -6,15 +7,34 @@ pub mod loader;
 pub mod types;
 pub mod utils;
 
-pub use client::{Client, Message};
-pub use events::{Error, Event, Result};
+#[cfg(feature = "async")]
+pub mod async_api;
+#[cfg(feature = "dispatch")]
+pub mod dispatch;
+#[cfg(feature = "logging")]
+pub mod logging;
+#[cfg(feature = "mock")]
+pub mod mock;
 
+#[cfg(feature = "async")]
+pub use async_api::{AsyncClient, AsyncConfig};
+pub use client::{Client, Message};
+#[cfg(feature = "dispatch")]
+pub use dispatch::{
+    ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher, EventContext, ReconnectSettings,
+};
+pub use events::{Error, Event, Result};
+#[cfg(feature = "mock")]
+pub use mock::{MockClient, MockMessage, MockUserBuilder};
+
+/// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {
     let dll_path = loader::find_or_download_dll().map_err(|_| Error::InitFailed)?;
     teamtalk_sys::load(dll_path.to_str().unwrap()).map_err(|_| Error::InitFailed)?;
     Ok(())
 }
 
+/// Initializes the TeamTalk SDK using a custom DLL path.
 pub fn init_with_path<P: AsRef<Path>>(path: P) -> Result<()> {
     teamtalk_sys::load(path.as_ref().to_str().ok_or(Error::InitFailed)?)
         .map_err(|_| Error::InitFailed)?;

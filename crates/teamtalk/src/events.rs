@@ -1,6 +1,8 @@
+//! Event and error types emitted by the TeamTalk client.
 use std::time::Duration;
 use teamtalk_sys as ffi;
 
+/// Client event emitted by `Client::poll`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     None,
@@ -137,6 +139,7 @@ impl From<ffi::ClientEvent> for Event {
 }
 
 impl Event {
+    /// Returns true when the event indicates a reconnect should be attempted.
     pub fn is_reconnect_needed(&self) -> bool {
         matches!(
             self,
@@ -144,6 +147,8 @@ impl Event {
         )
     }
 
+    /// Returns true when the event indicates a reconnect should be attempted,
+    /// including any additional custom events.
     pub fn is_reconnect_needed_with(&self, extra: &[Event]) -> bool {
         if self.is_reconnect_needed() {
             return true;
@@ -157,6 +162,7 @@ impl Event {
     }
 }
 
+/// Error type used across TeamTalk operations.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Init failed")]
@@ -173,4 +179,5 @@ pub enum Error {
     ClientError(i32),
 }
 
+/// Convenience result type for TeamTalk operations.
 pub type Result<T> = std::result::Result<T, Error>;

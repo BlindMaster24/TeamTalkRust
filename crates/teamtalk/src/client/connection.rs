@@ -1,8 +1,11 @@
+//! Connection and reconnect helpers.
 use super::Client;
 use crate::utils::{ToTT, backoff::ExponentialBackoff};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
+/// Reconnect policy configuration.
+#[derive(Clone)]
 pub struct ReconnectConfig {
     pub max_attempts: u32,
     pub min_delay: Duration,
@@ -30,6 +33,7 @@ pub struct ReconnectHandler {
 }
 
 impl ReconnectHandler {
+    /// Creates a new reconnect handler.
     pub fn new(config: ReconnectConfig) -> Self {
         let backoff = ExponentialBackoff::new(config.min_delay, config.max_delay, 1.6, 1.0);
         Self {
@@ -41,10 +45,12 @@ impl ReconnectHandler {
         }
     }
 
+    /// Marks the client as connected.
     pub fn mark_connected(&mut self) {
         self.connected_at = Some(Instant::now());
     }
 
+    /// Marks the client as disconnected.
     pub fn mark_disconnected(&mut self) {
         if let Some(at) = self.connected_at
             && at.elapsed() >= self.config.stability_threshold
@@ -55,6 +61,7 @@ impl ReconnectHandler {
         self.connected_at = None;
     }
 
+    /// Returns true when a reconnect attempt is allowed.
     pub fn can_attempt(&self) -> bool {
         if self.attempts >= self.config.max_attempts {
             return false;
@@ -65,6 +72,7 @@ impl ReconnectHandler {
         }
     }
 
+    /// Records a reconnect attempt.
     pub fn record_attempt(&mut self) {
         self.last_attempt = Some(Instant::now());
         self.attempts += 1;
@@ -73,6 +81,7 @@ impl ReconnectHandler {
 }
 
 #[derive(Debug, Clone)]
+/// Borrowed connection parameters.
 pub struct ConnectParams<'a> {
     pub host: &'a str,
     pub tcp: i32,
@@ -81,6 +90,7 @@ pub struct ConnectParams<'a> {
 }
 
 impl Client {
+    /// Connects to a TeamTalk server.
     pub fn connect(
         &self,
         host: &str,
@@ -106,20 +116,24 @@ impl Client {
         }
     }
 
+    /// Connects without encryption.
     pub fn connect_auto(&self, host: &str, tcp: i32, udp: i32) -> Result<(), crate::events::Error> {
         self.connect(host, tcp, udp, false)
     }
 
+    /// Returns true when the client is connected.
     pub fn is_connected(&self) -> bool {
         let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
         (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
     }
 
+    /// Returns true when the client is attempting to connect.
     pub fn is_connecting(&self) -> bool {
         let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
         (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
     }
 
+    /// Handles reconnect logic using provided parameters.
     pub fn handle_reconnect(&self, params: &ConnectParams, handler: &mut ReconnectHandler) -> bool {
         if handler.can_attempt() {
             let _ = self.disconnect();
@@ -130,6 +144,7 @@ impl Client {
         true
     }
 
+    /// Connects with a custom system id string.
     pub fn connect_sys_id(
         &self,
         host: &str,
@@ -157,6 +172,7 @@ impl Client {
         }
     }
 
+    /// Connects with a custom bind IP.
     pub fn connect_ex(
         &self,
         host: &str,
@@ -184,6 +200,7 @@ impl Client {
         }
     }
 
+    /// Disconnects from the server.
     pub fn disconnect(&self) -> Result<(), crate::events::Error> {
         if unsafe { ffi::api().TT_Disconnect(self.ptr) == 1 } {
             Ok(())
@@ -192,6 +209,7 @@ impl Client {
         }
     }
 
+    /// Sets client keep-alive parameters.
     pub fn set_client_keep_alive(
         &self,
         keep_alive: &crate::types::ClientKeepAlive,
@@ -203,6 +221,7 @@ impl Client {
         }
     }
 
+    /// Returns client keep-alive parameters.
     pub fn get_client_keep_alive(&self) -> Option<crate::types::ClientKeepAlive> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ClientKeepAlive>() };
         if unsafe { ffi::api().TT_GetClientKeepAlive(self.ptr, &mut raw) } == 1 {

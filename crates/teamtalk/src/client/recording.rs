@@ -1,9 +1,11 @@
+//! Recording APIs for channels and streams.
 use super::Client;
 use crate::types::AudioCodec;
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
+    /// Starts recording a muxed audio file using a codec.
     pub fn start_recording_muxed(
         &self,
         codec: &AudioCodec,
@@ -18,6 +20,7 @@ impl Client {
         }
     }
 
+    /// Starts recording the specified channel.
     pub fn start_recording_channel(
         &self,
         channel_id: i32,
@@ -31,6 +34,7 @@ impl Client {
         }
     }
 
+    /// Starts recording a set of stream types.
     pub fn start_recording_streams(
         &self,
         stream_types: u32,
@@ -51,10 +55,12 @@ impl Client {
         }
     }
 
+    /// Stops recording a muxed audio file.
     pub fn stop_recording(&self) -> bool {
         unsafe { ffi::api().TT_StopRecordingMuxedAudioFile(self.ptr) == 1 }
     }
 
+    /// Stops recording for a channel.
     pub fn stop_recording_channel(&self, channel_id: i32) -> bool {
         unsafe { ffi::api().TT_StopRecordingMuxedAudioFileEx(self.ptr, channel_id) == 1 }
     }

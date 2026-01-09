@@ -1,10 +1,13 @@
+//! Helpers for TeamTalk string conversions.
 use std::borrow::Cow;
 use teamtalk_sys as ffi;
 
+/// Creates a zeroed TeamTalk string buffer.
 pub fn tt_buf<const N: usize>() -> [ffi::TTCHAR; N] {
     [0 as ffi::TTCHAR; N]
 }
 
+/// Converts Rust strings into TeamTalk UTF-16 or UTF-8 buffers.
 pub trait ToTT {
     fn tt(&self) -> Vec<ffi::TTCHAR>;
 }
@@ -32,7 +35,10 @@ impl ToTT for String {
     }
 }
 
-#[allow(clippy::missing_safety_doc)]
+/// Converts a raw TeamTalk string pointer into `String`.
+///
+/// # Safety
+/// `ptr` must be a valid null-terminated TeamTalk string.
 pub unsafe fn from_tt(ptr: *const ffi::TTCHAR) -> String {
     if ptr.is_null() {
         return String::new();
@@ -55,6 +61,7 @@ pub unsafe fn from_tt(ptr: *const ffi::TTCHAR) -> String {
     }
 }
 
+/// Converts a TeamTalk string buffer into `String`.
 pub fn to_string(arr: &[ffi::TTCHAR]) -> String {
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());
     #[cfg(windows)]
@@ -68,6 +75,7 @@ pub fn to_string(arr: &[ffi::TTCHAR]) -> String {
     }
 }
 
+/// Converts a TeamTalk string buffer into a `Cow<str>`.
 pub fn to_cow(arr: &[ffi::TTCHAR]) -> Cow<'_, str> {
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());
     #[cfg(windows)]
@@ -81,6 +89,7 @@ pub fn to_cow(arr: &[ffi::TTCHAR]) -> Cow<'_, str> {
     }
 }
 
+/// Copies a TeamTalk string buffer into a reusable `String`.
 pub fn copy_to_string(arr: &[ffi::TTCHAR], out: &mut String) {
     out.clear();
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());

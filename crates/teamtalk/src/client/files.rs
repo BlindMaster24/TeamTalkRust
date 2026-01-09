@@ -1,9 +1,11 @@
+//! File transfer APIs.
 use super::Client;
 use crate::types::{ChannelId, FileId, RemoteFile, TransferId};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
+    /// Returns files available in a channel.
     pub fn get_channel_files(&self, channel_id: ChannelId) -> Vec<RemoteFile> {
         let mut count: i32 = 0;
         unsafe {
@@ -19,10 +21,12 @@ impl Client {
         }
     }
 
+    /// Sends a local file to a channel.
     pub fn send_file(&self, channel_id: ChannelId, local_path: &str) -> i32 {
         unsafe { ffi::api().TT_DoSendFile(self.ptr, channel_id.0, local_path.tt().as_ptr()) }
     }
 
+    /// Receives a remote file into a local directory.
     pub fn recv_file(&self, channel_id: ChannelId, remote_file_id: FileId, local_dir: &str) -> i32 {
         unsafe {
             ffi::api().TT_DoRecvFile(
@@ -34,10 +38,12 @@ impl Client {
         }
     }
 
+    /// Deletes a remote file from a channel.
     pub fn delete_file(&self, channel_id: ChannelId, remote_file_id: FileId) -> i32 {
         unsafe { ffi::api().TT_DoDeleteFile(self.ptr, channel_id.0, remote_file_id.0) }
     }
 
+    /// Returns file transfer info by transfer id.
     pub fn get_file_transfer_info(
         &self,
         transfer_id: TransferId,
@@ -50,6 +56,7 @@ impl Client {
         }
     }
 
+    /// Cancels an in-progress file transfer.
     pub fn cancel_file_transfer(&self, transfer_id: TransferId) -> bool {
         unsafe { ffi::api().TT_CancelFileTransfer(self.ptr, transfer_id.0) == 1 }
     }
