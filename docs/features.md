@@ -17,3 +17,11 @@ teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
 
+## Built-In Helpers (No Feature Flags)
+
+- Connection state tracking via `ConnectionState` and `Client::connection_state`.
+- Hooks API via `ClientHooks` for event callbacks.
+- Poll helpers: `Client::poll_until` and `Client::wait_for`.
+- Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
+- Recording guard: `RecordSession` for safe start/stop of channel recording.
+
