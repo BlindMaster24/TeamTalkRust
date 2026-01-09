@@ -6,7 +6,7 @@ Enable features in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "1.0.0", features = ["dispatch", "async"] }
+teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 ```
 
 ## Available Features
@@ -16,3 +16,4 @@ teamtalk = { version = "1.0.0", features = ["dispatch", "async"] }
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
+

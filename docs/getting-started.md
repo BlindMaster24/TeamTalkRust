@@ -9,7 +9,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "1.0.0"
+teamtalk = "1.0.1"
 ```
 
 ## Basic Flow
@@ -45,3 +45,4 @@ fn main() -> teamtalk::Result<()> {
     Ok(())
 }
 ```
+

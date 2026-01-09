@@ -21,7 +21,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "1.0.0"
+teamtalk = "1.0.1"
 ```
 
 ## Quick Start
@@ -96,3 +96,4 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 ## License
 
 MIT
+
