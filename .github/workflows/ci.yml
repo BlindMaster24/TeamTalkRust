@@ -23,7 +23,7 @@ jobs:
           components: rustfmt, clippy
       - name: sync-version-refs
         if: matrix.os == 'ubuntu-latest'
-        run: ./scripts/update-version.sh
+        run: bash ./scripts/update-version.sh
       - name: sync-version-refs
         if: matrix.os == 'windows-latest'
         shell: pwsh
