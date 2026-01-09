@@ -48,7 +48,12 @@ impl Client {
 
     /// Joins a channel by id.
     pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
-        unsafe { ffi::api().TT_DoJoinChannelByID(self.ptr, id.0, password.tt().as_ptr()) }
+        let cmd_id =
+            unsafe { ffi::api().TT_DoJoinChannelByID(self.ptr, id.0, password.tt().as_ptr()) };
+        if cmd_id > 0 {
+            self.set_connection_state(crate::events::ConnectionState::Joining(id));
+        }
+        cmd_id
     }
 
     /// Joins the root channel.

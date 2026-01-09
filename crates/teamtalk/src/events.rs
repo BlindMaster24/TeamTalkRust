@@ -1,4 +1,5 @@
 //! Event and error types emitted by the TeamTalk client.
+use crate::types::ChannelId;
 use std::time::Duration;
 use teamtalk_sys as ffi;
 
@@ -61,6 +62,20 @@ pub enum Event {
     SoundDeviceNewDefaultOutputComDevice,
     Reconnecting { attempt: u32, delay: Duration },
     Unknown(ffi::ClientEvent),
+}
+
+/// Client connection state derived from commands and events.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ConnectionState {
+    #[default]
+    Idle,
+    Connecting,
+    Connected,
+    LoggingIn,
+    LoggedIn,
+    Joining(ChannelId),
+    Joined(ChannelId),
+    Disconnected,
 }
 
 impl From<ffi::ClientEvent> for Event {

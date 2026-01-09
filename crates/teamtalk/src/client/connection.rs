@@ -1,5 +1,6 @@
 //! Connection and reconnect helpers.
 use super::Client;
+use crate::events::ConnectionState;
 use crate::utils::{ToTT, backoff::ExponentialBackoff};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
@@ -110,6 +111,7 @@ impl Client {
             ) == 1
         };
         if ok {
+            self.set_connection_state(ConnectionState::Connecting);
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -166,6 +168,7 @@ impl Client {
             ) == 1
         };
         if ok {
+            self.set_connection_state(ConnectionState::Connecting);
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -194,6 +197,7 @@ impl Client {
             ) == 1
         };
         if ok {
+            self.set_connection_state(ConnectionState::Connecting);
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -203,6 +207,7 @@ impl Client {
     /// Disconnects from the server.
     pub fn disconnect(&self) -> Result<(), crate::events::Error> {
         if unsafe { ffi::api().TT_Disconnect(self.ptr) == 1 } {
+            self.set_connection_state(ConnectionState::Disconnected);
             Ok(())
         } else {
             Err(crate::events::Error::CommandFailed(-1))

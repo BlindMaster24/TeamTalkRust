@@ -1,6 +1,6 @@
 //! Core polling and client state utilities.
 use super::{Client, Message};
-use crate::events::Event;
+use crate::events::{ConnectionState, Event};
 use crate::types::{ClientFlags, TT_STRLEN};
 use crate::utils::strings::tt_buf;
 use std::time::{Duration, Instant};
@@ -30,7 +30,11 @@ impl Client {
         let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
         let t = timeout_ms;
         if unsafe { ffi::api().TT_GetMessage(self.ptr, &mut msg, &t) } == 1 {
-            Some((Event::from(msg.nClientEvent), Message::from_raw(msg)))
+            let event = Event::from(msg.nClientEvent);
+            let message = Message::from_raw(msg);
+            self.update_state_for_event(event, &message);
+            self.invoke_hooks(event, &message);
+            Some((event, message))
         } else {
             None
         }
@@ -70,6 +74,33 @@ impl Client {
     pub fn wait_for(&self, event: Event, timeout_ms: i32) -> Option<Message> {
         self.poll_until(timeout_ms, |incoming, _| incoming == event)
             .map(|(_, msg)| msg)
+    }
+
+    fn update_state_for_event(&self, event: Event, msg: &Message) {
+        match event {
+            Event::ConnectSuccess => self.set_connection_state(ConnectionState::Connected),
+            Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
+                self.set_connection_state(ConnectionState::Disconnected)
+            }
+            Event::MySelfLoggedIn => self.set_connection_state(ConnectionState::LoggedIn),
+            Event::MySelfLoggedOut => self.set_connection_state(ConnectionState::Connected),
+            Event::UserJoined => {
+                if let Some(user) = msg.user()
+                    && user.id == self.my_id()
+                {
+                    self.set_connection_state(ConnectionState::Joined(user.channel_id));
+                    self.invoke_joined_hook(user.channel_id);
+                }
+            }
+            Event::UserLeft => {
+                if let Some(user) = msg.user()
+                    && user.id == self.my_id()
+                {
+                    self.set_connection_state(ConnectionState::LoggedIn);
+                }
+            }
+            _ => {}
+        }
     }
 
     /// Returns the current client flags.

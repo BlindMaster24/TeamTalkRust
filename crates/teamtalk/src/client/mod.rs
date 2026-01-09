@@ -1,5 +1,6 @@
 //! Core client type and message wrapper.
-use crate::events::{Error, Result};
+use crate::events::{ConnectionState, Error, Result};
+use std::cell::{Cell, RefCell};
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
@@ -9,6 +10,7 @@ pub mod core;
 pub mod desktop;
 pub mod encryption;
 pub mod files;
+pub mod hooks;
 pub mod hotkeys;
 pub mod media;
 pub mod recording;
@@ -18,11 +20,14 @@ pub mod users;
 pub mod video;
 
 pub use connection::{ConnectParams, ReconnectConfig, ReconnectHandler};
+pub use hooks::ClientHooks;
 
 pub struct Client {
     /// Optional client name used by the SDK.
     pub name: Option<String>,
     ptr: *mut ffi::TTInstance,
+    state: Cell<ConnectionState>,
+    hooks: RefCell<ClientHooks>,
 }
 
 unsafe impl Send for Client {}
@@ -35,7 +40,12 @@ impl Client {
         if ptr.is_null() {
             Err(Error::InitFailed)
         } else {
-            Ok(Self { name: None, ptr })
+            Ok(Self {
+                name: None,
+                ptr,
+                state: Cell::new(ConnectionState::Idle),
+                hooks: RefCell::new(ClientHooks::default()),
+            })
         }
     }
 
@@ -51,7 +61,12 @@ impl Client {
         if ptr.is_null() {
             Err(Error::InitFailed)
         } else {
-            Ok(Self { name: None, ptr })
+            Ok(Self {
+                name: None,
+                ptr,
+                state: Cell::new(ConnectionState::Idle),
+                hooks: RefCell::new(ClientHooks::default()),
+            })
         }
     }
 
@@ -69,6 +84,33 @@ impl Client {
     pub fn with_name(mut self, name: &str) -> Self {
         self.name = Some(name.to_string());
         self
+    }
+
+    /// Returns the current connection state.
+    pub fn connection_state(&self) -> ConnectionState {
+        self.state.get()
+    }
+
+    /// Replaces the current hook set.
+    pub fn set_hooks(&self, hooks: ClientHooks) {
+        *self.hooks.borrow_mut() = hooks;
+    }
+
+    /// Clears all hooks.
+    pub fn clear_hooks(&self) {
+        *self.hooks.borrow_mut() = ClientHooks::default();
+    }
+
+    pub(crate) fn set_connection_state(&self, state: ConnectionState) {
+        self.state.set(state);
+    }
+
+    pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
+        self.hooks.borrow_mut().fire(self, event, msg);
+    }
+
+    pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {
+        self.hooks.borrow_mut().fire_joined(self, channel_id);
     }
 
     /// Sends a debug input tone to the SDK.

@@ -9,7 +9,7 @@ use teamtalk_sys as ffi;
 impl Client {
     /// Logs in to the server.
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
-        unsafe {
+        let cmd_id = unsafe {
             ffi::api().TT_DoLoginEx(
                 self.ptr,
                 nickname.tt().as_ptr(),
@@ -17,12 +17,20 @@ impl Client {
                 password.tt().as_ptr(),
                 client_name.tt().as_ptr(),
             )
+        };
+        if cmd_id > 0 {
+            self.set_connection_state(crate::events::ConnectionState::LoggingIn);
         }
+        cmd_id
     }
 
     /// Logs out from the server.
     pub fn logout(&self) -> i32 {
-        unsafe { ffi::api().TT_DoLogout(self.ptr) }
+        let cmd_id = unsafe { ffi::api().TT_DoLogout(self.ptr) };
+        if cmd_id > 0 {
+            self.set_connection_state(crate::events::ConnectionState::Connected);
+        }
+        cmd_id
     }
 
     /// Returns the current user id.
