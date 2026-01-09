@@ -1,4 +1,4 @@
-#![doc = include_str!("../../../docs/README.md")]
+#![doc = include_str!("../README.md")]
 use std::path::Path;
 
 pub mod client;
