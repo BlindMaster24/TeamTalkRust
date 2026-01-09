@@ -1,7 +1,7 @@
 set -euo pipefail
 
 cargo_toml="crates/teamtalk/Cargo.toml"
-version=$(rg '^version\s*=\s*"' -m 1 "$cargo_toml" | sed -E 's/^version\s*=\s*"([^"]+)".*/\1/')
+version=$(grep -E '^version\s*=\s*"' "$cargo_toml" | head -n 1 | sed -E 's/^version\s*=\s*"([^"]+)".*/\1/')
 
 files=(
   "README.md"
