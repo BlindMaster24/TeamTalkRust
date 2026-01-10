@@ -28,4 +28,5 @@ teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 - Auto-login and rejoin using stored `LoginParams` and remembered channels.
 - Typed errors with SDK code + message.
 - Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
+- Multi-client tracking: `ClientId`, labels, and `ClientRegistry`.
 

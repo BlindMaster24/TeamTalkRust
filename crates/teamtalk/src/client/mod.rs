@@ -1,6 +1,8 @@
 //! Core client type and message wrapper.
 use crate::events::{ConnectionState, Error, Event, Result};
+use crate::types::ClientId;
 use std::cell::{Cell, RefCell};
+use std::sync::atomic::{AtomicU64, Ordering};
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
@@ -14,6 +16,7 @@ pub mod hooks;
 pub mod hotkeys;
 pub mod media;
 pub mod recording;
+pub mod registry;
 pub mod server;
 pub mod system;
 pub mod users;
@@ -21,11 +24,16 @@ pub mod video;
 
 pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
+pub use registry::{ClientInfo, ClientRegistry};
+
+static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
 pub struct Client {
     /// Optional client name used by the SDK.
     pub name: Option<String>,
     ptr: *mut ffi::TTInstance,
+    id: ClientId,
+    label: RefCell<Option<String>>,
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
     auto_reconnect: RefCell<AutoReconnectState>,
@@ -44,6 +52,8 @@ impl Client {
             Ok(Self {
                 name: None,
                 ptr,
+                id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
+                label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
@@ -66,6 +76,8 @@ impl Client {
             Ok(Self {
                 name: None,
                 ptr,
+                id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
+                label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
@@ -87,6 +99,27 @@ impl Client {
     pub fn with_name(mut self, name: &str) -> Self {
         self.name = Some(name.to_string());
         self
+    }
+
+    /// Sets a human-friendly label for the client instance.
+    pub fn with_label(self, label: &str) -> Self {
+        *self.label.borrow_mut() = Some(label.to_string());
+        self
+    }
+
+    /// Returns the client instance id.
+    pub fn id(&self) -> ClientId {
+        self.id
+    }
+
+    /// Returns the client label, if set.
+    pub fn label(&self) -> Option<String> {
+        self.label.borrow().clone()
+    }
+
+    /// Sets or clears the client label.
+    pub fn set_label(&self, label: Option<&str>) {
+        *self.label.borrow_mut() = label.map(|value| value.to_string());
     }
 
     /// Returns the current connection state.

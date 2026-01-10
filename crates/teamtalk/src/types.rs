@@ -13,6 +13,9 @@ pub struct FileId(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 /// Strongly typed transfer id.
 pub struct TransferId(pub i32);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed client id.
+pub struct ClientId(pub u64);
 
 /// Reserved local user id.
 pub const LOCAL_USER_ID: UserId = UserId(0);

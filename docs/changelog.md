@@ -16,6 +16,7 @@ public API with compatibility expectations for downstream users.
 - Auto-login and rejoin using stored login data.
 - Typed errors with SDK code and message.
 - Env-based helpers for connection and login parameters.
+- Multi-client tracking with `ClientId`, labels, and `ClientRegistry`.
 - Tests for subscription presets.
 
 ### Changed

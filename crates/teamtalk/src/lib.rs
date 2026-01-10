@@ -20,7 +20,7 @@ pub mod mock;
 pub use async_api::{AsyncClient, AsyncConfig};
 pub use client::recording::RecordSession;
 pub use client::users::LoginParams;
-pub use client::{Client, ClientHooks, Message, ReconnectConfig};
+pub use client::{Client, ClientHooks, ClientInfo, ClientRegistry, Message, ReconnectConfig};
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
     ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher, EventContext, ReconnectSettings,
@@ -28,6 +28,7 @@ pub use dispatch::{
 pub use events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "mock")]
 pub use mock::{MockClient, MockMessage, MockUserBuilder};
+pub use types::ClientId;
 
 /// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {
