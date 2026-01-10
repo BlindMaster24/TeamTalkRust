@@ -20,7 +20,10 @@ pub mod mock;
 pub use async_api::{AsyncClient, AsyncConfig};
 pub use client::recording::RecordSession;
 pub use client::users::LoginParams;
-pub use client::{Client, ClientHooks, ClientInfo, ClientRegistry, Message, ReconnectConfig};
+pub use client::{
+    Client, ClientEvent, ClientHealth, ClientHooks, ClientInfo, ClientManager, ClientRegistry,
+    Message, ReconnectConfig,
+};
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
     ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher, EventContext, ReconnectSettings,

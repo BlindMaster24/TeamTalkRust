@@ -29,4 +29,5 @@ teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 - Typed errors with SDK code + message.
 - Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
 - Multi-client tracking: `ClientId`, labels, and `ClientRegistry`.
+- Multi-client manager: `ClientManager` with event channel and health snapshots.
 

@@ -14,6 +14,7 @@ pub mod encryption;
 pub mod files;
 pub mod hooks;
 pub mod hotkeys;
+pub mod manager;
 pub mod media;
 pub mod recording;
 pub mod registry;
@@ -24,6 +25,7 @@ pub mod video;
 
 pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
+pub use manager::{ClientEvent, ClientHealth, ClientManager};
 pub use registry::{ClientInfo, ClientRegistry};
 
 static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);

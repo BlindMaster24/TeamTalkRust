@@ -17,6 +17,7 @@ public API with compatibility expectations for downstream users.
 - Typed errors with SDK code and message.
 - Env-based helpers for connection and login parameters.
 - Multi-client tracking with `ClientId`, labels, and `ClientRegistry`.
+- Multi-client scheduling via `ClientManager` with health snapshots.
 - Tests for subscription presets.
 
 ### Changed
