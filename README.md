@@ -17,6 +17,12 @@
 
 ## Installation
 
+Quick add:
+
+```bash
+cargo add teamtalk
+```
+
 Add this to your `Cargo.toml`:
 
 ```toml
@@ -29,6 +35,12 @@ For the latest development version from `main`:
 ```toml
 [dependencies]
 teamtalk = { git = "https://github.com/BlindMaster24/TeamTalkRust.git", branch = "main" }
+```
+
+Dev install via cargo:
+
+```bash
+cargo add teamtalk --git https://github.com/BlindMaster24/TeamTalkRust.git --branch main
 ```
 
 ## Quick Start
