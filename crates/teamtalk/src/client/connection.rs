@@ -79,6 +79,16 @@ impl ReconnectHandler {
         self.attempts += 1;
         self.backoff.next_delay();
     }
+
+    /// Returns the current backoff delay.
+    pub fn current_delay(&self) -> Duration {
+        self.backoff.current_delay()
+    }
+
+    /// Returns the number of attempts.
+    pub fn attempts(&self) -> u32 {
+        self.attempts
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -90,7 +100,82 @@ pub struct ConnectParams<'a> {
     pub encrypted: bool,
 }
 
+#[derive(Debug, Clone)]
+/// Owned connection parameters.
+pub struct ConnectParamsOwned {
+    pub host: String,
+    pub tcp: i32,
+    pub udp: i32,
+    pub encrypted: bool,
+}
+
+impl ConnectParamsOwned {
+    pub fn new(host: impl Into<String>, tcp: i32, udp: i32, encrypted: bool) -> Self {
+        Self {
+            host: host.into(),
+            tcp,
+            udp,
+            encrypted,
+        }
+    }
+}
+
+impl<'a> From<&ConnectParams<'a>> for ConnectParamsOwned {
+    fn from(params: &ConnectParams<'a>) -> Self {
+        Self::new(params.host, params.tcp, params.udp, params.encrypted)
+    }
+}
+
 impl Client {
+    /// Enables automatic reconnection using the provided config.
+    pub fn enable_auto_reconnect(&self, config: ReconnectConfig) {
+        let mut auto = self.auto_reconnect.borrow_mut();
+        auto.enabled = true;
+        auto.handler = Some(ReconnectHandler::new(config));
+    }
+
+    /// Disables automatic reconnection.
+    pub fn disable_auto_reconnect(&self) {
+        let mut auto = self.auto_reconnect.borrow_mut();
+        auto.enabled = false;
+        auto.handler = None;
+    }
+
+    /// Returns true if automatic reconnection is enabled.
+    pub fn auto_reconnect_enabled(&self) -> bool {
+        self.auto_reconnect.borrow().enabled
+    }
+
+    /// Stores connection parameters for automatic reconnection.
+    pub fn set_reconnect_params(&self, params: ConnectParamsOwned) {
+        self.auto_reconnect.borrow_mut().params = Some(params);
+    }
+
+    /// Returns the stored reconnection parameters, if any.
+    pub fn reconnect_params(&self) -> Option<ConnectParamsOwned> {
+        self.auto_reconnect.borrow().params.clone()
+    }
+
+    /// Connects and remembers the parameters for automatic reconnection.
+    pub fn connect_remember(
+        &self,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> Result<(), crate::events::Error> {
+        self.set_reconnect_params(ConnectParamsOwned::new(host, tcp, udp, encrypted));
+        self.connect(host, tcp, udp, encrypted)
+    }
+
+    /// Connects using the provided parameters.
+    pub fn connect_with_params(
+        &self,
+        params: &ConnectParamsOwned,
+    ) -> Result<(), crate::events::Error> {
+        self.connect(&params.host, params.tcp, params.udp, params.encrypted)
+    }
+
     /// Connects to a TeamTalk server.
     pub fn connect(
         &self,

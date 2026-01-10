@@ -34,8 +34,10 @@ impl Client {
             let message = Message::from_raw(msg);
             self.update_state_for_event(event, &message);
             self.invoke_hooks(event, &message);
+            self.handle_auto_reconnect();
             Some((event, message))
         } else {
+            self.handle_auto_reconnect();
             None
         }
     }

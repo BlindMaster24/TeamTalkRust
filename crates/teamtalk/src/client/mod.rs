@@ -1,5 +1,5 @@
 //! Core client type and message wrapper.
-use crate::events::{ConnectionState, Error, Result};
+use crate::events::{ConnectionState, Error, Event, Result};
 use std::cell::{Cell, RefCell};
 pub use teamtalk_sys as ffi;
 
@@ -19,7 +19,7 @@ pub mod system;
 pub mod users;
 pub mod video;
 
-pub use connection::{ConnectParams, ReconnectConfig, ReconnectHandler};
+pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
 
 pub struct Client {
@@ -28,6 +28,7 @@ pub struct Client {
     ptr: *mut ffi::TTInstance,
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
+    auto_reconnect: RefCell<AutoReconnectState>,
 }
 
 unsafe impl Send for Client {}
@@ -45,6 +46,7 @@ impl Client {
                 ptr,
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
+                auto_reconnect: RefCell::new(AutoReconnectState::default()),
             })
         }
     }
@@ -66,6 +68,7 @@ impl Client {
                 ptr,
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
+                auto_reconnect: RefCell::new(AutoReconnectState::default()),
             })
         }
     }
@@ -113,6 +116,36 @@ impl Client {
         self.hooks.borrow_mut().fire_joined(self, channel_id);
     }
 
+    pub(crate) fn handle_auto_reconnect(&self) {
+        if self.state.get() != ConnectionState::Disconnected {
+            return;
+        }
+
+        let mut auto = self.auto_reconnect.borrow_mut();
+        if !auto.enabled {
+            return;
+        }
+
+        let params = match auto.params.as_ref() {
+            Some(params) => params.clone(),
+            None => return,
+        };
+
+        let handler = match auto.handler.as_mut() {
+            Some(handler) => handler,
+            None => return,
+        };
+
+        if handler.can_attempt() {
+            handler.record_attempt();
+            let attempt = handler.attempts();
+            let delay = handler.current_delay();
+            let msg = Message::from_raw(unsafe { std::mem::zeroed::<ffi::TTMessage>() });
+            self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
+            let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
+        }
+    }
+
     /// Sends a debug input tone to the SDK.
     pub fn dbg_set_input_tone(&self, stream_types: u32, freq: i32) -> bool {
         unsafe { ffi::api().TT_DBG_SetSoundInputTone(self.ptr, stream_types, freq) == 1 }
@@ -141,6 +174,13 @@ impl Client {
     pub fn dbg_get_data_ptr(msg: &mut ffi::TTMessage) -> *mut std::ffi::c_void {
         unsafe { ffi::api().TT_DBG_GETDATAPTR(msg) }
     }
+}
+
+#[derive(Default)]
+pub(crate) struct AutoReconnectState {
+    enabled: bool,
+    handler: Option<ReconnectHandler>,
+    params: Option<ConnectParamsOwned>,
 }
 
 /// Wrapper around a raw TeamTalk message.

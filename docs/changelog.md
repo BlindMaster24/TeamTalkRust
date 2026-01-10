@@ -12,6 +12,7 @@ public API with compatibility expectations for downstream users.
 - Recording guard: `RecordSession` for safe start/stop of channel recording.
 - Connection state tracking via `ConnectionState` and `Client::connection_state`.
 - Hooks API: `ClientHooks` with per-event handlers.
+- Auto-reconnect configuration and remembered connection parameters.
 - Tests for subscription presets.
 
 ## 1.0.0
