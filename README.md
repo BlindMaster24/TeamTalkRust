@@ -24,6 +24,13 @@ Add this to your `Cargo.toml`:
 teamtalk = "1.0.1"
 ```
 
+For the latest development version from `main`:
+
+```toml
+[dependencies]
+teamtalk = { git = "https://github.com/BlindMaster24/TeamTalkRust.git", branch = "main" }
+```
+
 ## Quick Start
 
 ```rust

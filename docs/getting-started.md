@@ -12,6 +12,13 @@ Add to `Cargo.toml`:
 teamtalk = "1.0.1"
 ```
 
+For the latest development version from `main`:
+
+```toml
+[dependencies]
+teamtalk = { git = "https://github.com/BlindMaster24/TeamTalkRust.git", branch = "main" }
+```
+
 ## Basic Flow
 
 1. Initialize the SDK.
