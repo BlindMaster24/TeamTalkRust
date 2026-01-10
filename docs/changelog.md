@@ -20,6 +20,9 @@ public API with compatibility expectations for downstream users.
 ### Changed
 - Error variants now carry code + message payloads.
 
+### Breaking
+- `Error::CommandFailed` and `Error::ClientError` now include `code` and `message` fields.
+
 ## 1.0.0
 
 ### Added
