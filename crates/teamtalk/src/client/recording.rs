@@ -89,7 +89,10 @@ impl<'a> RecordSession<'a> {
                 active: true,
             })
         } else {
-            Err(Error::CommandFailed(0))
+            Err(Error::CommandFailed {
+                code: -1,
+                message: "Recording start failed".to_string(),
+            })
         }
     }
 

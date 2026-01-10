@@ -156,6 +156,16 @@ impl Client {
         self.auto_reconnect.borrow().params.clone()
     }
 
+    /// Returns the last remembered channel, if any.
+    pub fn last_channel(&self) -> Option<crate::types::ChannelId> {
+        self.auto_reconnect.borrow().last_channel
+    }
+
+    /// Clears the remembered channel.
+    pub fn clear_last_channel(&self) {
+        self.auto_reconnect.borrow_mut().last_channel = None;
+    }
+
     /// Connects and remembers the parameters for automatic reconnection.
     pub fn connect_remember(
         &self,
@@ -295,7 +305,10 @@ impl Client {
             self.set_connection_state(ConnectionState::Disconnected);
             Ok(())
         } else {
-            Err(crate::events::Error::CommandFailed(-1))
+            Err(crate::events::Error::CommandFailed {
+                code: -1,
+                message: "Disconnect failed".to_string(),
+            })
         }
     }
 
@@ -307,7 +320,10 @@ impl Client {
         if unsafe { ffi::api().TT_SetClientKeepAlive(self.ptr, &keep_alive.to_ffi()) == 1 } {
             Ok(())
         } else {
-            Err(crate::events::Error::CommandFailed(-1))
+            Err(crate::events::Error::CommandFailed {
+                code: -1,
+                message: "Set keep-alive failed".to_string(),
+            })
         }
     }
 

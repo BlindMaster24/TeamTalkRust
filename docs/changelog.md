@@ -13,7 +13,12 @@ public API with compatibility expectations for downstream users.
 - Connection state tracking via `ConnectionState` and `Client::connection_state`.
 - Hooks API: `ClientHooks` with per-event handlers.
 - Auto-reconnect configuration and remembered connection parameters.
+- Auto-login and rejoin using stored login data.
+- Typed errors with SDK code and message.
 - Tests for subscription presets.
+
+### Changed
+- Error variants now carry code + message payloads.
 
 ## 1.0.0
 

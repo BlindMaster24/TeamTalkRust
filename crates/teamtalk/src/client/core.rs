@@ -80,11 +80,17 @@ impl Client {
 
     fn update_state_for_event(&self, event: Event, msg: &Message) {
         match event {
-            Event::ConnectSuccess => self.set_connection_state(ConnectionState::Connected),
+            Event::ConnectSuccess => {
+                self.set_connection_state(ConnectionState::Connected);
+                self.handle_auto_login();
+            }
             Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
                 self.set_connection_state(ConnectionState::Disconnected)
             }
-            Event::MySelfLoggedIn => self.set_connection_state(ConnectionState::LoggedIn),
+            Event::MySelfLoggedIn => {
+                self.set_connection_state(ConnectionState::LoggedIn);
+                self.handle_auto_join();
+            }
             Event::MySelfLoggedOut => self.set_connection_state(ConnectionState::Connected),
             Event::UserJoined => {
                 if let Some(user) = msg.user()
@@ -116,6 +122,14 @@ impl Client {
         unsafe {
             ffi::api().TT_GetErrorMessage(code, buf.as_mut_ptr());
             crate::utils::strings::to_string(&buf)
+        }
+    }
+
+    /// Builds a typed SDK error with the resolved message.
+    pub fn client_error(&self, code: i32) -> crate::events::Error {
+        crate::events::Error::ClientError {
+            code,
+            message: self.get_error_message(code),
         }
     }
 }

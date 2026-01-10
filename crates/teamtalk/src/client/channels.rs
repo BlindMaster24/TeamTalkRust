@@ -52,6 +52,7 @@ impl Client {
             unsafe { ffi::api().TT_DoJoinChannelByID(self.ptr, id.0, password.tt().as_ptr()) };
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::Joining(id));
+            self.auto_reconnect.borrow_mut().last_channel = Some(id);
         }
         cmd_id
     }
@@ -64,7 +65,11 @@ impl Client {
 
     /// Leaves the current channel.
     pub fn leave_channel(&self) -> i32 {
-        unsafe { ffi::api().TT_DoLeaveChannel(self.ptr) }
+        let cmd_id = unsafe { ffi::api().TT_DoLeaveChannel(self.ptr) };
+        if cmd_id > 0 {
+            self.auto_reconnect.borrow_mut().last_channel = None;
+        }
+        cmd_id
     }
 
     /// Creates a new channel.

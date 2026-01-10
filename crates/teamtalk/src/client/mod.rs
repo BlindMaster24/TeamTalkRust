@@ -146,6 +146,47 @@ impl Client {
         }
     }
 
+    pub(crate) fn handle_auto_login(&self) {
+        if self.state.get() != ConnectionState::Connected {
+            return;
+        }
+
+        let auto = self.auto_reconnect.borrow();
+        if !auto.enabled {
+            return;
+        }
+
+        let params = match auto.login.as_ref() {
+            Some(params) => params,
+            None => return,
+        };
+
+        let _ = self.login(
+            &params.nickname,
+            &params.username,
+            &params.password,
+            &params.client_name,
+        );
+    }
+
+    pub(crate) fn handle_auto_join(&self) {
+        if self.state.get() != ConnectionState::LoggedIn {
+            return;
+        }
+
+        let auto = self.auto_reconnect.borrow();
+        if !auto.enabled {
+            return;
+        }
+
+        let channel = match auto.last_channel {
+            Some(channel) => channel,
+            None => return,
+        };
+
+        let _ = self.join_channel(channel, "");
+    }
+
     /// Sends a debug input tone to the SDK.
     pub fn dbg_set_input_tone(&self, stream_types: u32, freq: i32) -> bool {
         unsafe { ffi::api().TT_DBG_SetSoundInputTone(self.ptr, stream_types, freq) == 1 }
@@ -181,6 +222,8 @@ pub(crate) struct AutoReconnectState {
     enabled: bool,
     handler: Option<ReconnectHandler>,
     params: Option<ConnectParamsOwned>,
+    last_channel: Option<crate::types::ChannelId>,
+    login: Option<crate::client::users::LoginParams>,
 }
 
 /// Wrapper around a raw TeamTalk message.

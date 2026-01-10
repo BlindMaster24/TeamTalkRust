@@ -6,6 +6,31 @@ use crate::types::{
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
+/// Stored login parameters for automatic login.
+#[derive(Debug, Clone)]
+pub struct LoginParams {
+    pub nickname: String,
+    pub username: String,
+    pub password: String,
+    pub client_name: String,
+}
+
+impl LoginParams {
+    pub fn new(
+        nickname: impl Into<String>,
+        username: impl Into<String>,
+        password: impl Into<String>,
+        client_name: impl Into<String>,
+    ) -> Self {
+        Self {
+            nickname: nickname.into(),
+            username: username.into(),
+            password: password.into(),
+            client_name: client_name.into(),
+        }
+    }
+}
+
 impl Client {
     /// Logs in to the server.
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
@@ -22,6 +47,42 @@ impl Client {
             self.set_connection_state(crate::events::ConnectionState::LoggingIn);
         }
         cmd_id
+    }
+
+    /// Stores login parameters for automatic login.
+    pub fn set_login_params(&self, params: LoginParams) {
+        self.auto_reconnect.borrow_mut().login = Some(params);
+    }
+
+    /// Returns stored login parameters, if any.
+    pub fn login_params(&self) -> Option<LoginParams> {
+        self.auto_reconnect.borrow().login.clone()
+    }
+
+    /// Logs in using stored login parameters.
+    pub fn login_with_params(&self) -> Result<i32, crate::events::Error> {
+        let params = self
+            .login_params()
+            .ok_or(crate::events::Error::MissingLoginParams)?;
+        Ok(self.login(
+            &params.nickname,
+            &params.username,
+            &params.password,
+            &params.client_name,
+        ))
+    }
+
+    /// Stores login parameters and immediately logs in.
+    pub fn login_remember(
+        &self,
+        nickname: &str,
+        username: &str,
+        password: &str,
+        client_name: &str,
+    ) -> i32 {
+        let params = LoginParams::new(nickname, username, password, client_name);
+        self.set_login_params(params);
+        self.login(nickname, username, password, client_name)
     }
 
     /// Logs out from the server.

@@ -1,6 +1,6 @@
 use std::env;
 use teamtalk::types::ChannelId;
-use teamtalk::{Client, Event, ReconnectConfig};
+use teamtalk::{Client, Event, LoginParams, ReconnectConfig};
 
 fn env_or(name: &str, default: &str) -> String {
     env::var(name).unwrap_or_else(|_| default.to_string())
@@ -25,20 +25,19 @@ fn main() -> teamtalk::Result<()> {
 
     let client = Client::new()?;
     client.enable_auto_reconnect(ReconnectConfig::default());
+    client.set_login_params(LoginParams::new(
+        &nickname,
+        &username,
+        &password,
+        &client_name,
+    ));
     client.connect_remember(&host, tcp, udp, false)?;
 
     loop {
-        if let Some((event, _)) = client.poll(100) {
-            match event {
-                Event::ConnectSuccess => {
-                    client.login(&nickname, &username, &password, &client_name);
-                }
-                Event::MySelfLoggedIn => {
-                    client.join_channel(root_channel, "");
-                }
-                Event::ConnectionLost | Event::ConnectFailed | Event::ConnectCryptError => {}
-                _ => {}
-            }
+        if let Some((event, _)) = client.poll(100)
+            && matches!(event, Event::MySelfLoggedIn)
+        {
+            client.join_channel(root_channel, "");
         }
     }
 }

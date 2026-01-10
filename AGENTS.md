@@ -21,6 +21,7 @@
 - Event-driven only: react to `client.poll()` events and avoid `thread::sleep` for control flow.
 - Use strong IDs like `UserId` and `ChannelId`; avoid raw `i32` in public APIs.
 - Deliver professional, optimized code with descriptive names and no inline comments in library code or examples.
+- Auto-reconnect is opt-in; keep manual reconnect logic out of examples unless explicitly required.
 - New optional functionality must be feature-gated in `crates/teamtalk/Cargo.toml`.
 
 ## Feature Flags

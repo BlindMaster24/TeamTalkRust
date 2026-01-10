@@ -182,16 +182,20 @@ impl Event {
 pub enum Error {
     #[error("Init failed")]
     InitFailed,
-    #[error("Command failed: {0}")]
-    CommandFailed(i32),
+    #[error("Command failed: {code} ({message})")]
+    CommandFailed { code: i32, message: String },
     #[error("Connection failed")]
     ConnectFailed,
     #[error("Auth failed")]
     AuthFailed,
     #[error("Invalid parameter")]
     InvalidParam,
-    #[error("SDK Error: {0}")]
-    ClientError(i32),
+    #[error("Missing reconnect parameters")]
+    MissingReconnectParams,
+    #[error("Missing login parameters")]
+    MissingLoginParams,
+    #[error("SDK Error: {code} ({message})")]
+    ClientError { code: i32, message: String },
 }
 
 /// Convenience result type for TeamTalk operations.
