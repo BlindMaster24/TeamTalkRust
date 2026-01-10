@@ -92,6 +92,8 @@
 ## Commit & Pull Request Guidelines
 - Use Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`.
 - PRs should explain intent, list key changes, and include commands run.
+- Before committing, run required checks in the Definition of Done.
+- Commit workflow: review `git status`, stage only relevant files, review `git diff --staged`, then commit and push after user confirmation.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
