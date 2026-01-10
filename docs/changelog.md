@@ -15,6 +15,7 @@ public API with compatibility expectations for downstream users.
 - Auto-reconnect configuration and remembered connection parameters.
 - Auto-login and rejoin using stored login data.
 - Typed errors with SDK code and message.
+- Env-based helpers for connection and login parameters.
 - Tests for subscription presets.
 
 ### Changed

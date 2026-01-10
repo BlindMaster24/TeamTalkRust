@@ -27,4 +27,5 @@ teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 - Auto-reconnect support via `enable_auto_reconnect` and `connect_remember`.
 - Auto-login and rejoin using stored `LoginParams` and remembered channels.
 - Typed errors with SDK code + message.
+- Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
 

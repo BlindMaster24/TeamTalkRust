@@ -2,6 +2,7 @@
 use super::Client;
 use crate::events::ConnectionState;
 use crate::utils::{ToTT, backoff::ExponentialBackoff};
+use std::env;
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
@@ -118,6 +119,23 @@ impl ConnectParamsOwned {
             encrypted,
         }
     }
+
+    pub fn from_env() -> Self {
+        let host = env::var("TT_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let tcp = env::var("TT_TCP")
+            .ok()
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(10333);
+        let udp = env::var("TT_UDP")
+            .ok()
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(10333);
+        let encrypted = env::var("TT_ENCRYPTED")
+            .ok()
+            .map(|value| matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
+            .unwrap_or(false);
+        Self::new(host, tcp, udp, encrypted)
+    }
 }
 
 impl<'a> From<&ConnectParams<'a>> for ConnectParamsOwned {
@@ -184,6 +202,11 @@ impl Client {
         params: &ConnectParamsOwned,
     ) -> Result<(), crate::events::Error> {
         self.connect(&params.host, params.tcp, params.udp, params.encrypted)
+    }
+
+    pub fn connect_from_env(&self) -> Result<(), crate::events::Error> {
+        let params = ConnectParamsOwned::from_env();
+        self.connect_remember(&params.host, params.tcp, params.udp, params.encrypted)
     }
 
     /// Connects to a TeamTalk server.

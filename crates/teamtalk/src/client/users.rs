@@ -4,6 +4,7 @@ use crate::types::{
     ChannelId, MessageTarget, Subscriptions, User, UserAccount, UserId, UserStatistics, UserStatus,
 };
 use crate::utils::ToTT;
+use std::env;
 use teamtalk_sys as ffi;
 
 /// Stored login parameters for automatic login.
@@ -28,6 +29,14 @@ impl LoginParams {
             password: password.into(),
             client_name: client_name.into(),
         }
+    }
+
+    pub fn from_env() -> Self {
+        let nickname = env::var("TT_NICK").unwrap_or_default();
+        let username = env::var("TT_USER").unwrap_or_default();
+        let password = env::var("TT_PASS").unwrap_or_default();
+        let client_name = env::var("TT_CLIENT").unwrap_or_default();
+        Self::new(nickname, username, password, client_name)
     }
 }
 
@@ -83,6 +92,17 @@ impl Client {
         let params = LoginParams::new(nickname, username, password, client_name);
         self.set_login_params(params);
         self.login(nickname, username, password, client_name)
+    }
+
+    pub fn login_from_env(&self) -> i32 {
+        let params = LoginParams::from_env();
+        self.set_login_params(params.clone());
+        self.login(
+            &params.nickname,
+            &params.username,
+            &params.password,
+            &params.client_name,
+        )
     }
 
     /// Logs out from the server.
