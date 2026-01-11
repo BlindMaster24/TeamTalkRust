@@ -1,6 +1,6 @@
 # Feature Flags
 
-Feature flags enable optional capabilities. Defaults are empty.
+Feature flags enable optional capabilities. Default features include `tls-native`.
 
 Enable features in `Cargo.toml`:
 
@@ -16,6 +16,16 @@ teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
+- `scripts`: Lua scripting support for extensions.
+- `plugins`: native plugin loading for extensions.
+- `tls-native`: system TLS via the native OS backend (default).
+- `tls-rustls`: pure Rust TLS for builds without OpenSSL.
+
+To use Rustls only:
+
+```bash
+cargo build --no-default-features --features tls-rustls
+```
 
 ## Built-In Helpers (No Feature Flags)
 
