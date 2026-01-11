@@ -67,7 +67,10 @@ pub struct ClientHooks {
     on_sound_device_new_default_output: Option<MessageHook>,
     on_sound_device_new_default_input_com_device: Option<MessageHook>,
     on_sound_device_new_default_output_com_device: Option<MessageHook>,
+    on_before_reconnect: Option<MessageHook>,
     on_reconnecting: Option<MessageHook>,
+    on_after_reconnect: Option<MessageHook>,
+    on_reconnect_failed: Option<MessageHook>,
 }
 
 impl ClientHooks {
@@ -503,6 +506,33 @@ impl ClientHooks {
         self
     }
 
+    /// Registers a handler before an automatic reconnect attempt.
+    pub fn on_before_reconnect(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_before_reconnect = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler after an automatic reconnect succeeds.
+    pub fn on_after_reconnect(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_after_reconnect = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler when automatic reconnect gives up.
+    pub fn on_reconnect_failed(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_reconnect_failed = Some(Box::new(hook));
+        self
+    }
+
     pub(crate) fn fire(&mut self, client: &Client, event: Event, msg: &Message) {
         match event {
             Event::ConnectSuccess => {
@@ -782,8 +812,23 @@ impl ClientHooks {
                     hook(client, msg);
                 }
             }
+            Event::BeforeReconnect { .. } => {
+                if let Some(hook) = self.on_before_reconnect.as_mut() {
+                    hook(client, msg);
+                }
+            }
             Event::Reconnecting { .. } => {
                 if let Some(hook) = self.on_reconnecting.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::AfterReconnect { .. } => {
+                if let Some(hook) = self.on_after_reconnect.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::ReconnectFailed { .. } => {
+                if let Some(hook) = self.on_reconnect_failed.as_mut() {
                     hook(client, msg);
                 }
             }

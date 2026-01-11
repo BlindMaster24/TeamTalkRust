@@ -3,6 +3,33 @@ use super::Client;
 use crate::types::{AudioPreprocessor, SoundDevice, UserId};
 use teamtalk_sys as ffi;
 
+/// Audio device selection preset.
+#[derive(Debug, Clone, Copy)]
+pub struct AudioDeviceProfile {
+    pub input_id: i32,
+    pub output_id: i32,
+    pub duplex: bool,
+}
+
+impl AudioDeviceProfile {
+    /// Creates a split input/output profile.
+    pub fn split(input_id: i32, output_id: i32) -> Self {
+        Self {
+            input_id,
+            output_id,
+            duplex: false,
+        }
+    }
+
+    /// Creates a duplex input/output profile.
+    pub fn duplex(input_id: i32, output_id: i32) -> Self {
+        Self {
+            input_id,
+            output_id,
+            duplex: true,
+        }
+    }
+}
 impl Client {
     /// Returns available sound devices.
     pub fn get_sound_devices(&self) -> Vec<SoundDevice> {
@@ -66,6 +93,22 @@ impl Client {
     /// Initializes duplex input/output devices.
     pub fn init_sound_duplex_devices(&self, in_id: i32, out_id: i32) -> bool {
         unsafe { ffi::api().TT_InitSoundDuplexDevices(self.ptr, in_id, out_id) == 1 }
+    }
+
+    /// Returns an audio profile using default input and output devices.
+    pub fn default_audio_profile(&self) -> AudioDeviceProfile {
+        let (input, output) = self.get_default_sound_devices();
+        AudioDeviceProfile::split(input, output)
+    }
+
+    /// Applies an audio profile to the client.
+    pub fn apply_audio_profile(&self, profile: AudioDeviceProfile) -> bool {
+        if profile.duplex {
+            self.init_sound_duplex_devices(profile.input_id, profile.output_id)
+        } else {
+            self.init_sound_input_device(profile.input_id)
+                && self.init_sound_output_device(profile.output_id)
+        }
     }
 
     /// Closes the sound input device.

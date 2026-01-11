@@ -33,6 +33,7 @@ impl Client {
             let event = Event::from(msg.nClientEvent);
             let message = Message::from_raw(msg);
             self.update_state_for_event(event, &message);
+            self.update_cache_for_event(event, &message);
             self.invoke_hooks(event, &message);
             self.handle_auto_reconnect();
             Some((event, message))
@@ -83,6 +84,19 @@ impl Client {
             Event::ConnectSuccess => {
                 self.set_connection_state(ConnectionState::Connected);
                 self.handle_auto_login();
+                if self.auto_reconnect_enabled() {
+                    let msg = Message::from_raw(unsafe { std::mem::zeroed::<ffi::TTMessage>() });
+                    let attempts = self
+                        .auto_reconnect
+                        .borrow()
+                        .handler
+                        .as_ref()
+                        .map(|h| h.attempts())
+                        .unwrap_or(0);
+                    if attempts > 0 {
+                        self.invoke_hooks(Event::AfterReconnect { attempt: attempts }, &msg);
+                    }
+                }
             }
             Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
                 self.set_connection_state(ConnectionState::Disconnected)

@@ -1209,6 +1209,7 @@ impl From<ffi::TextMessage> for TextMessage {
 }
 
 /// Destination for sending text messages.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageTarget {
     User(UserId),
     Channel(ChannelId),
@@ -1228,6 +1229,33 @@ impl From<ChannelId> for MessageTarget {
 impl From<&TextMessage> for MessageTarget {
     fn from(m: &TextMessage) -> Self {
         Self::User(m.from_id)
+    }
+}
+
+/// Builder for outgoing text messages.
+pub struct MessageBuilder {
+    target: MessageTarget,
+    text: String,
+}
+
+impl MessageBuilder {
+    /// Creates a new builder for the target.
+    pub fn new(target: impl Into<MessageTarget>) -> Self {
+        Self {
+            target: target.into(),
+            text: String::new(),
+        }
+    }
+
+    /// Sets the message body.
+    pub fn text(mut self, text: impl Into<String>) -> Self {
+        self.text = text.into();
+        self
+    }
+
+    /// Sends the message using the provided client.
+    pub fn send(self, client: &crate::client::Client) -> i32 {
+        client.send_text(self.target, &self.text)
     }
 }
 
@@ -1379,6 +1407,7 @@ impl From<ffi::MediaFileInfo> for MediaFileInfo {
 }
 
 /// Server properties snapshot.
+#[derive(Debug, Clone)]
 pub struct ServerProperties {
     pub name: String,
     pub motd: String,
@@ -1766,6 +1795,7 @@ impl From<ffi::UserStatistics> for UserStatistics {
 }
 
 /// Server statistics snapshot.
+#[derive(Debug, Clone)]
 pub struct ServerStatistics {
     pub total_tx: i64,
     pub total_rx: i64,

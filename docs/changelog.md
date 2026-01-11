@@ -7,6 +7,13 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+### Added
+- Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
+- User/channel caches with auto-sync and refresh helpers.
+- `MessageBuilder` for outgoing text messages.
+- `AudioDeviceProfile` with `apply_audio_profile`.
+- `ServerInfo` cache snapshot for properties and statistics.
+
 ## 1.1.0
 
 ### Added

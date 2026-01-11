@@ -40,6 +40,13 @@ cargo build --no-default-features --features tls-rustls
 - Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
 - Multi-client tracking: `ClientId`, labels, and `ClientRegistry`.
 - Multi-client manager: `ClientManager` with event channel and health snapshots.
+- Cache helpers: user/channel caches with `refresh_*` and `cached_*` accessors.
+- Server info snapshot: `Client::server_info` from cached properties and stats.
+- Message builder: `MessageBuilder` for outgoing text messages.
+- Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
+- Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
+
+
 
 

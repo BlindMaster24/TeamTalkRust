@@ -60,7 +60,10 @@ pub enum Event {
     SoundDeviceNewDefaultOutput,
     SoundDeviceNewDefaultInputComDevice,
     SoundDeviceNewDefaultOutputComDevice,
+    BeforeReconnect { attempt: u32, delay: Duration },
     Reconnecting { attempt: u32, delay: Duration },
+    AfterReconnect { attempt: u32 },
+    ReconnectFailed { attempts: u32 },
     Unknown(ffi::ClientEvent),
 }
 

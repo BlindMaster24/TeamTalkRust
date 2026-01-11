@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
+pub mod cache;
 pub mod channels;
 pub mod connection;
 pub mod core;
@@ -23,6 +24,7 @@ pub mod system;
 pub mod users;
 pub mod video;
 
+pub use cache::ServerInfo;
 pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
 pub use manager::{ClientEvent, ClientHealth, ClientManager};
@@ -39,6 +41,7 @@ pub struct Client {
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
     auto_reconnect: RefCell<AutoReconnectState>,
+    cache: RefCell<cache::CacheState>,
 }
 
 unsafe impl Send for Client {}
@@ -59,6 +62,7 @@ impl Client {
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
+                cache: RefCell::new(cache::CacheState::default()),
             })
         }
     }
@@ -83,6 +87,7 @@ impl Client {
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
+                cache: RefCell::new(cache::CacheState::default()),
             })
         }
     }
@@ -172,12 +177,19 @@ impl Client {
         };
 
         if handler.can_attempt() {
-            handler.record_attempt();
-            let attempt = handler.attempts();
+            let attempt = handler.attempts() + 1;
             let delay = handler.current_delay();
             let msg = Message::from_raw(unsafe { std::mem::zeroed::<ffi::TTMessage>() });
+            self.invoke_hooks(Event::BeforeReconnect { attempt, delay }, &msg);
+            handler.record_attempt();
             self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
             let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
+        } else {
+            let attempts = handler.attempts();
+            let msg = Message::from_raw(unsafe { std::mem::zeroed::<ffi::TTMessage>() });
+            self.invoke_hooks(Event::ReconnectFailed { attempts }, &msg);
+            auto.enabled = false;
+            auto.handler = None;
         }
     }
 
@@ -280,6 +292,38 @@ impl Message {
         unsafe {
             Some(crate::types::TextMessage::from(
                 self.0.__bindgen_anon_1.textmessage,
+            ))
+        }
+    }
+
+    /// Returns the channel payload if present.
+    pub fn channel(&self) -> Option<crate::types::Channel> {
+        unsafe { Some(crate::types::Channel::from(self.0.__bindgen_anon_1.channel)) }
+    }
+
+    /// Returns the server properties payload if present.
+    pub fn server_properties(&self) -> Option<crate::types::ServerProperties> {
+        unsafe {
+            Some(crate::types::ServerProperties::from(
+                self.0.__bindgen_anon_1.serverproperties,
+            ))
+        }
+    }
+
+    /// Returns the server statistics payload if present.
+    pub fn server_statistics(&self) -> Option<crate::types::ServerStatistics> {
+        unsafe {
+            Some(crate::types::ServerStatistics::from(
+                self.0.__bindgen_anon_1.serverstatistics,
+            ))
+        }
+    }
+
+    /// Returns the file transfer payload if present.
+    pub fn file_transfer(&self) -> Option<crate::types::FileTransfer> {
+        unsafe {
+            Some(crate::types::FileTransfer::from(
+                self.0.__bindgen_anon_1.filetransfer,
             ))
         }
     }
