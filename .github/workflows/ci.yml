@@ -36,6 +36,27 @@ jobs:
         run: cargo check --workspace --all-targets
       - name: doc
         run: cargo doc --no-deps --all-features
+      - name: docs-link-style
+        if: matrix.os == 'ubuntu-latest'
+        run: bash ./scripts/check-doc-links.sh
+      - name: docs-link-style
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: ./scripts/check-doc-links.ps1
+      - name: link-check
+        if: matrix.os == 'ubuntu-latest'
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: >-
+            --verbose
+            --no-progress
+            --max-redirects 5
+            --retry-wait-time 2
+            --retry-count 2
+            --exclude-mail
+            README.md docs/**/*.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     name: Publish to crates.io

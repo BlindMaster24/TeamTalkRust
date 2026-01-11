@@ -34,7 +34,7 @@ This section is for contributors and maintainers.
 
 ## CI/CD
 
-- CI runs formatting, linting, checks, tests, and docs build.
+- CI runs formatting, linting, checks, tests, docs build, and link validation.
 - The publish job runs on version tags.
 
 ## Testing
@@ -51,6 +51,12 @@ Quick checks used in CI:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo check --workspace --all-targets
+```
+
+Doc link checks used in CI:
+
+```bash
+scripts/check-doc-links.sh
 ```
 
 Use the `mock` feature for deterministic event-driven tests without a running
