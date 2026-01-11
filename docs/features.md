@@ -6,7 +6,7 @@ Enable features in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "1.0.1", features = ["dispatch", "async"] }
+teamtalk = { version = "1.1.0", features = ["dispatch", "async"] }
 ```
 
 ## Available Features
@@ -41,4 +41,5 @@ cargo build --no-default-features --features tls-rustls
 - Multi-client tracking: `ClientId`, labels, and `ClientRegistry`.
 - Multi-client manager: `ClientManager` with event channel and health snapshots.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
+
 

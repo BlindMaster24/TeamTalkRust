@@ -9,7 +9,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "1.0.1"
+teamtalk = "1.1.0"
 ```
 
 For the latest development version from `main`:
@@ -64,4 +64,5 @@ fn main() -> teamtalk::Result<()> {
     Ok(())
 }
 ```
+
 

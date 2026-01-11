@@ -6,6 +6,9 @@ This project follows semantic versioning. A major release indicates stable
 public API with compatibility expectations for downstream users.
 
 ## Unreleased
+
+## 1.1.0
+
 ### Added
 - Subscription presets: `Subscriptions::all_audio`, `all_text`, `all_control`.
 - Client helpers: `poll_until`, `wait_for`, and `join_root`.
@@ -19,6 +22,7 @@ public API with compatibility expectations for downstream users.
 - Multi-client tracking with `ClientId`, labels, and `ClientRegistry`.
 - Multi-client scheduling via `ClientManager` with health snapshots.
 - Hybrid extensions via Lua scripts and native plugins.
+- TLS selection via `tls-native` (default) and `tls-rustls`.
 - Tests for subscription presets.
 
 ### Changed
