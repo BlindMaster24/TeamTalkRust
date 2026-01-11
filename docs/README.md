@@ -8,6 +8,7 @@ Start here:
 - Feature Flags: `docs/features.md`
 - Configuration: `docs/configuration.md`
 - Examples: `crates/teamtalk/examples/`
+- Extensions: `docs/extensions.md`
 - Changelog: `docs/changelog.md`
 
 API reference:
