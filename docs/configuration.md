@@ -15,3 +15,5 @@ ports in production and document them in your environment.
 
 For encrypted connections, configure the encryption context using certificate
 and key files, then connect with `encrypted = true`.
+
+For loader TLS options and build troubleshooting, see [docs/tls.md](tls.md).

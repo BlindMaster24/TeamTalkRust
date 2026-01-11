@@ -9,6 +9,7 @@ This section is for contributors and maintainers.
 - [docs/features.md](features.md): feature flags and how to enable them.
 - [docs/getting-started.md](getting-started.md): onboarding example and minimal workflow.
 - [docs/configuration.md](configuration.md): SDK binaries, networking, and TLS setup.
+- [docs/tls.md](tls.md): TLS backend selection and troubleshooting.
 - [docs/developer.md](developer.md): contributor-only guidance.
 
 ## When Adding a Feature
