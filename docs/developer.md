@@ -5,20 +5,20 @@ This section is for contributors and maintainers.
 ## Where to Update Documentation
 
 - `README.md`: short overview, install, quick start, and links to guides.
-- `docs/README.md`: documentation index and entry points.
-- `docs/features.md`: feature flags and how to enable them.
-- `docs/getting-started.md`: onboarding example and minimal workflow.
-- `docs/configuration.md`: SDK binaries, networking, and TLS setup.
-- `docs/developer.md`: contributor-only guidance.
+- [docs/README.md](README.md): documentation index and entry points.
+- [docs/features.md](features.md): feature flags and how to enable them.
+- [docs/getting-started.md](getting-started.md): onboarding example and minimal workflow.
+- [docs/configuration.md](configuration.md): SDK binaries, networking, and TLS setup.
+- [docs/developer.md](developer.md): contributor-only guidance.
 
 ## When Adding a Feature
 
 1. Add or update the feature flag in `crates/teamtalk/Cargo.toml`.
-2. Update `docs/features.md` with the new flag and a one-line description.
+2. Update [docs/features.md](features.md) with the new flag and a one-line description.
 3. Update `README.md` only if the feature affects onboarding or default usage.
 4. Update the Architecture Overview below if it changes core behavior or modules.
-5. Add or update examples under `crates/teamtalk/examples/` or `crates/teamtalk/my/`.
-6. Update `docs/README.md` if you add or remove guides.
+5. Add or update examples under [crates/teamtalk/examples](../crates/teamtalk/examples/).
+6. Update [docs/README.md](README.md) if you add or remove guides.
 
 ## Documentation Build
 

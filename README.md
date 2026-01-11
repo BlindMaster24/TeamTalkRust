@@ -13,7 +13,7 @@
 - **Strict Typing:** Strong IDs such as `UserId` and `ChannelId` prevent misuse.
 - **Dynamic Runtime Loading:** `loader.rs` downloads SDK binaries when needed.
 - **Full API Coverage:** Events, audio, video, desktop, files, and administration.
-- **Documentation:** API reference plus guides under `docs/`.
+- **Documentation:** API reference plus guides under [docs](docs/README.md).
 
 ## Installation
 
@@ -98,8 +98,8 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 
 - `crates/teamtalk-sys`: Low-level bindgen bindings to the SDK.
 - `crates/teamtalk`: High-level Rust wrapper.
-- `crates/teamtalk/examples`: Runnable examples.
-- `docs/`: User guides.
+- [crates/teamtalk/examples](crates/teamtalk/examples/): Runnable examples.
+- [docs](docs/README.md): User guides.
 
 ## Philosophy
 
@@ -110,8 +110,8 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 ## Documentation
 
 - API reference: https://docs.rs/teamtalk
-- Guides: `docs/README.md`
-- Changelog: `docs/changelog.md`
+- Guides: [docs](docs/README.md)
+- Changelog: [changelog](docs/changelog.md)
 
 ## License
 

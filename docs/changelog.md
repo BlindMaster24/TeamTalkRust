@@ -31,7 +31,7 @@ public API with compatibility expectations for downstream users.
 
 ### Added
 - Full rustdoc coverage for the public API.
-- User documentation set in `docs/` with onboarding and configuration guides.
+- User documentation set in [docs/](README.md) with onboarding and configuration guides.
 - Feature-gated modules: `dispatch`, `async`, `logging`, `mock`, `offline`.
 - Comprehensive test suite with feature coverage.
 - Documentation build automation and scripts.
