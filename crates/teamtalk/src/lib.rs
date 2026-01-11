@@ -3,6 +3,7 @@ use std::path::Path;
 
 pub mod client;
 pub mod events;
+pub mod extensions;
 pub mod loader;
 pub mod types;
 pub mod utils;
