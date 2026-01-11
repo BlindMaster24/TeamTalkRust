@@ -25,6 +25,20 @@ This section is for contributors and maintainers.
 - API reference: `cargo doc --no-deps --all-features --open`
 - Scripts: `scripts/build-docs.ps1`, `scripts/build-docs.sh`
 
+## Local Pre-Commit Checks
+
+- Install lefthook: `cargo install lefthook`
+- Enable hooks: `lefthook install`
+- Default hooks run formatting, linting, type checks, and doc-link checks.
+- If you are on Windows without bash, create `lefthook-local.yml` to override the doc-link command:
+
+```yml
+pre-commit:
+  commands:
+    doc-links:
+      run: pwsh -File scripts/check-doc-links.ps1
+```
+
 ## Publishing
 
 - Update the version in `crates/teamtalk/Cargo.toml`.
