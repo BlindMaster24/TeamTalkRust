@@ -92,6 +92,7 @@
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
 - Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/developer.md`.
 - Version bumps must be in a dedicated commit, even if requested alongside other changes.
+- Release workflow: update `docs/changelog.md` by moving `Unreleased` items under the new version header, then update versions in `crates/teamtalk/Cargo.toml` and docs, run the Definition of Done checks, commit the bump separately, tag `vX.Y.Z`, and push commits + tag.
 
 ## Testing Guidelines
 - Place tests under `crates/<crate>/tests` or `#[cfg(test)]` modules.
