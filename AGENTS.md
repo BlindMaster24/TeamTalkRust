@@ -15,6 +15,7 @@
 - `cargo test --workspace --all-targets --all-features` runs the full test matrix.
 - `cargo doc --no-deps --all-features` builds API docs; `cargo doc --no-deps --all-features --open` opens them.
 - `scripts/build-docs.ps1` and `scripts/build-docs.sh` run the docs build locally.
+- `scripts/check-doc-links.ps1` and `scripts/check-doc-links.sh` validate that docs paths are proper links.
 
 ## Coding Style & Naming Conventions
 - Rust 2024 edition; follow rustfmt defaults and keep clippy clean.
@@ -30,6 +31,10 @@
 - `logging`: tracing hook for client events.
 - `mock`: in-memory test client built on `dispatch`.
 - `offline`: disable SDK downloads; require a pre-populated `TEAMTALK_DLL/`.
+- `scripts`: Lua scripting support for extensions.
+- `plugins`: native plugin loading for extensions.
+- `tls-native`: system TLS via the native OS backend (default).
+- `tls-rustls`: pure Rust TLS for builds without OpenSSL.
 
 ## Documentation Guidelines
 - Keep user-facing documentation in `README.md` and `docs/`.
@@ -43,6 +48,7 @@
   - `docs/README.md` if new docs pages are added or removed.
 - When removing a feature or doc page, delete its entry from `docs/README.md` and `docs/features.md`.
 - Keep user docs free of implementation details; put internal mechanics in `docs/developer.md`.
+- Keep inline `docs/...` or `crates/...` paths out of prose; use Markdown links.
 
 ## Agent Documentation Workflow
 - Before editing docs, re-read `AGENTS.md` and confirm current expectations.
@@ -64,6 +70,7 @@
 - Ask before adding new docs pages outside `docs/`.
 - Ask whether to update `AGENTS.md` when the user introduces new permanent requirements.
 - Never use `git add .`; always stage only the files relevant to the task.
+- Local pre-commit hooks use `lefthook.yml`; Windows overrides can use `lefthook-local.yml` (see `lefthook-local.example.yml`).
 
 ## Definition of Done
 - Code changes compile with `cargo check --workspace --all-targets`.
@@ -71,6 +78,7 @@
 - Linting passes `cargo clippy --workspace --all-targets -- -D warnings`.
 - Tests pass with `cargo test --workspace --all-targets --all-features` unless the user says otherwise.
 - Docs build passes `cargo doc --no-deps --all-features`.
+- Docs link checks pass (`scripts/check-doc-links.ps1` or `scripts/check-doc-links.sh`).
 
 ## Documentation Change Response Template
 - Summarize which docs pages were updated.
