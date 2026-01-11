@@ -91,6 +91,7 @@
 - Update version references in `README.md`, `docs/getting-started.md`, and `docs/features.md` when the crate version changes.
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
 - Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/developer.md`.
+- Version bumps must be in a dedicated commit, even if requested alongside other changes.
 
 ## Testing Guidelines
 - Place tests under `crates/<crate>/tests` or `#[cfg(test)]` modules.
