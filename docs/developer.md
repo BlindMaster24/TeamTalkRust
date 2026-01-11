@@ -13,7 +13,7 @@ This section is for contributors and maintainers.
 
 ## When Adding a Feature
 
-1. Add or update the feature flag in `crates/teamtalk/Cargo.toml`.
+1. Add or update the feature flag in [crates/teamtalk/Cargo.toml](../crates/teamtalk/Cargo.toml).
 2. Update [docs/features.md](features.md) with the new flag and a one-line description.
 3. Update `README.md` only if the feature affects onboarding or default usage.
 4. Update the Architecture Overview below if it changes core behavior or modules.
@@ -41,9 +41,9 @@ pre-commit:
 
 ## Publishing
 
-- Update the version in `crates/teamtalk/Cargo.toml`.
+- Update the version in [crates/teamtalk/Cargo.toml](../crates/teamtalk/Cargo.toml).
 - Run the full Definition of Done checks from `AGENTS.md`.
-- Publish with `cargo publish` inside `crates/teamtalk`.
+- Publish with `cargo publish` inside [crates/teamtalk](../crates/teamtalk/).
 - docs.rs builds automatically after publish and uses `all-features = true`.
 
 ## CI/CD

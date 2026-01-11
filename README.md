@@ -96,8 +96,8 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 
 ## Project Structure
 
-- `crates/teamtalk-sys`: Low-level bindgen bindings to the SDK.
-- `crates/teamtalk`: High-level Rust wrapper.
+- [crates/teamtalk-sys](crates/teamtalk-sys/): Low-level bindgen bindings to the SDK.
+- [crates/teamtalk](crates/teamtalk/): High-level Rust wrapper.
 - [crates/teamtalk/examples](crates/teamtalk/examples/): Runnable examples.
 - [docs](docs/README.md): User guides.
 
