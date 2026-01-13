@@ -2,6 +2,7 @@ use super::{Client, Message};
 use crate::events::Event;
 use crate::types::{ChannelId, TextMessage, User, UserId};
 use std::mem;
+use teamtalk_sys as ffi;
 
 type Predicate = Box<dyn FnMut(&EventContext) -> bool + Send>;
 type Handler = Box<dyn FnMut(EventContext) + Send>;
@@ -9,6 +10,16 @@ type Handler = Box<dyn FnMut(EventContext) + Send>;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Identifier for an event subscription.
 pub struct EventSubscriptionId(u64);
+/// Identifier for a subscription group.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct EventSubscriptionGroup(String);
+
+impl EventSubscriptionGroup {
+    /// Creates a group identifier from a string.
+    pub fn new(group: impl Into<String>) -> Self {
+        Self(group.into())
+    }
+}
 
 /// Context for a dispatched client event.
 #[derive(Clone, Copy)]
@@ -73,6 +84,10 @@ impl EventBus {
         event: Option<Event>,
         user_id: Option<UserId>,
         channel_id: Option<ChannelId>,
+        username: Option<String>,
+        nickname: Option<String>,
+        text_type: Option<ffi::TextMsgType>,
+        group: Option<EventSubscriptionGroup>,
         predicate: Option<Predicate>,
         handler: Handler,
     ) -> EventSubscriptionId {
@@ -83,6 +98,10 @@ impl EventBus {
             event,
             user_id,
             channel_id,
+            username,
+            nickname,
+            text_type,
+            group,
             predicate,
             handler,
         });
@@ -97,6 +116,16 @@ impl EventBus {
 
     pub(crate) fn clear(&mut self) {
         self.subscriptions.clear();
+    }
+
+    pub(crate) fn unsubscribe_group(&mut self, group: &EventSubscriptionGroup) -> usize {
+        let before = self.subscriptions.len();
+        self.subscriptions.retain(|sub| {
+            sub.group
+                .as_ref()
+                .map_or(true, |existing| existing != group)
+        });
+        before.saturating_sub(self.subscriptions.len())
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -123,34 +152,68 @@ struct Subscription {
     event: Option<Event>,
     user_id: Option<UserId>,
     channel_id: Option<ChannelId>,
+    username: Option<String>,
+    nickname: Option<String>,
+    text_type: Option<ffi::TextMsgType>,
+    group: Option<EventSubscriptionGroup>,
     predicate: Option<Predicate>,
     handler: Handler,
 }
 
 impl Subscription {
     fn matches(&mut self, client: &Client, event: Event, message: &Message) -> bool {
+        let user = message.user();
+        let text = message.text();
+
         if let Some(filter) = self.event {
             if mem::discriminant(&filter) != mem::discriminant(&event) {
                 return false;
             }
         }
         if let Some(user_id) = self.user_id {
-            let match_user = message
-                .user()
+            let match_user = user
+                .as_ref()
                 .map(|user| user.id == user_id)
-                .or_else(|| message.text().map(|text| text.from_id == user_id))
+                .or_else(|| text.as_ref().map(|text| text.from_id == user_id))
                 .unwrap_or(false);
             if !match_user {
                 return false;
             }
         }
         if let Some(channel_id) = self.channel_id {
-            let match_channel = message
-                .user()
+            let match_channel = user
+                .as_ref()
                 .map(|user| user.channel_id == channel_id)
-                .or_else(|| message.text().map(|text| text.channel_id == channel_id))
+                .or_else(|| text.as_ref().map(|text| text.channel_id == channel_id))
                 .unwrap_or(false);
             if !match_channel {
+                return false;
+            }
+        }
+        if let Some(ref username) = self.username {
+            let matches_username = text
+                .as_ref()
+                .map(|text| text.from_username == *username)
+                .unwrap_or(false);
+            if !matches_username {
+                return false;
+            }
+        }
+        if let Some(ref nickname) = self.nickname {
+            let matches_nickname = user
+                .as_ref()
+                .map(|u| u.nickname == *nickname)
+                .unwrap_or(false);
+            if !matches_nickname {
+                return false;
+            }
+        }
+        if let Some(text_type) = self.text_type {
+            let matches_type = text
+                .as_ref()
+                .map(|text| text.msg_type == text_type)
+                .unwrap_or(false);
+            if !matches_type {
                 return false;
             }
         }
@@ -174,6 +237,10 @@ pub struct SubscriptionBuilder<'a> {
     event: Option<Event>,
     user_id: Option<UserId>,
     channel_id: Option<ChannelId>,
+    username: Option<String>,
+    nickname: Option<String>,
+    text_type: Option<ffi::TextMsgType>,
+    group: Option<EventSubscriptionGroup>,
     predicate: Option<Predicate>,
 }
 
@@ -184,6 +251,10 @@ impl<'a> SubscriptionBuilder<'a> {
             event,
             user_id: None,
             channel_id: None,
+            username: None,
+            nickname: None,
+            text_type: None,
+            group: None,
             predicate: None,
         }
     }
@@ -197,6 +268,30 @@ impl<'a> SubscriptionBuilder<'a> {
     /// Filters by a specific channel id.
     pub fn filter_channel(mut self, channel_id: ChannelId) -> Self {
         self.channel_id = Some(channel_id);
+        self
+    }
+
+    /// Filters by a text message type.
+    pub fn filter_text_type(mut self, msg_type: ffi::TextMsgType) -> Self {
+        self.text_type = Some(msg_type);
+        self
+    }
+
+    /// Filters by the sender username in text events.
+    pub fn filter_username(mut self, username: impl Into<String>) -> Self {
+        self.username = Some(username.into());
+        self
+    }
+
+    /// Filters by nickname (user events).
+    pub fn filter_nickname(mut self, nickname: impl Into<String>) -> Self {
+        self.nickname = Some(nickname.into());
+        self
+    }
+
+    /// Attaches the subscription to a group id for bulk removal.
+    pub fn group(mut self, group: impl Into<String>) -> Self {
+        self.group = Some(EventSubscriptionGroup::new(group.into()));
         self
     }
 
@@ -215,6 +310,10 @@ impl<'a> SubscriptionBuilder<'a> {
             self.event,
             self.user_id,
             self.channel_id,
+            self.username,
+            self.nickname,
+            self.text_type,
+            self.group,
             self.predicate,
             Box::new(handler),
         )

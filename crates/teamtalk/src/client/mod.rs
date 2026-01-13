@@ -25,7 +25,7 @@ pub mod system;
 pub mod users;
 pub mod video;
 
-pub use bus::{EventContext, EventSubscriptionId, SubscriptionBuilder};
+pub use bus::{EventContext, EventSubscriptionGroup, EventSubscriptionId, SubscriptionBuilder};
 pub use cache::ServerInfo;
 pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
@@ -157,6 +157,12 @@ impl Client {
     /// Clears all event subscriptions.
     pub fn clear_event_subscriptions(&self) {
         self.bus.borrow_mut().clear();
+    }
+
+    /// Removes all subscriptions in the specified group.
+    pub fn unsubscribe_event_group(&self, group: impl AsRef<str>) -> usize {
+        let group = EventSubscriptionGroup::new(group.as_ref());
+        self.bus.borrow_mut().unsubscribe_group(&group)
     }
 
     /// Returns the number of active event subscriptions.
