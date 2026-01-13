@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
+pub mod bus;
 pub mod cache;
 pub mod channels;
 pub mod connection;
@@ -24,6 +25,7 @@ pub mod system;
 pub mod users;
 pub mod video;
 
+pub use bus::{EventContext, EventSubscriptionId, SubscriptionBuilder};
 pub use cache::ServerInfo;
 pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
 pub use hooks::ClientHooks;
@@ -40,6 +42,7 @@ pub struct Client {
     label: RefCell<Option<String>>,
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
+    bus: RefCell<bus::EventBus>,
     auto_reconnect: RefCell<AutoReconnectState>,
     cache: RefCell<cache::CacheState>,
 }
@@ -61,6 +64,7 @@ impl Client {
                 label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
+                bus: RefCell::new(bus::EventBus::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
                 cache: RefCell::new(cache::CacheState::default()),
             })
@@ -86,6 +90,7 @@ impl Client {
                 label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
+                bus: RefCell::new(bus::EventBus::default()),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
                 cache: RefCell::new(cache::CacheState::default()),
             })
@@ -134,6 +139,31 @@ impl Client {
         self.state.get()
     }
 
+    /// Creates a subscription for a specific event type.
+    pub fn on_event(&self, event: Event) -> SubscriptionBuilder<'_> {
+        SubscriptionBuilder::new(self, Some(event))
+    }
+
+    /// Creates a subscription for all events.
+    pub fn on_any(&self) -> SubscriptionBuilder<'_> {
+        SubscriptionBuilder::new(self, None)
+    }
+
+    /// Removes an event subscription.
+    pub fn unsubscribe_event(&self, id: EventSubscriptionId) -> bool {
+        self.bus.borrow_mut().unsubscribe(id)
+    }
+
+    /// Clears all event subscriptions.
+    pub fn clear_event_subscriptions(&self) {
+        self.bus.borrow_mut().clear();
+    }
+
+    /// Returns the number of active event subscriptions.
+    pub fn event_subscription_count(&self) -> usize {
+        self.bus.borrow().len()
+    }
+
     /// Replaces the current hook set.
     pub fn set_hooks(&self, hooks: ClientHooks) {
         *self.hooks.borrow_mut() = hooks;
@@ -150,6 +180,10 @@ impl Client {
 
     pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
         self.hooks.borrow_mut().fire(self, event, msg);
+    }
+
+    pub(crate) fn dispatch_bus(&self, event: crate::events::Event, msg: &Message) {
+        self.bus.borrow_mut().dispatch(self, event, msg);
     }
 
     pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {

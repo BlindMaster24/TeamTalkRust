@@ -24,7 +24,7 @@ pub use client::recording::RecordSession;
 pub use client::users::LoginParams;
 pub use client::{
     Client, ClientEvent, ClientHealth, ClientHooks, ClientInfo, ClientManager, ClientRegistry,
-    Message, ReconnectConfig, ServerInfo,
+    EventContext, EventSubscriptionId, Message, ReconnectConfig, ServerInfo,
 };
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
