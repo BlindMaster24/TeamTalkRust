@@ -42,6 +42,8 @@ Example:
 ```rust
 use teamtalk::{Client, Event};
 use teamtalk::types::ChannelId;
+use teamtalk::types::UserId;
+use teamtalk_sys as ffi;
 
 fn main() -> teamtalk::Result<()> {
     teamtalk::init()?;
@@ -64,5 +66,30 @@ fn main() -> teamtalk::Result<()> {
     Ok(())
 }
 ```
+
+## Event Bus Helpers
+
+Manual `match` is still available, but the built-in subscription API can route events for you:
+
+```rust
+let _subscription = client
+    .on_event(Event::TextMessage)
+    .filter_user(UserId(42))
+    .filter_channel(ChannelId(1))
+    .filter_text_type(ffi::TextMsgType::MSGTYPE_USER)
+    .group("cli-watchers")
+    .subscribe(|ctx| {
+        if let Some(text) = ctx.text() {
+            println!("{} says: {}", text.from_username, text.text);
+        }
+    });
+
+loop {
+    let _ = client.poll(100); // dispatches the handler above
+}
+```
+
+Store the returned `EventSubscriptionId` to drop the handler later, or use
+`client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
 
 
