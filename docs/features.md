@@ -33,7 +33,8 @@ cargo build --no-default-features --features tls-rustls
 - Hooks API via `ClientHooks` for event callbacks.
 - Poll helpers: `Client::poll_until` and `Client::wait_for`.
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
-- Recording guard: `RecordSession` for safe start/stop of channel recording.
+- Recording guard: `RecordSession` for safe start/stop of channel recording.    
+- Managed recording: `RecordingSession`, `RecordingOptions`, `RecordingTarget`.  
 - Auto-reconnect support via `enable_auto_reconnect` and `connect_remember`.
 - Auto-login and rejoin using stored `LoginParams` and remembered channels.
 - Typed errors with SDK code + message.

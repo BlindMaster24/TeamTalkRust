@@ -50,6 +50,9 @@
 - When removing a feature or doc page, delete its entry from `docs/README.md` and `docs/features.md`.
 - Keep user docs free of implementation details; put internal mechanics in `docs/developer.md`.
 - Keep inline `docs/...` or `crates/...` paths out of prose; use Markdown links.
+- Use neutral, direct language; avoid subjective or marketing terms like "production".
+- Keep paragraphs short (1–3 sentences) and prefer lists for steps.
+- Split large topics into subfolders under `docs/` with a small `README.md` index.
 
 ## Agent Documentation Workflow
 - Before editing docs, re-read `AGENTS.md` and confirm current expectations.

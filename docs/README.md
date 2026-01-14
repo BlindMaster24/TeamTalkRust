@@ -8,6 +8,7 @@ Start here:
 - Feature Flags: [docs/features.md](features.md)
 - Configuration: [docs/configuration.md](configuration.md)
 - TLS: [docs/tls.md](tls.md)
+- Recording: [docs/recording/README.md](recording/README.md)
 - Examples: [crates/teamtalk/examples](../crates/teamtalk/examples/)
 - Extensions: [docs/extensions.md](extensions.md)
 - Changelog: [docs/changelog.md](changelog.md)

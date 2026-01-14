@@ -1,0 +1,23 @@
+# Segment naming and rotation
+
+`RecordingOptions::template` controls segment file names.
+
+## Template rules
+
+- If the template contains `{index}`, it is replaced with the segment number.
+- Otherwise, the file name becomes `name.partN.ext`.
+
+Examples:
+
+```
+recordings/session-{index}.ogg  -> recordings/session-1.ogg
+recordings/session.ogg          -> recordings/session.part1.ogg
+```
+
+## Rotation strategy
+
+Use `segment()` when you detect:
+- channel changes,
+- codec changes,
+- time-based rotation (e.g., hourly),
+- size-based rotation.

@@ -1,5 +1,4 @@
-//! Recording APIs for channels and streams.
-use super::Client;
+use super::super::Client;
 use crate::events::{Error, Result};
 use crate::types::{AudioCodec, ChannelId};
 use crate::utils::ToTT;
