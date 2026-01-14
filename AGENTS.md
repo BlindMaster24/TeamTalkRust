@@ -81,6 +81,12 @@
 - Docs build passes `cargo doc --no-deps --all-features`.
 - Docs link checks pass (`scripts/check-doc-links.ps1` or `scripts/check-doc-links.sh`).
 
+## Lint and Tool Discovery
+- Definition of Done (DoD) means the checklist above must pass before commit/push.
+- Show clippy help and flags: `cargo clippy --help`.
+- List all lint names: `cargo clippy -- -W help`.
+- Explain a lint: `cargo clippy --explain clippy::lint_name`.
+
 ## Documentation Change Response Template
 - Summarize which docs pages were updated.
 - Call out any links or indices adjusted in `docs/README.md`.
