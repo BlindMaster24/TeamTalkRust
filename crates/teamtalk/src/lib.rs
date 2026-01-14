@@ -28,7 +28,8 @@ pub use client::{
 };
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
-    ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher, EventContext, ReconnectSettings,
+    ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher,
+    EventContext as DispatchEventContext, ReconnectSettings,
 };
 pub use events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "mock")]

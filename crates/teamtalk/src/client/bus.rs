@@ -78,31 +78,36 @@ pub(crate) struct EventBus {
     subscriptions: Vec<Subscription>,
 }
 
+#[derive(Default)]
+pub(crate) struct SubscriptionConfig {
+    event: Option<Event>,
+    user_id: Option<UserId>,
+    channel_id: Option<ChannelId>,
+    username: Option<String>,
+    nickname: Option<String>,
+    text_type: Option<ffi::TextMsgType>,
+    group: Option<EventSubscriptionGroup>,
+    predicate: Option<Predicate>,
+}
+
 impl EventBus {
     pub(crate) fn subscribe(
         &mut self,
-        event: Option<Event>,
-        user_id: Option<UserId>,
-        channel_id: Option<ChannelId>,
-        username: Option<String>,
-        nickname: Option<String>,
-        text_type: Option<ffi::TextMsgType>,
-        group: Option<EventSubscriptionGroup>,
-        predicate: Option<Predicate>,
+        config: SubscriptionConfig,
         handler: Handler,
     ) -> EventSubscriptionId {
         self.next_id += 1;
         let id = EventSubscriptionId(self.next_id);
         self.subscriptions.push(Subscription {
             id,
-            event,
-            user_id,
-            channel_id,
-            username,
-            nickname,
-            text_type,
-            group,
-            predicate,
+            event: config.event,
+            user_id: config.user_id,
+            channel_id: config.channel_id,
+            username: config.username,
+            nickname: config.nickname,
+            text_type: config.text_type,
+            group: config.group,
+            predicate: config.predicate,
             handler,
         });
         id
@@ -120,11 +125,8 @@ impl EventBus {
 
     pub(crate) fn unsubscribe_group(&mut self, group: &EventSubscriptionGroup) -> usize {
         let before = self.subscriptions.len();
-        self.subscriptions.retain(|sub| {
-            sub.group
-                .as_ref()
-                .map_or(true, |existing| existing != group)
-        });
+        self.subscriptions
+            .retain(|sub| sub.group.as_ref() != Some(group));
         before.saturating_sub(self.subscriptions.len())
     }
 
@@ -165,10 +167,10 @@ impl Subscription {
         let user = message.user();
         let text = message.text();
 
-        if let Some(filter) = self.event {
-            if mem::discriminant(&filter) != mem::discriminant(&event) {
-                return false;
-            }
+        if let Some(filter) = self.event
+            && mem::discriminant(&filter) != mem::discriminant(&event)
+        {
+            return false;
         }
         if let Some(user_id) = self.user_id {
             let match_user = user
@@ -306,16 +308,19 @@ impl<'a> SubscriptionBuilder<'a> {
         self,
         handler: impl FnMut(EventContext) + Send + 'static,
     ) -> EventSubscriptionId {
-        self.client.bus.borrow_mut().subscribe(
-            self.event,
-            self.user_id,
-            self.channel_id,
-            self.username,
-            self.nickname,
-            self.text_type,
-            self.group,
-            self.predicate,
-            Box::new(handler),
-        )
+        let config = SubscriptionConfig {
+            event: self.event,
+            user_id: self.user_id,
+            channel_id: self.channel_id,
+            username: self.username,
+            nickname: self.nickname,
+            text_type: self.text_type,
+            group: self.group,
+            predicate: self.predicate,
+        };
+        self.client
+            .bus
+            .borrow_mut()
+            .subscribe(config, Box::new(handler))
     }
 }
