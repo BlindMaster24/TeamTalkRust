@@ -1,8 +1,13 @@
 # Recording
 
-Recording workflows need stable sessions, pause/resume, and safe handling of codec
-or channel changes. Use the managed recording APIs to keep
-one logical session while rotating file segments underneath.
+Recording workflows need uninterrupted sessions, pause/resume, and safe handling of codec
+or channel changes. Use the managed recording APIs to keep one logical session
+while rotating file segments underneath.
+
+Why it helps:
+- Pause/resume keeps a single logical session without losing context.
+- Segments keep files small and allow clean rotation when codecs change.
+- Switching channels without rebuilding state avoids recording gaps.
 
 ## Managed sessions
 
