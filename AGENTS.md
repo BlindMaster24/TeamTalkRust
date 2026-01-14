@@ -11,7 +11,7 @@
 - `cargo build` builds the workspace (`teamtalk`, `teamtalk-sys`).
 - `cargo check --workspace --all-targets` runs fast type checks used in CI.
 - `cargo fmt --all -- --check` enforces formatting; `cargo fmt --all` applies it.
-- `cargo clippy --workspace --all-targets -- -D warnings` enforces lint rules.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` enforces lint rules.
 - `cargo test --workspace --all-targets --all-features` runs the full test matrix.
 - `cargo doc --no-deps --all-features` builds API docs; `cargo doc --no-deps --all-features --open` opens them.
 - `scripts/build-docs.ps1` and `scripts/build-docs.sh` run the docs build locally.
@@ -24,6 +24,7 @@
 - Deliver professional, optimized code with descriptive names and no inline comments in library code or examples.
 - Auto-reconnect is opt-in; keep manual reconnect logic out of examples unless explicitly required.
 - New optional functionality must be feature-gated in `crates/teamtalk/Cargo.toml`.
+- Linting is enforced via workspace rules in `Cargo.toml`; do not relax lint levels without user approval.
 
 ## Feature Flags
 - `dispatch`: event dispatcher wrapper for deterministic event routing.
@@ -75,7 +76,7 @@
 ## Definition of Done
 - Code changes compile with `cargo check --workspace --all-targets`.
 - Formatting passes `cargo fmt --all -- --check`.
-- Linting passes `cargo clippy --workspace --all-targets -- -D warnings`.
+- Linting passes `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
 - Tests pass with `cargo test --workspace --all-targets --all-features` unless the user says otherwise.
 - Docs build passes `cargo doc --no-deps --all-features`.
 - Docs link checks pass (`scripts/check-doc-links.ps1` or `scripts/check-doc-links.sh`).
