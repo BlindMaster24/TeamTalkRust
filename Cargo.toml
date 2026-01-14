@@ -4,3 +4,25 @@ members = [
     "crates/teamtalk",
 ]
 resolver = "2"
+
+[workspace.lints.rust]
+warnings = "deny"
+future_incompatible = { level = "deny", priority = -1 }
+rust_2021_compatibility = { level = "deny", priority = -1 }
+rust_2024_compatibility = { level = "deny", priority = -1 }
+nonstandard_style = { level = "deny", priority = -1 }
+unused = { level = "deny", priority = -1 }
+missing_docs = "deny"
+unsafe_code = "allow"
+
+[workspace.lints.clippy]
+all = "deny"
+correctness = "deny"
+suspicious = "deny"
+complexity = "deny"
+perf = "deny"
+style = "deny"
+pedantic = "deny"
+nursery = "deny"
+cargo = "deny"
+restriction = "deny"
