@@ -108,6 +108,7 @@
 - Update version references in `README.md`, `docs/getting-started.md`, and `docs/features.md` when the crate version changes.
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
 - Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/developer.md`.
+- Every user-facing change must be added to `docs/changelog.md` under `Unreleased` in the same PR/commit set.
 - Version bumps must be in a dedicated commit, even if requested alongside other changes.
 - Release workflow: update `docs/changelog.md` by moving `Unreleased` items under the new version header, then update versions in `crates/teamtalk/Cargo.toml` and docs, run the Definition of Done checks, commit the bump separately, tag `vX.Y.Z`, and push commits + tag.
 

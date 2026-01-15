@@ -1,6 +1,7 @@
 #![cfg(feature = "mock")]
 
 use teamtalk::client::ffi;
+use teamtalk::events::Event;
 use teamtalk::mock::{MockMessage, MockUserBuilder};
 use teamtalk::types::{ChannelId, UserId, UserPresence, UserStatus};
 
@@ -38,7 +39,7 @@ fn mock_user_builder_fields() {
         .user_data(42)
         .user_type(2)
         .version(3)
-        .build();
+        .build_for(Event::UserUpdate);
     let user = msg.user().unwrap();
     assert_eq!(user.id.0, 7);
     assert_eq!(user.username, "bob");

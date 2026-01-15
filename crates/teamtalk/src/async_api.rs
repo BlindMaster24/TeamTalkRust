@@ -1,15 +1,13 @@
 //! Async wrapper around the polling client.
 use crate::client::{Client, Message};
 use crate::events::Event;
-use futures::SinkExt;
-use futures::channel::mpsc::{Receiver, Sender, channel};
-use futures::executor::block_on;
 use futures::stream::Stream;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 use std::thread;
+use std::time::Duration;
 
 /// Configuration for the async polling loop.
 #[derive(Clone, Copy)]
@@ -48,10 +46,10 @@ impl AsyncConfig {
 
 /// Async stream of client events backed by a worker thread.
 pub struct AsyncClient {
-    client: Option<Arc<Mutex<Client>>>,
-    receiver: Receiver<(Event, Message)>,
+    client: Option<Client>,
     stop: Arc<AtomicBool>,
-    handle: Option<thread::JoinHandle<()>>,
+    poll_timeout_ms: i32,
+    wake_pending: Arc<AtomicBool>,
 }
 
 impl AsyncClient {
@@ -62,20 +60,13 @@ impl AsyncClient {
 
     /// Creates an async client with custom configuration.
     pub fn with_config(client: Client, config: AsyncConfig) -> Self {
-        let buffer = config.buffer.max(1);
-        let (sender, receiver) = channel(buffer);
-        let client = Arc::new(Mutex::new(client));
+        let _ = config.buffer;
         let stop = Arc::new(AtomicBool::new(false));
-        let thread_client = Arc::clone(&client);
-        let thread_stop = Arc::clone(&stop);
-        let handle = thread::spawn(move || {
-            run_event_loop(thread_client, thread_stop, sender, config.poll_timeout_ms);
-        });
         Self {
             client: Some(client),
-            receiver,
             stop,
-            handle: Some(handle),
+            poll_timeout_ms: config.poll_timeout_ms,
+            wake_pending: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -85,36 +76,27 @@ impl AsyncClient {
         F: FnOnce(&Client) -> R,
     {
         let client = self.client.as_ref()?;
-        let guard = client.lock().ok()?;
-        Some(f(&guard))
+        Some(f(client))
     }
 
     /// Runs a closure with a mutable client reference.
-    pub fn with_client_mut<F, R>(&self, f: F) -> Option<R>
+    pub fn with_client_mut<F, R>(&mut self, f: F) -> Option<R>
     where
         F: FnOnce(&mut Client) -> R,
     {
-        let client = self.client.as_ref()?;
-        let mut guard = client.lock().ok()?;
-        Some(f(&mut guard))
+        let client = self.client.as_mut()?;
+        Some(f(client))
     }
 
     /// Stops the async polling loop.
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
-        self.receiver.close();
     }
 
     /// Stops the loop and returns the underlying client.
     pub fn into_client(mut self) -> Option<Client> {
         self.stop();
-        if let Some(handle) = self.handle.take() {
-            let _ = handle.join();
-        }
-        let client = self.client.take()?;
-        Arc::try_unwrap(client)
-            .ok()
-            .and_then(|mutex| mutex.into_inner().ok())
+        self.client.take()
     }
 }
 
@@ -123,39 +105,32 @@ impl Stream for AsyncClient {
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        Pin::new(&mut this.receiver).poll_next(cx)
+        if this.stop.load(Ordering::Relaxed) {
+            return Poll::Ready(None);
+        }
+        let Some(client) = this.client.as_ref() else {
+            return Poll::Ready(None);
+        };
+        if let Some((event, message)) = client.poll(this.poll_timeout_ms) {
+            return Poll::Ready(Some((event, message)));
+        }
+        if !this.wake_pending.swap(true, Ordering::Relaxed) {
+            let waker = cx.waker().clone();
+            let pending = Arc::clone(&this.wake_pending);
+            let delay = Duration::from_millis(this.poll_timeout_ms.max(1) as u64);
+            thread::spawn(move || {
+                thread::sleep(delay);
+                pending.store(false, Ordering::Relaxed);
+                waker.wake();
+            });
+        }
+        Poll::Pending
     }
 }
 
 impl Drop for AsyncClient {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
-        self.receiver.close();
-        if let Some(handle) = self.handle.take() {
-            let _ = handle.join();
-        }
-    }
-}
-
-fn run_event_loop(
-    client: Arc<Mutex<Client>>,
-    stop: Arc<AtomicBool>,
-    mut sender: Sender<(Event, Message)>,
-    poll_timeout_ms: i32,
-) {
-    while !stop.load(Ordering::Relaxed) {
-        let event = {
-            let guard = match client.lock() {
-                Ok(guard) => guard,
-                Err(_) => break,
-            };
-            guard.poll(poll_timeout_ms)
-        };
-        if let Some((event, message)) = event
-            && block_on(sender.send((event, message))).is_err()
-        {
-            break;
-        }
     }
 }
 

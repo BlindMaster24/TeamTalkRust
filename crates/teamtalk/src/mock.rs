@@ -33,12 +33,12 @@ impl MockClient {
 
     /// Pushes a `UserJoined` event.
     pub fn push_user_joined(&mut self, user: MockUserBuilder) -> &mut Self {
-        self.push(Event::UserJoined, user.build())
+        self.push(Event::UserJoined, user.build_for(Event::UserJoined))
     }
 
     /// Pushes a `UserUpdate` event.
     pub fn push_user_update(&mut self, user: MockUserBuilder) -> &mut Self {
-        self.push(Event::UserUpdate, user.build())
+        self.push(Event::UserUpdate, user.build_for(Event::UserUpdate))
     }
 
     /// Pushes a `TextMessage` event.
@@ -176,8 +176,8 @@ impl MockUserBuilder {
     }
 
     /// Builds the message.
-    pub fn build(self) -> Message {
-        message_from_user(self.user)
+    pub fn build_for(self, event: Event) -> Message {
+        message_from_user(self.user, event)
     }
 }
 
@@ -191,12 +191,12 @@ fn write_tt(dst: &mut [ffi::TTCHAR], value: &str) {
     }
 }
 
-fn message_from_user(user: ffi::User) -> Message {
+fn message_from_user(user: ffi::User, event: Event) -> Message {
     let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
     msg.nSource = user.nUserID;
     msg.ttType = ffi::TTType::__USER;
     msg.__bindgen_anon_1.user = user;
-    Message::from_raw(Event::TextMessage, msg)
+    Message::from_raw(event, msg)
 }
 
 fn message_from_text(text: ffi::TextMessage, source: i32) -> Message {
@@ -204,5 +204,5 @@ fn message_from_text(text: ffi::TextMessage, source: i32) -> Message {
     msg.nSource = source;
     msg.ttType = ffi::TTType::__TEXTMESSAGE;
     msg.__bindgen_anon_1.textmessage = text;
-    Message::from_raw(Event::UserUpdate, msg)
+    Message::from_raw(Event::TextMessage, msg)
 }

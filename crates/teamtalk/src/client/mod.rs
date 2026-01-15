@@ -217,15 +217,21 @@ impl Client {
         if handler.can_attempt() {
             let attempt = handler.attempts() + 1;
             let delay = handler.current_delay();
-            let msg = Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() });
-            self.invoke_hooks(Event::BeforeReconnect { attempt, delay }, &msg);
+            let before_event = Event::BeforeReconnect { attempt, delay };
+            let msg = Message::from_raw(before_event, unsafe {
+                std::mem::zeroed::<ffi::TTMessage>()
+            });
+            self.invoke_hooks(before_event, &msg);
             handler.record_attempt();
             self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
             let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
         } else {
             let attempts = handler.attempts();
-            let msg = Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() });
-            self.invoke_hooks(Event::ReconnectFailed { attempts }, &msg);
+            let failed_event = Event::ReconnectFailed { attempts };
+            let msg = Message::from_raw(failed_event, unsafe {
+                std::mem::zeroed::<ffi::TTMessage>()
+            });
+            self.invoke_hooks(failed_event, &msg);
             auto.enabled = false;
             auto.handler = None;
         }

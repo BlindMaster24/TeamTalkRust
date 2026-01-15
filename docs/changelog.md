@@ -14,6 +14,15 @@ public API with compatibility expectations for downstream users.
 - `AudioDeviceProfile` with `apply_audio_profile`.
 - `ServerInfo` cache snapshot for properties and statistics.
 
+### Changed
+- `Message` payload accessors now return `None` when the event does not match.
+- `Client` is single-threaded (`!Send`); keep it on one thread or wrap it yourself.
+
+### Fixed
+- Avoid panics on non-UTF8 DLL paths during SDK init.
+- Synced user recording returns IO errors instead of panicking on file creation.
+- Registry operations no longer panic on poisoned mutexes.
+
 ## 1.1.0
 
 ### Added
