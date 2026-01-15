@@ -301,7 +301,7 @@ impl UserTrack {
             .unwrap_or_else(|| "unknown".to_string());
         let filename = render_vars(file_vars, user_id, &username);
         let path = Path::new(folder).join(filename);
-        let mut writer = TrackWriter::new(path, format);
+        let mut writer = TrackWriter::new(path, format)?;
         let sample_rate = default_sample_rate;
         let channels = default_channels;
         if let (Some(rate), Some(ch)) = (sample_rate, channels) {
@@ -352,12 +352,14 @@ enum TrackWriter {
 }
 
 impl TrackWriter {
-    fn new(path: PathBuf, format: RecordingSampleFormat) -> Self {
-        let file = File::create(path).unwrap();
-        match format {
+    fn new(path: PathBuf, format: RecordingSampleFormat) -> Result<Self> {
+        let file = File::create(path).map_err(|e| Error::IoError {
+            message: e.to_string(),
+        })?;
+        Ok(match format {
             RecordingSampleFormat::PcmS16Le => TrackWriter::Pcm(file),
             RecordingSampleFormat::WavS16Le => TrackWriter::Wav(WavWriter::new(file)),
-        }
+        })
     }
 
     fn init(&mut self, sample_rate: i32, channels: i32) -> Result<()> {

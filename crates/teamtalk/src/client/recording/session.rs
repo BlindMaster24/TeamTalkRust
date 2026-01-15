@@ -313,7 +313,9 @@ impl<'a> RecordingSession<'a> {
         if current.is_none() {
             return Ok(None);
         }
-        let current = current.unwrap();
+        let Some(current) = current else {
+            return Ok(Some(false));
+        };
         if self.options.rotate_on_channel_change && self.last_channel_id != Some(current) {
             let rotated = self.segment()?;
             return Ok(Some(rotated));

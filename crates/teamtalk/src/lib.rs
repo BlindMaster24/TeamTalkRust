@@ -46,7 +46,8 @@ pub use types::{ClientId, MessageBuilder};
 /// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {
     let dll_path = loader::find_or_download_dll().map_err(|_| Error::InitFailed)?;
-    teamtalk_sys::load(dll_path.to_str().unwrap()).map_err(|_| Error::InitFailed)?;
+    let dll_path = dll_path.to_str().ok_or(Error::InitFailed)?;
+    teamtalk_sys::load(dll_path).map_err(|_| Error::InitFailed)?;
     Ok(())
 }
 

@@ -31,17 +31,17 @@ impl ClientRegistry {
             last_event: None,
             last_event_at: None,
         };
-        let mut map = self.inner.lock().unwrap();
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         map.insert(info.id, info);
     }
 
     pub fn unregister(&self, id: ClientId) {
-        let mut map = self.inner.lock().unwrap();
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         map.remove(&id);
     }
 
     pub fn update_event(&self, client: &crate::client::Client, event: Event) {
-        let mut map = self.inner.lock().unwrap();
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let entry = map.entry(client.id()).or_insert(ClientInfo {
             id: client.id(),
             label: client.label(),
@@ -56,7 +56,7 @@ impl ClientRegistry {
     }
 
     pub fn update_snapshot(&self, client: &crate::client::Client) {
-        let mut map = self.inner.lock().unwrap();
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let entry = map.entry(client.id()).or_insert(ClientInfo {
             id: client.id(),
             label: client.label(),
@@ -69,12 +69,12 @@ impl ClientRegistry {
     }
 
     pub fn list(&self) -> Vec<ClientInfo> {
-        let map = self.inner.lock().unwrap();
+        let map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         map.values().cloned().collect()
     }
 
     pub fn get(&self, id: ClientId) -> Option<ClientInfo> {
-        let map = self.inner.lock().unwrap();
+        let map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         map.get(&id).cloned()
     }
 }

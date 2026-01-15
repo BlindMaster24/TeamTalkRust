@@ -79,7 +79,7 @@ pub struct MockMessage;
 impl MockMessage {
     /// Returns an empty message instance.
     pub fn empty() -> Message {
-        Message::from_raw(unsafe { std::mem::zeroed() })
+        Message::from_raw(Event::None, unsafe { std::mem::zeroed() })
     }
 
     /// Builds a text message instance.
@@ -196,7 +196,7 @@ fn message_from_user(user: ffi::User) -> Message {
     msg.nSource = user.nUserID;
     msg.ttType = ffi::TTType::__USER;
     msg.__bindgen_anon_1.user = user;
-    Message::from_raw(msg)
+    Message::from_raw(Event::TextMessage, msg)
 }
 
 fn message_from_text(text: ffi::TextMessage, source: i32) -> Message {
@@ -204,5 +204,5 @@ fn message_from_text(text: ffi::TextMessage, source: i32) -> Message {
     msg.nSource = source;
     msg.ttType = ffi::TTType::__TEXTMESSAGE;
     msg.__bindgen_anon_1.textmessage = text;
-    Message::from_raw(msg)
+    Message::from_raw(Event::UserUpdate, msg)
 }

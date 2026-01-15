@@ -31,7 +31,7 @@ impl Client {
         let t = timeout_ms;
         if unsafe { ffi::api().TT_GetMessage(self.ptr, &mut msg, &t) } == 1 {
             let event = Event::from(msg.nClientEvent);
-            let message = Message::from_raw(msg);
+            let message = Message::from_raw(event, msg);
             self.update_state_for_event(event, &message);
             self.update_cache_for_event(event, &message);
             self.invoke_hooks(event, &message);
@@ -86,7 +86,8 @@ impl Client {
                 self.set_connection_state(ConnectionState::Connected);
                 self.handle_auto_login();
                 if self.auto_reconnect_enabled() {
-                    let msg = Message::from_raw(unsafe { std::mem::zeroed::<ffi::TTMessage>() });
+                    let msg =
+                        Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() });
                     let attempts = self
                         .auto_reconnect
                         .borrow()

@@ -67,6 +67,10 @@ fn main() -> teamtalk::Result<()> {
 }
 ```
 
+Note: message payloads are event-specific. Only call the accessor that matches
+the event you received (for example, `msg.text()` for `Event::TextMessage`).
+Other accessors return `None`.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:
