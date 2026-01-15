@@ -4,7 +4,7 @@ use teamtalk::extensions::scripts::ScriptManager;
 #[cfg(feature = "scripts")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut manager = ScriptManager::new();
-    manager.load_script("commands", "scripts/commands.lua")?;
+    manager.load_script("commands", "crates/teamtalk/examples/scripts/commands.lua")?;
     let handled = manager.call_command("start", &["channel".to_string()])?;
     println!("handled: {}", handled);
     Ok(())

@@ -1,5 +1,7 @@
 //! Core client type and message wrapper.
 use crate::events::{ConnectionState, Error, Event, Result};
+#[cfg(feature = "scripts")]
+use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -43,6 +45,8 @@ pub struct Client {
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
     bus: RefCell<bus::EventBus>,
+    #[cfg(feature = "scripts")]
+    scripts: RefCell<Option<ScriptManager>>,
     auto_reconnect: RefCell<AutoReconnectState>,
     cache: RefCell<cache::CacheState>,
 }
@@ -63,6 +67,8 @@ impl Client {
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 bus: RefCell::new(bus::EventBus::default()),
+                #[cfg(feature = "scripts")]
+                scripts: RefCell::new(None),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
                 cache: RefCell::new(cache::CacheState::default()),
             })
@@ -89,6 +95,8 @@ impl Client {
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
                 bus: RefCell::new(bus::EventBus::default()),
+                #[cfg(feature = "scripts")]
+                scripts: RefCell::new(None),
                 auto_reconnect: RefCell::new(AutoReconnectState::default()),
                 cache: RefCell::new(cache::CacheState::default()),
             })
@@ -178,6 +186,32 @@ impl Client {
         *self.hooks.borrow_mut() = ClientHooks::default();
     }
 
+    #[cfg(feature = "scripts")]
+    pub fn enable_scripts(&self) {
+        let mut scripts = self.scripts.borrow_mut();
+        if scripts.is_none() {
+            *scripts = Some(ScriptManager::new());
+        }
+    }
+
+    #[cfg(feature = "scripts")]
+    pub fn set_script_manager(&self, manager: ScriptManager) {
+        *self.scripts.borrow_mut() = Some(manager);
+    }
+
+    #[cfg(feature = "scripts")]
+    pub fn clear_scripts(&self) {
+        *self.scripts.borrow_mut() = None;
+    }
+
+    #[cfg(feature = "scripts")]
+    pub fn scripts_mut<F, R>(&self, f: F) -> Option<R>
+    where
+        F: FnOnce(&mut ScriptManager) -> R,
+    {
+        self.scripts.borrow_mut().as_mut().map(f)
+    }
+
     pub(crate) fn set_connection_state(&self, state: ConnectionState) {
         self.state.set(state);
     }
@@ -188,6 +222,13 @@ impl Client {
 
     pub(crate) fn dispatch_bus(&self, event: crate::events::Event, msg: &Message) {
         self.bus.borrow_mut().dispatch(self, event, msg);
+    }
+
+    #[cfg(feature = "scripts")]
+    pub(crate) fn dispatch_scripts(&self, event: crate::events::Event, msg: &Message) {
+        if let Some(manager) = self.scripts.borrow().as_ref() {
+            let _ = manager.handle_event(event, msg);
+        }
     }
 
     pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {

@@ -36,6 +36,8 @@ impl Client {
             self.update_cache_for_event(event, &message);
             self.invoke_hooks(event, &message);
             self.dispatch_bus(event, &message);
+            #[cfg(feature = "scripts")]
+            self.dispatch_scripts(event, &message);
             self.handle_auto_reconnect();
             Some((event, message))
         } else {

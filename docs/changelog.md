@@ -13,6 +13,7 @@ public API with compatibility expectations for downstream users.
 - `MessageBuilder` for outgoing text messages.
 - `AudioDeviceProfile` with `apply_audio_profile`.
 - `ServerInfo` cache snapshot for properties and statistics.
+- Lua scripting event handlers and host function registration.
 
 ### Changed
 - `Message` payload accessors now return `None` when the event does not match.
