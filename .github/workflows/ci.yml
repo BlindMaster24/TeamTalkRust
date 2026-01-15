@@ -45,7 +45,7 @@ jobs:
         run: ./scripts/check-doc-links.ps1
       - name: link-check
         if: matrix.os == 'ubuntu-latest'
-        uses: lycheeverse/lychee-action@v1
+        uses: lycheeverse/lychee-action@v2
         with:
           args: >-
             --verbose
