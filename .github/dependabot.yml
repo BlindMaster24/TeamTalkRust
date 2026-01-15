@@ -8,6 +8,9 @@ updates:
       - dependencies
       - rust
     target-branch: main
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -16,3 +19,6 @@ updates:
       - dependencies
       - github-actions
     target-branch: main
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
