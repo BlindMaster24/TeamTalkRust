@@ -25,6 +25,10 @@
 - Auto-reconnect is opt-in; keep manual reconnect logic out of examples unless explicitly required.
 - New optional functionality must be feature-gated in `crates/teamtalk/Cargo.toml`.
 - Linting is enforced via workspace rules in `Cargo.toml`; do not relax lint levels without user approval.
+- High-level APIs must have a matching `*_ex` variant that exposes full parameters without defaults.
+- Auto-features must be off by default and require explicit opt-in to enable.
+- Prefer explicit start/stop calls over implicit background behavior.
+- Keep public APIs deterministic; avoid time-based side effects unless explicitly configured.
 
 ## Feature Flags
 - `dispatch`: event dispatcher wrapper for deterministic event routing.
@@ -51,9 +55,11 @@
 - Keep user docs free of implementation details; put internal mechanics in `docs/developer.md`.
 - Keep inline `docs/...` or `crates/...` paths out of prose; use Markdown links.
 - Use neutral, direct language; avoid subjective or marketing terms like "production".
-- Keep paragraphs short (1–3 sentences) and prefer lists for steps.
+- Keep paragraphs short (1-3 sentences) and prefer lists for steps.
 - Split large topics into subfolders under `docs/` with a small `README.md` index.
 - User docs should explain both "what" and "why" in short, practical terms.
+- When introducing new high-level APIs, document both the default and `*_ex` variants.
+- Document all auto-features with explicit opt-in instructions and default state.
 
 ## Agent Documentation Workflow
 - Before editing docs, re-read `AGENTS.md` and confirm current expectations.
@@ -109,6 +115,7 @@
 - Place tests under `crates/<crate>/tests` or `#[cfg(test)]` modules.
 - Prefer focused unit tests and feature-gated tests for optional modules.
 - Name tests by behavior, for example `recording_start_on_command`.
+- Add at least one usage example for every new high-level API, even if no tests are added.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`.
