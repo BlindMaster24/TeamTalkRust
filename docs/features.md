@@ -12,7 +12,7 @@ teamtalk = { version = "1.1.0", features = ["dispatch", "async"] }
 ## Available Features
 
 - `dispatch`: event dispatcher with handler routing and reconnect support.
-- `async`: async wrapper with a worker thread.
+- `async`: async wrapper without a worker thread (single-threaded polling).
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
