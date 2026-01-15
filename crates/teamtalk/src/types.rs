@@ -814,7 +814,7 @@ impl From<ffi::User> for User {
 }
 
 /// Speex audio codec configuration.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpeexCodec {
     pub bandmode: i32,
     pub quality: i32,
@@ -846,7 +846,7 @@ impl SpeexCodec {
 }
 
 /// Speex VBR audio codec configuration.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpeexVBRCodec {
     pub bandmode: i32,
     pub quality: i32,
@@ -887,7 +887,7 @@ impl SpeexVBRCodec {
 }
 
 /// Opus audio codec configuration.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpusCodec {
     pub sample_rate: i32,
     pub channels: i32,
@@ -940,7 +940,7 @@ impl OpusCodec {
 }
 
 /// Audio codec selection.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum AudioCodec {
     #[default]
     None,

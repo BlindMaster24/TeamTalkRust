@@ -15,7 +15,9 @@ Why it helps:
 - pause/resume (implemented as segment stop/start),
 - manual segmentation,
 - channel switching without rebuilding your own state machine.
-- automatic rotation with `rotate_if_needed()`.
+- automatic rotation with `rotate_if_needed()`,
+- automatic rotation on channel/codec changes with `handle_event()`.
+- recording the joined channel with `start_current_channel()`.
 
 ```rust
 use teamtalk::recording::{RecordingOptions, RecordingSession};
@@ -33,8 +35,9 @@ let ok = session.stop();
 ## Channel or codec changes
 
 When you move to a channel with a different codec, the SDK recording may restart.
-Call `session.segment()` or `session.switch_channel(new_id)` to keep one logical
-recording with multiple segments.
+Call `session.segment()`, `session.switch_channel(new_id)`, or pass events to
+`session.handle_event(event, message)` to keep one logical recording with
+multiple segments.
 
 See:
 - [Segment naming and rotation](segments.md)

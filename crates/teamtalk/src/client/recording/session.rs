@@ -1,6 +1,7 @@
 use super::super::Client;
 use super::options::{RecordingOptions, RecordingTarget, segment_path};
-use crate::events::{Error, Result};
+use crate::client::Message;
+use crate::events::{Error, Event, Result};
 use crate::types::{AudioCodec, ChannelId};
 use std::fs;
 use std::time::Instant;
@@ -15,6 +16,8 @@ pub struct RecordingSession<'a> {
     current_path: Option<String>,
     segments: Vec<String>,
     segment_started_at: Option<Instant>,
+    last_channel_id: Option<ChannelId>,
+    last_codec: Option<AudioCodec>,
 }
 
 impl<'a> RecordingSession<'a> {
@@ -33,6 +36,8 @@ impl<'a> RecordingSession<'a> {
             current_path: None,
             segments: Vec::new(),
             segment_started_at: None,
+            last_channel_id: None,
+            last_codec: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -57,6 +62,8 @@ impl<'a> RecordingSession<'a> {
             current_path: None,
             segments: Vec::new(),
             segment_started_at: None,
+            last_channel_id: None,
+            last_codec: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -77,6 +84,26 @@ impl<'a> RecordingSession<'a> {
             current_path: None,
             segments: Vec::new(),
             segment_started_at: None,
+            last_channel_id: None,
+            last_codec: None,
+        };
+        session.start_segment()?;
+        Ok(session)
+    }
+
+    /// Starts a managed recording session for the current channel.
+    pub fn start_current_channel(client: &'a Client, options: RecordingOptions) -> Result<Self> {
+        let mut session = Self {
+            client,
+            target: RecordingTarget::CurrentChannel,
+            options,
+            active: false,
+            next_index: 0,
+            current_path: None,
+            segments: Vec::new(),
+            segment_started_at: None,
+            last_channel_id: None,
+            last_codec: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -172,9 +199,43 @@ impl<'a> RecordingSession<'a> {
         Ok(false)
     }
 
+    /// Applies smart rotation based on channel or codec changes.
+    pub fn handle_event(&mut self, event: Event, message: &Message) -> Result<bool> {
+        if !self.active {
+            return Ok(false);
+        }
+
+        match self.target {
+            RecordingTarget::CurrentChannel => {
+                if let Some(rotated) = self.rotate_for_channel_change()? {
+                    return Ok(rotated);
+                }
+            }
+            RecordingTarget::Channel(_) => {
+                if matches!(event, Event::ChannelUpdated)
+                    && let Some(channel) = message.channel()
+                    && Some(channel.id) == self.last_channel_id
+                    && self.maybe_rotate_for_codec(channel.audio_codec)?
+                {
+                    return Ok(true);
+                }
+            }
+            _ => {}
+        }
+
+        Ok(false)
+    }
+
     fn stop_active(&self) -> bool {
         match self.target {
             RecordingTarget::Channel(id) => self.client.stop_recording_channel(id.0),
+            RecordingTarget::CurrentChannel => {
+                if let Some(id) = self.last_channel_id.or_else(|| self.current_channel_id()) {
+                    self.client.stop_recording_channel(id.0)
+                } else {
+                    true
+                }
+            }
             RecordingTarget::Streams { .. } | RecordingTarget::Muxed { .. } => {
                 self.client.stop_recording()
             }
@@ -190,6 +251,20 @@ impl<'a> RecordingSession<'a> {
 
         let ok = match self.target.clone() {
             RecordingTarget::Channel(id) => {
+                self.last_channel_id = Some(id);
+                self.last_codec = self.channel_codec(id);
+                self.client
+                    .start_recording_channel(id.0, &path, self.options.format)
+            }
+            RecordingTarget::CurrentChannel => {
+                let id = self
+                    .current_channel_id()
+                    .ok_or_else(|| Error::CommandFailed {
+                        code: -1,
+                        message: "Not joined to a channel".to_string(),
+                    })?;
+                self.last_channel_id = Some(id);
+                self.last_codec = self.channel_codec(id);
                 self.client
                     .start_recording_channel(id.0, &path, self.options.format)
             }
@@ -220,5 +295,42 @@ impl<'a> RecordingSession<'a> {
                 message: "Recording start failed".to_string(),
             })
         }
+    }
+
+    fn current_channel_id(&self) -> Option<ChannelId> {
+        let id = self.client.my_channel_id();
+        if id.0 == 0 { None } else { Some(id) }
+    }
+
+    fn channel_codec(&self, id: ChannelId) -> Option<AudioCodec> {
+        self.client
+            .get_channel(id)
+            .map(|channel| channel.audio_codec)
+    }
+
+    fn rotate_for_channel_change(&mut self) -> Result<Option<bool>> {
+        let current = self.current_channel_id();
+        if current.is_none() {
+            return Ok(None);
+        }
+        let current = current.unwrap();
+        if self.options.rotate_on_channel_change && self.last_channel_id != Some(current) {
+            let rotated = self.segment()?;
+            return Ok(Some(rotated));
+        }
+        if let Some(codec) = self.channel_codec(current)
+            && self.maybe_rotate_for_codec(codec)?
+        {
+            return Ok(Some(true));
+        }
+        Ok(Some(false))
+    }
+
+    fn maybe_rotate_for_codec(&mut self, codec: AudioCodec) -> Result<bool> {
+        if self.options.rotate_on_codec_change && self.last_codec != Some(codec) {
+            self.last_codec = Some(codec);
+            return self.segment();
+        }
+        Ok(false)
     }
 }

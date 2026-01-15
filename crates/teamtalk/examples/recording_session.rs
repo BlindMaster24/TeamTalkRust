@@ -1,5 +1,5 @@
 use teamtalk::client::ffi::AudioFileFormat;
-use teamtalk::{RecordingOptions, RecordingSession};
+use teamtalk::{Event, RecordingOptions, RecordingSession};
 
 fn main() -> teamtalk::Result<()> {
     let client = teamtalk::Client::new()?;
@@ -11,9 +11,15 @@ fn main() -> teamtalk::Result<()> {
     );
     let mut session = RecordingSession::start_channel(&client, channel_id, options)?;
 
-    session.pause();
-    session.resume()?;
-    session.segment()?;
+    loop {
+        if let Some((event, message)) = client.poll(100) {
+            let _ = session.handle_event(event, &message)?;
+            let _ = session.rotate_if_needed()?;
+            if matches!(event, Event::ConnectionLost) {
+                break;
+            }
+        }
+    }
     let _ = session.stop();
     Ok(())
 }

@@ -13,6 +13,8 @@ pub enum RecordingSampleFormat {
 pub enum RecordingTarget {
     /// Record the current channel audio (server codec).
     Channel(ChannelId),
+    /// Record the channel you are currently joined to.
+    CurrentChannel,
     /// Record muxed streams using a specific codec.
     Streams {
         stream_types: u32,
@@ -35,6 +37,10 @@ pub struct RecordingOptions {
     pub max_duration: Option<Duration>,
     /// Rotate after the file exceeds the given size in bytes.
     pub max_size_bytes: Option<u64>,
+    /// Rotate when the current channel changes.
+    pub rotate_on_channel_change: bool,
+    /// Rotate when the channel codec changes.
+    pub rotate_on_codec_change: bool,
 }
 
 impl RecordingOptions {
@@ -46,6 +52,8 @@ impl RecordingOptions {
             start_index: 1,
             max_duration: None,
             max_size_bytes: None,
+            rotate_on_channel_change: true,
+            rotate_on_codec_change: true,
         }
     }
 
