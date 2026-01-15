@@ -199,6 +199,8 @@ pub enum Error {
     MissingLoginParams,
     #[error("SDK Error: {code} ({message})")]
     ClientError { code: i32, message: String },
+    #[error("IO error: {message}")]
+    IoError { message: String },
 }
 
 /// Convenience result type for TeamTalk operations.

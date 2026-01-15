@@ -2,6 +2,8 @@ use super::super::Client;
 use super::options::{RecordingOptions, RecordingTarget, segment_path};
 use crate::events::{Error, Result};
 use crate::types::{AudioCodec, ChannelId};
+use std::fs;
+use std::time::Instant;
 
 /// Managed recording session with pause/resume and segmentation support.
 pub struct RecordingSession<'a> {
@@ -12,6 +14,7 @@ pub struct RecordingSession<'a> {
     next_index: u32,
     current_path: Option<String>,
     segments: Vec<String>,
+    segment_started_at: Option<Instant>,
 }
 
 impl<'a> RecordingSession<'a> {
@@ -29,6 +32,7 @@ impl<'a> RecordingSession<'a> {
             next_index: 0,
             current_path: None,
             segments: Vec::new(),
+            segment_started_at: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -52,6 +56,7 @@ impl<'a> RecordingSession<'a> {
             next_index: 0,
             current_path: None,
             segments: Vec::new(),
+            segment_started_at: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -71,6 +76,7 @@ impl<'a> RecordingSession<'a> {
             next_index: 0,
             current_path: None,
             segments: Vec::new(),
+            segment_started_at: None,
         };
         session.start_segment()?;
         Ok(session)
@@ -100,6 +106,7 @@ impl<'a> RecordingSession<'a> {
         if ok {
             self.active = false;
             self.current_path = None;
+            self.segment_started_at = None;
         }
         ok
     }
@@ -134,6 +141,35 @@ impl<'a> RecordingSession<'a> {
     pub fn switch_channel(&mut self, channel_id: ChannelId) -> Result<bool> {
         self.target = RecordingTarget::Channel(channel_id);
         self.segment()
+    }
+
+    /// Rotates the segment when duration or size limits are reached.
+    pub fn rotate_if_needed(&mut self) -> Result<bool> {
+        if !self.active {
+            return Ok(false);
+        }
+
+        if let Some(max_duration) = self.options.max_duration
+            && let Some(started) = self.segment_started_at
+            && started.elapsed() >= max_duration
+        {
+            return self.segment();
+        }
+
+        if let Some(max_size) = self.options.max_size_bytes
+            && let Some(path) = self.current_path.as_ref()
+        {
+            let len = fs::metadata(path)
+                .map(|m| m.len())
+                .map_err(|e| Error::IoError {
+                    message: e.to_string(),
+                })?;
+            if len >= max_size {
+                return self.segment();
+            }
+        }
+
+        Ok(false)
     }
 
     fn stop_active(&self) -> bool {
@@ -176,6 +212,7 @@ impl<'a> RecordingSession<'a> {
             self.active = true;
             self.current_path = Some(path.clone());
             self.segments.push(path);
+            self.segment_started_at = Some(Instant::now());
             Ok(())
         } else {
             Err(Error::CommandFailed {

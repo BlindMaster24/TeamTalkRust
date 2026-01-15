@@ -1,5 +1,12 @@
 use crate::types::{AudioCodec, ChannelId};
+use std::time::Duration;
 use teamtalk_sys as ffi;
+
+#[derive(Clone, Debug)]
+pub enum RecordingSampleFormat {
+    PcmS16Le,
+    WavS16Le,
+}
 
 /// Target for a managed recording session.
 #[derive(Clone, Debug)]
@@ -24,6 +31,10 @@ pub struct RecordingOptions {
     pub format: ffi::AudioFileFormat,
     /// First segment index to use.
     pub start_index: u32,
+    /// Rotate after the given duration.
+    pub max_duration: Option<Duration>,
+    /// Rotate after the file exceeds the given size in bytes.
+    pub max_size_bytes: Option<u64>,
 }
 
 impl RecordingOptions {
@@ -33,7 +44,21 @@ impl RecordingOptions {
             template: template.into(),
             format,
             start_index: 1,
+            max_duration: None,
+            max_size_bytes: None,
         }
+    }
+
+    /// Sets a maximum segment duration.
+    pub fn with_max_duration(mut self, duration: Duration) -> Self {
+        self.max_duration = Some(duration);
+        self
+    }
+
+    /// Sets a maximum segment size in bytes.
+    pub fn with_max_size_bytes(mut self, size: u64) -> Self {
+        self.max_size_bytes = Some(size);
+        self
     }
 }
 

@@ -15,6 +15,7 @@ Why it helps:
 - pause/resume (implemented as segment stop/start),
 - manual segmentation,
 - channel switching without rebuilding your own state machine.
+- automatic rotation with `rotate_if_needed()`.
 
 ```rust
 use teamtalk::recording::{RecordingOptions, RecordingSession};
@@ -37,3 +38,6 @@ recording with multiple segments.
 
 See:
 - [Segment naming and rotation](segments.md)
+- [Per-user recording](user.md)
+- [Streaming audio blocks](streaming.md)
+- [Synced user recording](synced.md)

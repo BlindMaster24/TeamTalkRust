@@ -21,3 +21,5 @@ Use `segment()` when you detect:
 - codec changes,
 - time-based rotation (e.g., hourly),
 - size-based rotation.
+
+Use `rotate_if_needed()` when you configure `max_duration` or `max_size_bytes`.

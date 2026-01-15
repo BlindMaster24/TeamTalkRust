@@ -20,7 +20,14 @@ pub mod mock;
 #[cfg(feature = "async")]
 pub use async_api::{AsyncClient, AsyncConfig};
 pub use client::audio::AudioDeviceProfile;
-pub use client::recording::{RecordSession, RecordingOptions, RecordingSession, RecordingTarget};
+pub use client::audio::{
+    AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,
+};
+pub use client::recording::{
+    RecordSession, RecordingOptions, RecordingSampleFormat, RecordingSession, RecordingTarget,
+    SilencePolicy, SyncedUserRecording, SyncedUserRecordingBus, SyncedUserRecordingOptions,
+    SyncedUserRecordingSession, UserRecordingOptions, UserRecordingSession,
+};
 pub use client::users::LoginParams;
 pub use client::{
     Client, ClientEvent, ClientHealth, ClientHooks, ClientInfo, ClientManager, ClientRegistry,

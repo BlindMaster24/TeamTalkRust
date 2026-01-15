@@ -35,6 +35,10 @@ cargo build --no-default-features --features tls-rustls
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
 - Recording guard: `RecordSession` for safe start/stop of channel recording.    
 - Managed recording: `RecordingSession`, `RecordingOptions`, `RecordingTarget`.  
+- Auto-rotation: `RecordingSession::rotate_if_needed` with size/time limits.    
+- Per-user recording: `UserRecordingSession`, `UserRecordingOptions`.           
+- Audio block streaming: `stream_audio_blocks`, sinks (`CallbackSink`, `WriterSink`, `UdpSink`).
+- Synced per-user recording: `SyncedUserRecordingSession` with `PcmS16Le`/`WavS16Le` output and silence policies.
 - Auto-reconnect support via `enable_auto_reconnect` and `connect_remember`.
 - Auto-login and rejoin using stored `LoginParams` and remembered channels.
 - Typed errors with SDK code + message.
