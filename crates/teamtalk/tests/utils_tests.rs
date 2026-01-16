@@ -47,6 +47,15 @@ fn backoff_reset() {
 }
 
 #[test]
+fn backoff_zero_max_delay() {
+    let mut backoff =
+        ExponentialBackoff::new(Duration::from_millis(0), Duration::from_millis(0), 2.0, 0.0);
+    let delay = backoff.next_delay();
+    assert_eq!(delay, Duration::ZERO);
+    assert_eq!(backoff.current_delay(), Duration::ZERO);
+}
+
+#[test]
 fn string_roundtrip() {
     let input = "TeamTalk";
     let tt = input.tt();

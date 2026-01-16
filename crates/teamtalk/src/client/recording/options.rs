@@ -83,3 +83,42 @@ pub(crate) fn segment_path(template: &str, index: u32) -> String {
         format!("{base}.part{index}")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{RecordingOptions, segment_path};
+    use std::time::Duration;
+    use teamtalk_sys as ffi;
+
+    #[test]
+    fn segment_path_replaces_index() {
+        let path = segment_path("out_{index}.wav", 5);
+        assert_eq!(path, "out_5.wav");
+    }
+
+    #[test]
+    fn segment_path_inserts_before_extension() {
+        let path = segment_path("out.wav", 3);
+        assert_eq!(path, "out.part3.wav");
+    }
+
+    #[test]
+    fn segment_path_appends_when_no_extension() {
+        let path = segment_path("out", 2);
+        assert_eq!(path, "out.part2");
+    }
+
+    #[test]
+    fn recording_options_builder_fields() {
+        let options =
+            RecordingOptions::new("out_{index}.wav", ffi::AudioFileFormat::AFF_WAVE_FORMAT)
+                .with_max_duration(Duration::from_secs(5))
+                .with_max_size_bytes(1024);
+        assert_eq!(options.template, "out_{index}.wav");
+        assert_eq!(options.start_index, 1);
+        assert_eq!(options.max_duration, Some(Duration::from_secs(5)));
+        assert_eq!(options.max_size_bytes, Some(1024));
+        assert!(options.rotate_on_channel_change);
+        assert!(options.rotate_on_codec_change);
+    }
+}

@@ -16,6 +16,19 @@
 - `cargo doc --no-deps --all-features` builds API docs; `cargo doc --no-deps --all-features --open` opens them.
 - `scripts/build-docs.ps1` and `scripts/build-docs.sh` run the docs build locally.
 - `scripts/check-doc-links.ps1` and `scripts/check-doc-links.sh` validate that docs paths are proper links.
+- Coverage (optional but preferred for test-heavy changes):
+  - Install once: `cargo install cargo-llvm-cov`
+  - Ensure toolchain component: `rustup component add llvm-tools-preview`
+  - Summary: `cargo llvm-cov --workspace --all-targets --all-features --summary-only`
+  - LCOV report: `cargo llvm-cov --workspace --all-targets --all-features --lcov --output-path target/coverage.lcov`
+- Rustup tooling:
+  - Help: `rustup --help` and `rustup <command> --help`
+  - Status summary: `rustup show`
+  - Update toolchains: `rustup update`
+  - Toolchains list: `rustup toolchain list`
+  - Components list: `rustup component list` and `rustup component list --installed`
+  - Targets list: `rustup target list` and `rustup target list --installed`
+  - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
 
 ## Coding Style & Naming Conventions
 - Rust 2024 edition; follow rustfmt defaults and keep clippy clean.
@@ -117,6 +130,7 @@
 - Prefer focused unit tests and feature-gated tests for optional modules.
 - Name tests by behavior, for example `recording_start_on_command`.
 - Add at least one usage example for every new high-level API, even if no tests are added.
+- When adding or expanding tests, run the full test matrix and (if requested) coverage commands above.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`.

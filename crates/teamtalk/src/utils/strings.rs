@@ -103,3 +103,38 @@ pub fn copy_to_string(arr: &[ffi::TTCHAR], out: &mut String) {
         out.push_str(&String::from_utf8_lossy(u8_slice));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{ToTT, copy_to_string, from_tt, to_cow, to_string, tt_buf};
+
+    #[test]
+    fn tt_buf_is_zeroed() {
+        let buf = tt_buf::<4>();
+        assert!(buf.iter().all(|&c| c == 0));
+    }
+
+    #[test]
+    fn to_tt_roundtrip() {
+        let input = "TeamTalk";
+        let tt = input.tt();
+        let output = unsafe { from_tt(tt.as_ptr()) };
+        assert_eq!(output, input);
+    }
+
+    #[test]
+    fn to_cow_matches_to_string() {
+        let input = "abc";
+        let tt = input.tt();
+        assert_eq!(to_cow(&tt).as_ref(), to_string(&tt));
+    }
+
+    #[test]
+    fn copy_to_string_clears_and_reuses() {
+        let input = "hello";
+        let tt = input.tt();
+        let mut out = String::from("placeholder");
+        copy_to_string(&tt, &mut out);
+        assert_eq!(out, input);
+    }
+}
