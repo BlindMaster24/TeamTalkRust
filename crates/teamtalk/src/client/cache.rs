@@ -135,6 +135,7 @@ impl Client {
 }
 
 #[cfg(test)]
+#[cfg(feature = "mock")]
 mod tests {
     use crate::client::backend::MockBackend;
     use crate::client::{Client, Message};

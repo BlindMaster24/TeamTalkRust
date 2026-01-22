@@ -1,3 +1,5 @@
+#![cfg(feature = "mock")]
+
 use std::sync::Arc;
 
 use teamtalk::client::Client;

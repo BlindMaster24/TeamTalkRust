@@ -326,6 +326,7 @@ impl<'a> SubscriptionBuilder<'a> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "mock")]
 mod tests {
     use super::*;
     use crate::client::Client;
