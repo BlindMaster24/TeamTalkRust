@@ -5,6 +5,7 @@ use teamtalk_sys as ffi;
 #[cfg(feature = "mock")]
 pub trait TeamTalkBackend: Send + Sync {
     fn init_poll(&self) -> *mut ffi::TTInstance;
+    #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance;
     fn close(&self, ptr: *mut ffi::TTInstance);
     fn start_recording_muxed(
@@ -58,6 +59,7 @@ pub trait TeamTalkBackend: Send + Sync {
 #[cfg(not(feature = "mock"))]
 pub(crate) trait TeamTalkBackend: Send + Sync {
     fn init_poll(&self) -> *mut ffi::TTInstance;
+    #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance;
     fn close(&self, ptr: *mut ffi::TTInstance);
     fn start_recording_muxed(
@@ -115,6 +117,7 @@ impl TeamTalkBackend for FfiBackend {
         unsafe { ffi::api().TT_InitTeamTalkPoll() }
     }
 
+    #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance {
         unsafe { ffi::api().TT_InitTeamTalk(hwnd, msg) }
     }
@@ -356,6 +359,7 @@ impl TeamTalkBackend for MockBackend {
         std::ptr::dangling_mut()
     }
 
+    #[cfg(windows)]
     fn init_hwnd(&self, _hwnd: ffi::HWND, _msg: u32) -> *mut ffi::TTInstance {
         self.init_poll()
     }
