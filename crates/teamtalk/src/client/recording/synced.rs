@@ -453,3 +453,20 @@ fn render_vars(template: &str, user_id: UserId, username: &str) -> String {
         .replace("%user_id%", &user_id.0.to_string())
         .replace("%username%", username)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn render_vars_replaces_placeholders() {
+        let rendered = render_vars("user_%user_id%_%username%", UserId(42), "alice");
+        assert_eq!(rendered, "user_42_alice");
+    }
+
+    #[test]
+    fn render_vars_leaves_unknown_placeholders() {
+        let rendered = render_vars("%unknown%_%username%", UserId(7), "bob");
+        assert_eq!(rendered, "%unknown%_bob");
+    }
+}
