@@ -171,6 +171,10 @@
   - Keep CI green; if it breaks, prioritize fix or revert before new changes.
   - For hotfixes, isolate the minimal fix in a single commit and document impact.
   - Avoid hidden behavior changes; surface them in commit body and changelog.
+  - Do not reword or squash commits after review starts unless explicitly requested.
+  - Use `fixup!`/`squash!` only on private branches; never leave them in main history.
+  - Ensure commit order matches dependency order (foundations before dependents).
+  - When splitting work, keep each commit buildable or clearly mark why not.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
