@@ -161,6 +161,9 @@
 - Validation before push:
   - Run DoD checks; if any are skipped, state why before commit.
   - Confirm staged diff matches intent; never push partial/unfinished work.
+  - Prefer clean history: avoid "WIP" commits in main history.
+  - Use a dedicated commit for dependency updates unless they are required by the same change.
+  - If a revert is needed, use `revert:` with a clear reason rather than rewriting history.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
