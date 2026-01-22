@@ -324,3 +324,118 @@ impl<'a> SubscriptionBuilder<'a> {
             .subscribe(config, Box::new(handler))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::client::Client;
+    use crate::client::backend::MockBackend;
+    use crate::events::Event;
+    use crate::mock::{MockMessage, MockUserBuilder};
+    use crate::types::{ChannelId, UserId};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    fn test_client() -> Client {
+        let backend = Arc::new(MockBackend::new());
+        Client::with_backend(backend).expect("client")
+    }
+
+    #[test]
+    fn dispatch_filters_user_and_channel() {
+        let client = test_client();
+        let counter = Arc::new(AtomicUsize::new(0));
+        let seen = counter.clone();
+        let sub_id = client
+            .on_event(Event::TextMessage)
+            .filter_user(UserId(7))
+            .filter_channel(ChannelId(3))
+            .subscribe(move |_| {
+                seen.fetch_add(1, Ordering::SeqCst);
+            });
+
+        let message = MockMessage::text(
+            ffi::TextMsgType::MSGTYPE_USER,
+            UserId(7),
+            UserId(0),
+            ChannelId(3),
+            "alice",
+            "hello",
+        );
+        client.dispatch_bus(Event::TextMessage, &message);
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+
+        client.unsubscribe_event(sub_id);
+        client.dispatch_bus(Event::TextMessage, &message);
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn dispatch_filters_username_and_text_type() {
+        let client = test_client();
+        let counter = Arc::new(AtomicUsize::new(0));
+        let seen = counter.clone();
+        client
+            .on_event(Event::TextMessage)
+            .filter_username("alice")
+            .filter_text_type(ffi::TextMsgType::MSGTYPE_USER)
+            .subscribe(move |_| {
+                seen.fetch_add(1, Ordering::SeqCst);
+            });
+
+        let message = MockMessage::text(
+            ffi::TextMsgType::MSGTYPE_USER,
+            UserId(1),
+            UserId(2),
+            ChannelId(0),
+            "alice",
+            "ping",
+        );
+        client.dispatch_bus(Event::TextMessage, &message);
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn dispatch_filters_nickname_and_predicate() {
+        let client = test_client();
+        let counter = Arc::new(AtomicUsize::new(0));
+        let seen = counter.clone();
+        client
+            .on_event(Event::UserUpdate)
+            .filter_nickname("nick")
+            .filter(|ctx| ctx.user_id() == Some(UserId(11)))
+            .subscribe(move |_| {
+                seen.fetch_add(1, Ordering::SeqCst);
+            });
+
+        let msg = MockUserBuilder::new(UserId(11))
+            .nickname("nick")
+            .build_for(Event::UserUpdate);
+        client.dispatch_bus(Event::UserUpdate, &msg);
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn unsubscribe_group_removes_all() {
+        let client = test_client();
+        let counter = Arc::new(AtomicUsize::new(0));
+        let first = counter.clone();
+        let second = counter.clone();
+
+        client.on_any().group("grp").subscribe(move |_| {
+            first.fetch_add(1, Ordering::SeqCst);
+        });
+        client.on_any().group("grp").subscribe(move |_| {
+            second.fetch_add(1, Ordering::SeqCst);
+        });
+
+        let removed = client.unsubscribe_event_group("grp");
+        assert_eq!(removed, 2);
+
+        let msg = MockMessage::empty();
+        client.dispatch_bus(Event::UserUpdate, &msg);
+        assert_eq!(counter.load(Ordering::SeqCst), 0);
+    }
+}

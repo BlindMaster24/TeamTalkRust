@@ -43,15 +43,9 @@ impl LoginParams {
 impl Client {
     /// Logs in to the server.
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
-        let cmd_id = unsafe {
-            ffi::api().TT_DoLoginEx(
-                self.ptr,
-                nickname.tt().as_ptr(),
-                username.tt().as_ptr(),
-                password.tt().as_ptr(),
-                client_name.tt().as_ptr(),
-            )
-        };
+        let cmd_id =
+            self.backend()
+                .do_login_ex(self.ptr, nickname, username, password, client_name);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::LoggingIn);
         }
@@ -107,7 +101,7 @@ impl Client {
 
     /// Logs out from the server.
     pub fn logout(&self) -> i32 {
-        let cmd_id = unsafe { ffi::api().TT_DoLogout(self.ptr) };
+        let cmd_id = self.backend().do_logout(self.ptr);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::Connected);
         }
@@ -116,7 +110,7 @@ impl Client {
 
     /// Returns the current user id.
     pub fn my_id(&self) -> UserId {
-        UserId(unsafe { ffi::api().TT_GetMyUserID(self.ptr) })
+        UserId(self.backend().get_my_user_id(self.ptr))
     }
 
     /// Returns the account of the current user.
@@ -160,12 +154,12 @@ impl Client {
     pub fn set_status_message(&self, msg: &str) -> i32 {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
-        let bits = if unsafe { ffi::api().TT_GetUser(self.ptr, my_id.0, &mut user) } == 1 {
+        let bits = if self.backend().get_user(self.ptr, my_id.0, &mut user) {
             user.nStatusMode as u32
         } else {
             UserStatus::default().to_bits()
         };
-        unsafe { ffi::api().TT_DoChangeStatus(self.ptr, bits as i32, msg.tt().as_ptr()) }
+        self.backend().do_change_status(self.ptr, bits as i32, msg)
     }
 
     /// Kicks a user from a channel.
@@ -208,7 +202,7 @@ impl Client {
         unsafe {
             let len = t.len().min(511);
             std::ptr::copy_nonoverlapping(t.as_ptr(), msg.szMessage.as_mut_ptr(), len);
-            ffi::api().TT_DoTextMessage(self.ptr, &msg)
+            self.backend().do_text_message(self.ptr, &msg)
         }
     }
 

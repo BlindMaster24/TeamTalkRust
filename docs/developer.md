@@ -74,8 +74,24 @@ Doc link checks used in CI:
 scripts/check-doc-links.sh
 ```
 
+Coverage (logic-only; excludes thin FFI wrappers):
+
+```bash
+scripts/coverage.sh
+scripts/coverage.ps1
+```
+
+The coverage scripts exclude thin FFI wrapper modules and the `teamtalk-sys`
+crate so the reported percentage reflects logic we can validate without the
+SDK or a live server.
+
 Use the `mock` feature for deterministic event-driven tests without a running
 TeamTalk server.
+
+Backend abstractions are intentionally limited to logic-heavy areas that need
+mocking (recording, scripting, channels). Thin FFI wrappers stay direct to
+avoid unnecessary indirection. If you add a new mockable logic layer, route it
+through the backend; if you add a thin wrapper, keep it direct.
 
 ## Architecture Overview
 

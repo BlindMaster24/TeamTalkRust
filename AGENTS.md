@@ -38,6 +38,9 @@
 - Auto-reconnect is opt-in; keep manual reconnect logic out of examples unless explicitly required.
 - New optional functionality must be feature-gated in `crates/teamtalk/Cargo.toml`.
 - Linting is enforced via workspace rules in `Cargo.toml`; do not relax lint levels without user approval.
+- Backend abstractions exist only for logic-heavy paths that need mocking. Thin
+  FFI wrappers stay direct unless a specific testable logic layer requires a
+  backend hook.
 - High-level APIs must have a matching `*_ex` variant that exposes full parameters without defaults.
 - Auto-features must be off by default and require explicit opt-in to enable.
 - Prefer explicit start/stop calls over implicit background behavior.

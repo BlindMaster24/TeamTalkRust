@@ -43,8 +43,9 @@ impl Client {
 
     /// Joins a channel by id.
     pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
-        let cmd_id =
-            unsafe { ffi::api().TT_DoJoinChannelByID(self.ptr, id.0, password.tt().as_ptr()) };
+        let cmd_id = self
+            .backend()
+            .do_join_channel_by_id(self.ptr, id.0, password);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::Joining(id));
             self.auto_reconnect.borrow_mut().last_channel = Some(id);
@@ -60,7 +61,7 @@ impl Client {
 
     /// Leaves the current channel.
     pub fn leave_channel(&self) -> i32 {
-        let cmd_id = unsafe { ffi::api().TT_DoLeaveChannel(self.ptr) };
+        let cmd_id = self.backend().do_leave_channel(self.ptr);
         if cmd_id > 0 {
             self.auto_reconnect.borrow_mut().last_channel = None;
         }
