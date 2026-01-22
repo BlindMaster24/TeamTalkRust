@@ -144,6 +144,23 @@
 - If asked to push, still confirm that commits are scoped correctly before pushing.
 - Version bumps are always a dedicated commit. Never combine a version bump with other changes, even if requested.
 - Version bump flow (separate commit only): update `docs/changelog.md` (move Unreleased), update `crates/teamtalk/Cargo.toml` version, sync references via `scripts/update-version.*`, run DoD checks, commit with a `chore:` message, tag `vX.Y.Z`, then push commits + tag.
+- Commit hygiene:
+  - Keep diffs minimal; avoid drive‑by refactors unless explicitly requested.
+  - Separate behavior changes from refactors and from docs-only edits.
+  - If a change needs tests and doc updates, prefer: code -> tests -> docs (separate commits if they stand alone).
+  - Never mix formatting-only edits with behavior changes unless rustfmt is required.
+  - Avoid mixing unrelated files; each commit should have a single intent you can explain in one sentence.
+- Commit sizing:
+  - Prefer smaller, reviewable commits; break large changes into 2–5 commits with clean boundaries.
+  - Do not split a single cohesive change across multiple commits just to hit a number.
+  - When in doubt, split by module or by feature boundary (e.g., core logic vs. tests vs. docs).
+- Commit messages:
+  - Use imperative mood and <= 72 characters in the summary.
+  - Use a body when rationale or migration guidance matters.
+  - Include references to breaking changes and how to migrate.
+- Validation before push:
+  - Run DoD checks; if any are skipped, state why before commit.
+  - Confirm staged diff matches intent; never push partial/unfinished work.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
