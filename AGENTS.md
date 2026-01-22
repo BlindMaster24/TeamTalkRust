@@ -175,6 +175,9 @@
   - Use `fixup!`/`squash!` only on private branches; never leave them in main history.
   - Ensure commit order matches dependency order (foundations before dependents).
   - When splitting work, keep each commit buildable or clearly mark why not.
+  - For multi-step changes, include a short commit body explaining the step in the series.
+  - If a commit changes user-visible behavior, add or update tests in the same or next commit.
+  - Prefer deterministic commits: avoid relying on local environment state in commit content.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
