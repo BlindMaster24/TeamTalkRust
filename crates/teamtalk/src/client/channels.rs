@@ -21,12 +21,7 @@ impl Client {
 
     /// Returns a channel by id.
     pub fn get_channel(&self, id: ChannelId) -> Option<Channel> {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::Channel>() };
-        if unsafe { ffi::api().TT_GetChannel(self.ptr, id.0, &mut raw) } == 1 {
-            Some(Channel::from(raw))
-        } else {
-            None
-        }
+        self.backend().get_channel(self.ptr, id.0)
     }
 
     /// Returns a channel path string for a channel id.
@@ -115,7 +110,7 @@ impl Client {
 
     /// Returns the current channel id.
     pub fn my_channel_id(&self) -> ChannelId {
-        ChannelId(unsafe { ffi::api().TT_GetMyChannelID(self.ptr) })
+        self.backend().get_my_channel_id(self.ptr)
     }
 
     /// Returns the root channel id.

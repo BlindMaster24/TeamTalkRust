@@ -1,7 +1,6 @@
 use super::super::Client;
 use crate::events::{Error, Result};
 use crate::types::{AudioCodec, ChannelId};
-use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
@@ -12,12 +11,8 @@ impl Client {
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> bool {
-        let p = file_path.tt();
-        let raw_codec = codec.to_ffi();
-        unsafe {
-            ffi::api().TT_StartRecordingMuxedAudioFile(self.ptr, &raw_codec, p.as_ptr(), format)
-                == 1
-        }
+        self.backend()
+            .start_recording_muxed(self.ptr, codec, file_path, format)
     }
 
     /// Starts recording the specified channel.
@@ -27,11 +22,8 @@ impl Client {
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> bool {
-        let p = file_path.tt();
-        unsafe {
-            ffi::api().TT_StartRecordingMuxedAudioFileEx(self.ptr, channel_id, p.as_ptr(), format)
-                == 1
-        }
+        self.backend()
+            .start_recording_channel(self.ptr, channel_id, file_path, format)
     }
 
     /// Starts recording a set of stream types.
@@ -42,27 +34,18 @@ impl Client {
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> bool {
-        let p = file_path.tt();
-        let raw_codec = codec.to_ffi();
-        unsafe {
-            ffi::api().TT_StartRecordingMuxedStreams(
-                self.ptr,
-                stream_types,
-                &raw_codec,
-                p.as_ptr(),
-                format,
-            ) == 1
-        }
+        self.backend()
+            .start_recording_streams(self.ptr, stream_types, codec, file_path, format)
     }
 
     /// Stops recording a muxed audio file.
     pub fn stop_recording(&self) -> bool {
-        unsafe { ffi::api().TT_StopRecordingMuxedAudioFile(self.ptr) == 1 }
+        self.backend().stop_recording(self.ptr)
     }
 
     /// Stops recording for a channel.
     pub fn stop_recording_channel(&self, channel_id: i32) -> bool {
-        unsafe { ffi::api().TT_StopRecordingMuxedAudioFileEx(self.ptr, channel_id) == 1 }
+        self.backend().stop_recording_channel(self.ptr, channel_id)
     }
 }
 

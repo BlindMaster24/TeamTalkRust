@@ -4,10 +4,15 @@ use crate::events::{ConnectionState, Error, Event, Result};
 use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
 use std::cell::{Cell, RefCell};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
+#[cfg(feature = "mock")]
+pub mod backend;
+#[cfg(not(feature = "mock"))]
+pub(crate) mod backend;
 pub mod bus;
 pub mod cache;
 pub mod channels;
@@ -41,6 +46,7 @@ pub struct Client {
     pub name: Option<String>,
     ptr: *mut ffi::TTInstance,
     id: ClientId,
+    backend: Arc<dyn backend::TeamTalkBackend>,
     label: RefCell<Option<String>>,
     state: Cell<ConnectionState>,
     hooks: RefCell<ClientHooks>,
@@ -55,7 +61,8 @@ impl Client {
     /// Creates a new polling client and loads the SDK.
     pub fn new() -> Result<Self> {
         crate::init()?;
-        let ptr = unsafe { ffi::api().TT_InitTeamTalkPoll() };
+        let backend: Arc<dyn backend::TeamTalkBackend> = Arc::new(backend::FfiBackend);
+        let ptr = backend.init_poll();
         if ptr.is_null() {
             Err(Error::InitFailed)
         } else {
@@ -63,6 +70,7 @@ impl Client {
                 name: None,
                 ptr,
                 id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
+                backend,
                 label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
@@ -83,7 +91,8 @@ impl Client {
     /// The caller must ensure `hwnd` and `msg` are valid for the target window.
     pub unsafe fn with_hwnd(hwnd: ffi::HWND, msg: u32) -> Result<Self> {
         crate::init()?;
-        let ptr = unsafe { ffi::api().TT_InitTeamTalk(hwnd, msg) };
+        let backend: Arc<dyn backend::TeamTalkBackend> = Arc::new(backend::FfiBackend);
+        let ptr = backend.init_hwnd(hwnd, msg);
         if ptr.is_null() {
             Err(Error::InitFailed)
         } else {
@@ -91,6 +100,7 @@ impl Client {
                 name: None,
                 ptr,
                 id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
+                backend,
                 label: RefCell::new(None),
                 state: Cell::new(ConnectionState::Idle),
                 hooks: RefCell::new(ClientHooks::default()),
@@ -111,6 +121,33 @@ impl Client {
     /// The caller must ensure `hwnd` is valid for the target window.
     pub unsafe fn swap_hwnd(&self, hwnd: ffi::HWND) -> bool {
         unsafe { ffi::api().TT_SwapTeamTalkHWND(self.ptr, hwnd) == 1 }
+    }
+
+    pub(crate) fn backend(&self) -> &dyn backend::TeamTalkBackend {
+        self.backend.as_ref()
+    }
+
+    #[cfg(feature = "mock")]
+    pub fn with_backend(backend: Arc<dyn backend::TeamTalkBackend>) -> Result<Self> {
+        let ptr = backend.init_poll();
+        if ptr.is_null() {
+            Err(Error::InitFailed)
+        } else {
+            Ok(Self {
+                name: None,
+                ptr,
+                id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
+                backend,
+                label: RefCell::new(None),
+                state: Cell::new(ConnectionState::Idle),
+                hooks: RefCell::new(ClientHooks::default()),
+                bus: RefCell::new(bus::EventBus::default()),
+                #[cfg(feature = "scripts")]
+                scripts: RefCell::new(None),
+                auto_reconnect: RefCell::new(AutoReconnectState::default()),
+                cache: RefCell::new(cache::CacheState::default()),
+            })
+        }
     }
 
     /// Sets the client name used for login.
@@ -494,8 +531,6 @@ impl Message {
 
 impl Drop for Client {
     fn drop(&mut self) {
-        unsafe {
-            ffi::api().TT_CloseTeamTalk(self.ptr);
-        }
+        self.backend.close(self.ptr);
     }
 }
