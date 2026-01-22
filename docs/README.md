@@ -1,8 +1,5 @@
 # TeamTalkRust Documentation
 
-This documentation is for users of the TeamTalk Rust SDK. It focuses on
-installation, connection flow, and configuration.
-
 Start here:
 - Getting Started: [docs/getting-started.md](getting-started.md)
 - Feature Flags: [docs/features.md](features.md)
