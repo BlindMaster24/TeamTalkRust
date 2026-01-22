@@ -164,6 +164,13 @@
   - Prefer clean history: avoid "WIP" commits in main history.
   - Use a dedicated commit for dependency updates unless they are required by the same change.
   - If a revert is needed, use `revert:` with a clear reason rather than rewriting history.
+  - Do not push failing CI unless explicitly approved; fix or revert first.
+  - Keep public API changes in their own commit when possible and document them.
+  - Avoid squashing unrelated commits; preserve logical boundaries for auditability.
+  - If backporting or cherry-picking, note it in the commit body.
+  - Keep CI green; if it breaks, prioritize fix or revert before new changes.
+  - For hotfixes, isolate the minimal fix in a single commit and document impact.
+  - Avoid hidden behavior changes; surface them in commit body and changelog.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
