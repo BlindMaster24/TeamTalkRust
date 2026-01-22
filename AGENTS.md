@@ -140,6 +140,10 @@
 - PRs should explain intent, list key changes, and include commands run.
 - Before committing, run required checks in the Definition of Done.
 - Commit workflow: review `git status`, stage only relevant files, review `git diff --staged`, then commit and push after user confirmation.
+- Keep commits production-grade: one logical change per commit. If a task spans multiple concerns, split into 2–5 focused commits (or more if justified).
+- If asked to push, still confirm that commits are scoped correctly before pushing.
+- Version bumps are always a dedicated commit. Never combine a version bump with other changes, even if requested.
+- Version bump flow (separate commit only): update `docs/changelog.md` (move Unreleased), update `crates/teamtalk/Cargo.toml` version, sync references via `scripts/update-version.*`, run DoD checks, commit with a `chore:` message, tag `vX.Y.Z`, then push commits + tag.
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
