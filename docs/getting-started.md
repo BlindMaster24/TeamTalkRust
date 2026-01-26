@@ -97,3 +97,4 @@ Store the returned `EventSubscriptionId` to drop the handler later, or use
 `client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
 
 
+
