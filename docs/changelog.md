@@ -7,8 +7,6 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
-## 1.2.0
-
 ### Added
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - User/channel caches with auto-sync and refresh helpers.
