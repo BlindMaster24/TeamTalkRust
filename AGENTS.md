@@ -121,6 +121,12 @@
 ## Versioning and Changelog
 - Use semantic versioning for `crates/teamtalk/Cargo.toml`.
 - Record user-facing changes in `docs/changelog.md` under the version header.
+- Changelog scope: include only user-facing changes (API, behavior, new features, fixes, user docs). Exclude internal commit policy, linting rules, refactors, and test-only changes unless they impact users.
+- Changelog completeness: for any release, enumerate all user-facing changes since the last release baseline (or chosen baseline commit); do not shorten or omit relevant user-facing items.
+- Release checklist for changes since a baseline commit:
+  - List commits: `git log --oneline <baseline>..HEAD`.
+  - Summarize diff scope: `git diff --stat <baseline>..HEAD`.
+  - Draft changelog groups (Added/Changed/Fixed/Docs/Tests/Chore) using those results.
 - Update version references in `README.md`, `docs/getting-started.md`, and `docs/features.md` when the crate version changes.
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
 - Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/developer.md`.

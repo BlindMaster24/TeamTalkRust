@@ -13,6 +13,9 @@ public API with compatibility expectations for downstream users.
 - `MessageBuilder` for outgoing text messages.
 - `AudioDeviceProfile` with `apply_audio_profile`.
 - `ServerInfo` cache snapshot for properties and statistics.
+- Event bus subscriptions and filters.
+- Recording session management and rotation policies.
+- Synced user recording and audio streaming helpers.
 - Lua scripting event handlers and host function registration.
 
 ### Changed
@@ -23,6 +26,7 @@ public API with compatibility expectations for downstream users.
 - Avoid panics on non-UTF8 DLL paths during SDK init.
 - Synced user recording returns IO errors instead of panicking on file creation.
 - Registry operations no longer panic on poisoned mutexes.
+- Windows: gate HWND backend APIs to avoid cross-platform build failures.
 
 ## 1.1.0
 
