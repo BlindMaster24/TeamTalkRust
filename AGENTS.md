@@ -133,6 +133,19 @@
 - Every user-facing change must be added to `docs/changelog.md` under `Unreleased` in the same PR/commit set.
 - Version bumps must be in a dedicated commit, even if requested alongside other changes.
 - Release workflow: update `docs/changelog.md` by moving `Unreleased` items under the new version header, then update versions in `crates/teamtalk/Cargo.toml` and docs, run the Definition of Done checks, commit the bump separately, tag `vX.Y.Z`, and push commits + tag.
+ - Release commands (Windows PowerShell):
+   - Baseline diff: `git log --oneline <baseline>..HEAD` and `git diff --stat <baseline>..HEAD`
+   - Update changelog: edit `docs/changelog.md` (move Unreleased -> X.Y.Z).
+   - Version sync: `scripts\\update-version.ps1 X.Y.Z`
+   - Required checks:
+     - `cargo fmt --all`
+     - `cargo check --workspace --all-targets`
+     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+     - `cargo test --workspace --all-targets --all-features`
+     - `cargo doc --no-deps --all-features`
+     - `scripts\\check-doc-links.ps1`
+   - Commit release bump: `git add README.md docs/changelog.md docs/features.md docs/getting-started.md crates/teamtalk/Cargo.toml` then `git commit -m "chore: release X.Y.Z"`
+   - Tag and push: `git tag vX.Y.Z` then `git push` and `git push --tags`
 
 ## Testing Guidelines
 - Place tests under `crates/<crate>/tests` or `#[cfg(test)]` modules.
