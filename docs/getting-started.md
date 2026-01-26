@@ -9,7 +9,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "1.1.0"
+teamtalk = "1.2.0"
 ```
 
 For the latest development version from `main`:
@@ -95,6 +95,9 @@ loop {
 
 Store the returned `EventSubscriptionId` to drop the handler later, or use
 `client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
+
+
+
 
 
 

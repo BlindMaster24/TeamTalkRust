@@ -6,7 +6,7 @@ Enable features in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "1.1.0", features = ["dispatch", "async"] }
+teamtalk = { version = "1.2.0", features = ["dispatch", "async"] }
 ```
 
 ## Available Features
@@ -52,6 +52,9 @@ cargo build --no-default-features --features tls-rustls
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
+
+
+
 
 
 
