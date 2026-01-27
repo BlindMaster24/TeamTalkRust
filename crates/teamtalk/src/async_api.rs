@@ -3,6 +3,7 @@ use crate::client::{Client, Message};
 use crate::events::Event;
 use futures::stream::Stream;
 use futures::task::AtomicWaker;
+use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -59,6 +60,8 @@ pub struct AsyncClient {
     poll_timeout_ms: i32,
     wake_pending: Arc<AtomicBool>,
     waker: Arc<AtomicWaker>,
+    buffer: VecDeque<(Event, Message)>,
+    buffer_cap: usize,
     #[cfg(not(feature = "async-tokio"))]
     ticker: Option<JoinHandle<()>>,
     #[cfg(feature = "async-tokio")]
@@ -73,7 +76,7 @@ impl AsyncClient {
 
     /// Creates an async client with custom configuration.
     pub fn with_config(client: Client, config: AsyncConfig) -> Self {
-        let _ = config.buffer;
+        let buffer_cap = config.buffer.max(1);
         let stop = Arc::new(AtomicBool::new(false));
         let wake_pending = Arc::new(AtomicBool::new(false));
         let waker = Arc::new(AtomicWaker::new());
@@ -105,6 +108,8 @@ impl AsyncClient {
             poll_timeout_ms: config.poll_timeout_ms,
             wake_pending,
             waker,
+            buffer: VecDeque::with_capacity(buffer_cap),
+            buffer_cap,
             ticker,
         }
     }
@@ -150,8 +155,19 @@ impl Stream for AsyncClient {
         let Some(client) = this.client.as_ref() else {
             return Poll::Ready(None);
         };
+        if let Some(item) = this.buffer.pop_front() {
+            return Poll::Ready(Some(item));
+        }
         if let Some((event, message)) = client.poll(this.poll_timeout_ms) {
-            return Poll::Ready(Some((event, message)));
+            this.buffer.push_back((event, message));
+            while this.buffer.len() < this.buffer_cap {
+                let Some((event, message)) = client.poll(0) else {
+                    break;
+                };
+                this.buffer.push_back((event, message));
+            }
+            let item = this.buffer.pop_front();
+            return Poll::Ready(item);
         }
         this.waker.register(cx.waker());
         this.wake_pending.store(true, Ordering::Relaxed);
