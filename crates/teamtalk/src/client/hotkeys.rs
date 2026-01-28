@@ -6,12 +6,8 @@ impl Client {
     /// Registers a global hotkey.
     pub fn register_hotkey(&self, id: i32, vk_codes: &[i32]) -> bool {
         unsafe {
-            ffi::api().TT_HotKey_Register(
-                self.ptr.0,
-                id,
-                vk_codes.as_ptr(),
-                vk_codes.len() as i32,
-            ) == 1
+            ffi::api().TT_HotKey_Register(self.ptr.0, id, vk_codes.as_ptr(), vk_codes.len() as i32)
+                == 1
         }
     }
 
@@ -26,8 +22,11 @@ impl Client {
     }
 
     /// Installs a hotkey test hook (Windows only).
+    ///
+    /// # Safety
+    /// `hwnd` must be a valid window handle.
     #[cfg(windows)]
-    pub fn install_hotkey_test_hook(&self, hwnd: ffi::HWND, msg: u32) -> bool {
+    pub unsafe fn install_hotkey_test_hook(&self, hwnd: ffi::HWND, msg: u32) -> bool {
         unsafe { ffi::api().TT_HotKey_InstallTestHook(self.ptr.0, hwnd, msg) == 1 }
     }
 

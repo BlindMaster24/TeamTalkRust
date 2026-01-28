@@ -13,10 +13,11 @@ pub struct MediaFilePlayback {
 
 impl MediaFilePlayback {
     pub fn to_ffi(&self) -> ffi::MediaFilePlayback {
-        let mut raw = ffi::MediaFilePlayback::default();
-        raw.uOffsetMSec = self.offset_ms;
-        raw.bPaused = self.paused as i32;
-        raw
+        ffi::MediaFilePlayback {
+            uOffsetMSec: self.offset_ms,
+            bPaused: self.paused as i32,
+            ..Default::default()
+        }
     }
 }
 
@@ -79,11 +80,7 @@ impl Client {
     /// Initializes local media playback.
     pub fn init_local_playback(&self, file_path: &str, playback: &MediaFilePlayback) -> i32 {
         unsafe {
-            ffi::api().TT_InitLocalPlayback(
-                self.ptr.0,
-                file_path.tt().as_ptr(),
-                &playback.to_ffi(),
-            )
+            ffi::api().TT_InitLocalPlayback(self.ptr.0, file_path.tt().as_ptr(), &playback.to_ffi())
         }
     }
 
@@ -100,10 +97,7 @@ impl Client {
     }
 
     /// Acquires a media video frame for a user.
-    pub fn acquire_user_media_video_frame(
-        &self,
-        user_id: UserId,
-    ) -> Option<*mut ffi::VideoFrame> {
+    pub fn acquire_user_media_video_frame(&self, user_id: UserId) -> Option<*mut ffi::VideoFrame> {
         unsafe {
             let ptr = ffi::api().TT_AcquireUserMediaVideoFrame(self.ptr.0, user_id.0);
             if ptr.is_null() { None } else { Some(ptr) }
