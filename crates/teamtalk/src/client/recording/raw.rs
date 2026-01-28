@@ -12,7 +12,7 @@ impl Client {
         format: ffi::AudioFileFormat,
     ) -> bool {
         self.backend()
-            .start_recording_muxed(self.ptr, codec, file_path, format)
+            .start_recording_muxed(self.ptr.0, codec, file_path, format)
     }
 
     /// Starts recording the specified channel.
@@ -23,7 +23,7 @@ impl Client {
         format: ffi::AudioFileFormat,
     ) -> bool {
         self.backend()
-            .start_recording_channel(self.ptr, channel_id, file_path, format)
+            .start_recording_channel(self.ptr.0, channel_id, file_path, format)
     }
 
     /// Starts recording a set of stream types.
@@ -35,17 +35,18 @@ impl Client {
         format: ffi::AudioFileFormat,
     ) -> bool {
         self.backend()
-            .start_recording_streams(self.ptr, stream_types, codec, file_path, format)
+            .start_recording_streams(self.ptr.0, stream_types, codec, file_path, format)
     }
 
     /// Stops recording a muxed audio file.
     pub fn stop_recording(&self) -> bool {
-        self.backend().stop_recording(self.ptr)
+        self.backend().stop_recording(self.ptr.0)
     }
 
     /// Stops recording for a channel.
     pub fn stop_recording_channel(&self, channel_id: i32) -> bool {
-        self.backend().stop_recording_channel(self.ptr, channel_id)
+        self.backend()
+            .stop_recording_channel(self.ptr.0, channel_id)
     }
 }
 

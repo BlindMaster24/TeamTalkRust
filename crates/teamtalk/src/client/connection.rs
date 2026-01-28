@@ -147,41 +147,41 @@ impl<'a> From<&ConnectParams<'a>> for ConnectParamsOwned {
 impl Client {
     /// Enables automatic reconnection using the provided config.
     pub fn enable_auto_reconnect(&self, config: ReconnectConfig) {
-        let mut auto = self.auto_reconnect.borrow_mut();
+        let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = true;
         auto.handler = Some(ReconnectHandler::new(config));
     }
 
     /// Disables automatic reconnection.
     pub fn disable_auto_reconnect(&self) {
-        let mut auto = self.auto_reconnect.borrow_mut();
+        let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = false;
         auto.handler = None;
     }
 
     /// Returns true if automatic reconnection is enabled.
     pub fn auto_reconnect_enabled(&self) -> bool {
-        self.auto_reconnect.borrow().enabled
+        self.auto_reconnect.lock().unwrap().enabled
     }
 
     /// Stores connection parameters for automatic reconnection.
     pub fn set_reconnect_params(&self, params: ConnectParamsOwned) {
-        self.auto_reconnect.borrow_mut().params = Some(params);
+        self.auto_reconnect.lock().unwrap().params = Some(params);
     }
 
     /// Returns the stored reconnection parameters, if any.
     pub fn reconnect_params(&self) -> Option<ConnectParamsOwned> {
-        self.auto_reconnect.borrow().params.clone()
+        self.auto_reconnect.lock().unwrap().params.clone()
     }
 
     /// Returns the last remembered channel, if any.
     pub fn last_channel(&self) -> Option<crate::types::ChannelId> {
-        self.auto_reconnect.borrow().last_channel
+        self.auto_reconnect.lock().unwrap().last_channel
     }
 
     /// Clears the remembered channel.
     pub fn clear_last_channel(&self) {
-        self.auto_reconnect.borrow_mut().last_channel = None;
+        self.auto_reconnect.lock().unwrap().last_channel = None;
     }
 
     /// Connects and remembers the parameters for automatic reconnection.
@@ -219,7 +219,7 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         let ok = unsafe {
             ffi::api().TT_Connect(
-                self.ptr,
+                self.ptr.0,
                 host.tt().as_ptr(),
                 tcp,
                 udp,
@@ -243,13 +243,13 @@ impl Client {
 
     /// Returns true when the client is connected.
     pub fn is_connected(&self) -> bool {
-        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
+        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr.0) };
         (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
     }
 
     /// Returns true when the client is attempting to connect.
     pub fn is_connecting(&self) -> bool {
-        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr) };
+        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr.0) };
         (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
     }
 
@@ -275,7 +275,7 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         let ok = unsafe {
             ffi::api().TT_ConnectSysID(
-                self.ptr,
+                self.ptr.0,
                 host.tt().as_ptr(),
                 tcp,
                 udp,
@@ -304,7 +304,7 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         let ok = unsafe {
             ffi::api().TT_ConnectEx(
-                self.ptr,
+                self.ptr.0,
                 host.tt().as_ptr(),
                 tcp,
                 udp,
@@ -324,7 +324,7 @@ impl Client {
 
     /// Disconnects from the server.
     pub fn disconnect(&self) -> Result<(), crate::events::Error> {
-        if unsafe { ffi::api().TT_Disconnect(self.ptr) == 1 } {
+        if unsafe { ffi::api().TT_Disconnect(self.ptr.0) == 1 } {
             self.set_connection_state(ConnectionState::Disconnected);
             Ok(())
         } else {
@@ -340,7 +340,7 @@ impl Client {
         &self,
         keep_alive: &crate::types::ClientKeepAlive,
     ) -> Result<(), crate::events::Error> {
-        if unsafe { ffi::api().TT_SetClientKeepAlive(self.ptr, &keep_alive.to_ffi()) == 1 } {
+        if unsafe { ffi::api().TT_SetClientKeepAlive(self.ptr.0, &keep_alive.to_ffi()) == 1 } {
             Ok(())
         } else {
             Err(crate::events::Error::CommandFailed {
@@ -353,7 +353,7 @@ impl Client {
     /// Returns client keep-alive parameters.
     pub fn get_client_keep_alive(&self) -> Option<crate::types::ClientKeepAlive> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ClientKeepAlive>() };
-        if unsafe { ffi::api().TT_GetClientKeepAlive(self.ptr, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetClientKeepAlive(self.ptr.0, &mut raw) } == 1 {
             Some(crate::types::ClientKeepAlive::from(raw))
         } else {
             None

@@ -17,6 +17,10 @@ public API with compatibility expectations for downstream users.
 - Manager helpers: `ClientManager::{wait_cmd, wait_cmd_ok, wait_cmd_any}` and command id tracking in events.
 - SDK version pin/override via [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt) and `TEAMTALK_SDK_VERSION`.
 - `async-tokio` feature for Tokio wake integration in the async wrapper.
+- `Client::split()` method returning `ClientEvents` (polling) and `ClientCommands` (execution) for concurrent usage.
+
+### Changed
+- `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
