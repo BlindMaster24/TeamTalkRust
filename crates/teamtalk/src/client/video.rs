@@ -45,28 +45,28 @@ impl Client {
     pub fn init_video_capture_device(&self, device_id: &str, format: &VideoFormat) -> bool {
         let id = crate::utils::ToTT::tt(device_id);
         let raw_fmt = format.to_ffi();
-        unsafe { ffi::api().TT_InitVideoCaptureDevice(self.ptr, id.as_ptr(), &raw_fmt) == 1 }
+        unsafe { ffi::api().TT_InitVideoCaptureDevice(self.ptr.0, id.as_ptr(), &raw_fmt) == 1 }
     }
 
     /// Closes the active video capture device.
     pub fn close_video_capture_device(&self) -> bool {
-        unsafe { ffi::api().TT_CloseVideoCaptureDevice(self.ptr) == 1 }
+        unsafe { ffi::api().TT_CloseVideoCaptureDevice(self.ptr.0) == 1 }
     }
 
     /// Starts video transmission.
     pub fn start_video_transmission(&self, codec: &VideoCodec) -> bool {
-        unsafe { ffi::api().TT_StartVideoCaptureTransmission(self.ptr, &codec.to_ffi()) == 1 }
+        unsafe { ffi::api().TT_StartVideoCaptureTransmission(self.ptr.0, &codec.to_ffi()) == 1 }
     }
 
     /// Stops video transmission.
     pub fn stop_video_transmission(&self) -> bool {
-        unsafe { ffi::api().TT_StopVideoCaptureTransmission(self.ptr) == 1 }
+        unsafe { ffi::api().TT_StopVideoCaptureTransmission(self.ptr.0) == 1 }
     }
 
     /// Acquires the latest video frame for a user.
     pub fn acquire_video_frame(&self, user_id: UserId) -> Option<*mut ffi::VideoFrame> {
         unsafe {
-            let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr, user_id.0);
+            let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr.0, user_id.0);
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }
@@ -80,6 +80,6 @@ impl Client {
         if frame.is_null() {
             return false;
         }
-        unsafe { ffi::api().TT_ReleaseUserVideoCaptureFrame(self.ptr, frame) == 1 }
+        unsafe { ffi::api().TT_ReleaseUserVideoCaptureFrame(self.ptr.0, frame) == 1 }
     }
 }
