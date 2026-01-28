@@ -16,16 +16,11 @@ impl Client {
 
     /// Sends keyboard or mouse input to the desktop sharer.
     pub fn send_desktop_input(&self, user_id: UserId, input: &ffi::DesktopInput) -> bool {
-        unsafe {
-            ffi::api().TT_SendDesktopInput(self.ptr.0, user_id.0, input, 1) == 1
-        }
+        unsafe { ffi::api().TT_SendDesktopInput(self.ptr.0, user_id.0, input, 1) == 1 }
     }
 
     /// Acquires a desktop window update bitmap.
-    pub fn acquire_user_desktop_window(
-        &self,
-        user_id: UserId,
-    ) -> Option<*mut ffi::DesktopWindow> {
+    pub fn acquire_user_desktop_window(&self, user_id: UserId) -> Option<*mut ffi::DesktopWindow> {
         unsafe {
             let ptr = ffi::api().TT_AcquireUserDesktopWindow(self.ptr.0, user_id.0);
             if ptr.is_null() { None } else { Some(ptr) }
@@ -37,10 +32,7 @@ impl Client {
     ///
     /// # Safety
     /// `window` must be a valid pointer returned by `acquire_user_desktop_window`.
-    pub unsafe fn release_user_desktop_window(
-        &self,
-        window: *mut ffi::DesktopWindow,
-    ) -> bool {
+    pub unsafe fn release_user_desktop_window(&self, window: *mut ffi::DesktopWindow) -> bool {
         if window.is_null() {
             return false;
         }

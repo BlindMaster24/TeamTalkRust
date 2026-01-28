@@ -3,13 +3,13 @@ use crate::events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "scripts")]
 use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 pub use teamtalk_sys as ffi;
 
 use super::bus;
-use super::hooks;
 use super::cache;
+use super::hooks;
 
 static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -63,7 +63,8 @@ impl Client {
     /// Creates a new polling client and loads the SDK.
     pub fn new() -> Result<Self> {
         crate::init()?;
-        let backend: Arc<dyn super::backend::TeamTalkBackend> = Arc::new(super::backend::FfiBackend);
+        let backend: Arc<dyn super::backend::TeamTalkBackend> =
+            Arc::new(super::backend::FfiBackend);
         let ptr = backend.init_poll();
         if ptr.is_null() {
             Err(Error::InitFailed)
@@ -99,7 +100,8 @@ impl Client {
     /// The caller must ensure `hwnd` and `msg` are valid for the target window.
     pub unsafe fn with_hwnd(hwnd: ffi::HWND, msg: u32) -> Result<Self> {
         crate::init()?;
-        let backend: Arc<dyn super::backend::TeamTalkBackend> = Arc::new(super::backend::FfiBackend);
+        let backend: Arc<dyn super::backend::TeamTalkBackend> =
+            Arc::new(super::backend::FfiBackend);
         let ptr = backend.init_hwnd(hwnd, msg);
         if ptr.is_null() {
             Err(Error::InitFailed)
@@ -308,13 +310,13 @@ impl Client {
                 std::mem::zeroed::<ffi::TTMessage>()
             });
             drop(auto);
-            
+
             self.invoke_hooks(before_event, &msg);
-            
+
             let mut auto = self.auto_reconnect.lock().unwrap();
-             if let Some(handler) = auto.handler.as_mut() {
-                 handler.record_attempt();
-             }
+            if let Some(handler) = auto.handler.as_mut() {
+                handler.record_attempt();
+            }
             drop(auto);
 
             self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
@@ -327,7 +329,7 @@ impl Client {
             });
             drop(auto);
             self.invoke_hooks(failed_event, &msg);
-            
+
             let mut auto = self.auto_reconnect.lock().unwrap();
             auto.enabled = false;
             auto.handler = None;

@@ -159,7 +159,8 @@ impl Client {
         } else {
             UserStatus::default().to_bits()
         };
-        self.backend().do_change_status(self.ptr.0, bits as i32, msg)
+        self.backend()
+            .do_change_status(self.ptr.0, bits as i32, msg)
     }
 
     /// Kicks a user from a channel.

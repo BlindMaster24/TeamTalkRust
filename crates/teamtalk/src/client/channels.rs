@@ -1,8 +1,6 @@
 //! Channel management APIs.
 use super::Client;
-use crate::types::{
-    Channel, ChannelId, UserId,
-};
+use crate::types::{Channel, ChannelId, UserId};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
@@ -115,10 +113,19 @@ impl Client {
     pub fn get_channel_users(&self, channel_id: ChannelId) -> Vec<crate::types::User> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetChannelUsers(self.ptr.0, channel_id.0, std::ptr::null_mut(), &mut count);
+            ffi::api().TT_GetChannelUsers(
+                self.ptr.0,
+                channel_id.0,
+                std::ptr::null_mut(),
+                &mut count,
+            );
             let mut users = vec![std::mem::zeroed::<ffi::User>(); count as usize];
-            if ffi::api().TT_GetChannelUsers(self.ptr.0, channel_id.0, users.as_mut_ptr(), &mut count)
-                == 1
+            if ffi::api().TT_GetChannelUsers(
+                self.ptr.0,
+                channel_id.0,
+                users.as_mut_ptr(),
+                &mut count,
+            ) == 1
             {
                 users.into_iter().map(crate::types::User::from).collect()
             } else {

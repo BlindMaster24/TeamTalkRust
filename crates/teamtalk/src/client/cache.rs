@@ -73,12 +73,23 @@ impl Client {
 
     /// Returns a cached channel, if present.
     pub fn cached_channel(&self, channel_id: ChannelId) -> Option<Channel> {
-        self.cache.lock().unwrap().channels.get(&channel_id).cloned()
+        self.cache
+            .lock()
+            .unwrap()
+            .channels
+            .get(&channel_id)
+            .cloned()
     }
 
     /// Returns all cached channels.
     pub fn cached_channels(&self) -> Vec<Channel> {
-        self.cache.lock().unwrap().channels.values().cloned().collect()
+        self.cache
+            .lock()
+            .unwrap()
+            .channels
+            .values()
+            .cloned()
+            .collect()
     }
 
     /// Returns the last cached server properties and statistics.
