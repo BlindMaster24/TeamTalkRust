@@ -30,9 +30,8 @@ pub use client::recording::{
 };
 pub use client::users::LoginParams;
 pub use client::{
-    Client, ClientCommands, ClientEvents, ClientEvent, ClientHealth, ClientHooks, ClientInfo,
-    ClientManager, ClientRegistry, EventContext, EventSubscriptionId, Message, ReconnectConfig,
-    ServerInfo,
+    Client, ClientEvent, ClientHealth, ClientHooks, ClientInfo, ClientManager, ClientRegistry,
+    EventContext, EventSubscriptionId, Message, ReconnectConfig, ServerInfo,
 };
 #[cfg(feature = "dispatch")]
 pub use dispatch::{

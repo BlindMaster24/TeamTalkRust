@@ -320,8 +320,7 @@ impl<'a> SubscriptionBuilder<'a> {
         };
         self.client
             .bus
-            .lock()
-            .unwrap()
+            .borrow_mut()
             .subscribe(config, Box::new(handler))
     }
 }

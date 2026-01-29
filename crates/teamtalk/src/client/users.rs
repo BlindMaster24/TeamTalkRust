@@ -45,7 +45,7 @@ impl Client {
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
         let cmd_id =
             self.backend()
-                .do_login_ex(self.ptr.0, nickname, username, password, client_name);
+                .do_login_ex(self.ptr, nickname, username, password, client_name);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::LoggingIn);
         }
@@ -54,12 +54,12 @@ impl Client {
 
     /// Stores login parameters for automatic login.
     pub fn set_login_params(&self, params: LoginParams) {
-        self.auto_reconnect.lock().unwrap().login = Some(params);
+        self.auto_reconnect.borrow_mut().login = Some(params);
     }
 
     /// Returns stored login parameters, if any.
     pub fn login_params(&self) -> Option<LoginParams> {
-        self.auto_reconnect.lock().unwrap().login.clone()
+        self.auto_reconnect.borrow().login.clone()
     }
 
     /// Logs in using stored login parameters.
@@ -101,7 +101,7 @@ impl Client {
 
     /// Logs out from the server.
     pub fn logout(&self) -> i32 {
-        let cmd_id = self.backend().do_logout(self.ptr.0);
+        let cmd_id = self.backend().do_logout(self.ptr);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::Connected);
         }
@@ -110,13 +110,13 @@ impl Client {
 
     /// Returns the current user id.
     pub fn my_id(&self) -> UserId {
-        UserId(self.backend().get_my_user_id(self.ptr.0))
+        UserId(self.backend().get_my_user_id(self.ptr))
     }
 
     /// Returns the account of the current user.
     pub fn get_my_user_account(&self) -> Option<UserAccount> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserAccount>() };
-        if unsafe { ffi::api().TT_GetMyUserAccount(self.ptr.0, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetMyUserAccount(self.ptr, &mut raw) } == 1 {
             Some(UserAccount::from(raw))
         } else {
             None
@@ -125,28 +125,28 @@ impl Client {
 
     /// Returns the user type of the current user.
     pub fn get_my_user_type(&self) -> u32 {
-        unsafe { ffi::api().TT_GetMyUserType(self.ptr.0) }
+        unsafe { ffi::api().TT_GetMyUserType(self.ptr) }
     }
 
     /// Returns the user rights of the current user.
     pub fn get_my_user_rights(&self) -> u32 {
-        unsafe { ffi::api().TT_GetMyUserRights(self.ptr.0) }
+        unsafe { ffi::api().TT_GetMyUserRights(self.ptr) }
     }
 
     /// Requests user data for the current user.
     pub fn get_my_user_data(&self) -> i32 {
-        unsafe { ffi::api().TT_GetMyUserData(self.ptr.0) }
+        unsafe { ffi::api().TT_GetMyUserData(self.ptr) }
     }
 
     /// Changes the current nickname.
     pub fn change_nickname(&self, nick: &str) -> i32 {
-        unsafe { ffi::api().TT_DoChangeNickname(self.ptr.0, nick.tt().as_ptr()) }
+        unsafe { ffi::api().TT_DoChangeNickname(self.ptr, nick.tt().as_ptr()) }
     }
 
     /// Sets the status and status message.
     pub fn set_status(&self, status: UserStatus, msg: &str) -> i32 {
         unsafe {
-            ffi::api().TT_DoChangeStatus(self.ptr.0, status.to_bits() as i32, msg.tt().as_ptr())
+            ffi::api().TT_DoChangeStatus(self.ptr, status.to_bits() as i32, msg.tt().as_ptr())
         }
     }
 
@@ -154,32 +154,32 @@ impl Client {
     pub fn set_status_message(&self, msg: &str) -> i32 {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
-        let bits = if self.backend().get_user(self.ptr.0, my_id.0, &mut user) {
+        let bits = if self.backend().get_user(self.ptr, my_id.0, &mut user) {
             user.nStatusMode as u32
         } else {
             UserStatus::default().to_bits()
         };
-        self.backend().do_change_status(self.ptr.0, bits as i32, msg)
+        self.backend().do_change_status(self.ptr, bits as i32, msg)
     }
 
     /// Kicks a user from a channel.
     pub fn kick_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
-        unsafe { ffi::api().TT_DoKickUser(self.ptr.0, user_id.0, channel_id.0) }
+        unsafe { ffi::api().TT_DoKickUser(self.ptr, user_id.0, channel_id.0) }
     }
 
     /// Bans a user from a channel.
     pub fn ban_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
-        unsafe { ffi::api().TT_DoBanUser(self.ptr.0, user_id.0, channel_id.0) }
+        unsafe { ffi::api().TT_DoBanUser(self.ptr, user_id.0, channel_id.0) }
     }
 
     /// Bans a user with custom ban types.
     pub fn ban_user_ex(&self, user_id: UserId, ban_types: u32) -> i32 {
-        unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.0, ban_types) }
+        unsafe { ffi::api().TT_DoBanUserEx(self.ptr, user_id.0, ban_types) }
     }
 
     /// Removes a ban by IP address.
     pub fn unban_user(&self, ip: &str, channel_id: ChannelId) -> i32 {
-        unsafe { ffi::api().TT_DoUnBanUser(self.ptr.0, ip.tt().as_ptr(), channel_id.0) }
+        unsafe { ffi::api().TT_DoUnBanUser(self.ptr, ip.tt().as_ptr(), channel_id.0) }
     }
 
     /// Sends a text message to a target.
@@ -202,7 +202,7 @@ impl Client {
         unsafe {
             let len = t.len().min(511);
             std::ptr::copy_nonoverlapping(t.as_ptr(), msg.szMessage.as_mut_ptr(), len);
-            self.backend().do_text_message(self.ptr.0, &msg)
+            self.backend().do_text_message(self.ptr, &msg)
         }
     }
 
@@ -223,18 +223,18 @@ impl Client {
 
     /// Adds a user to the ban list.
     pub fn ban(&self, banned_user: &crate::types::BannedUser) -> i32 {
-        unsafe { ffi::api().TT_DoBan(self.ptr.0, &banned_user.to_ffi()) }
+        unsafe { ffi::api().TT_DoBan(self.ptr, &banned_user.to_ffi()) }
     }
 
     /// Removes a user from the ban list.
     pub fn unban_ex(&self, banned_user: &crate::types::BannedUser) -> i32 {
-        unsafe { ffi::api().TT_DoUnBanUserEx(self.ptr.0, &banned_user.to_ffi()) }
+        unsafe { ffi::api().TT_DoUnBanUserEx(self.ptr, &banned_user.to_ffi()) }
     }
 
     /// Returns a user by id.
     pub fn get_user(&self, user_id: UserId) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
-        if unsafe { ffi::api().TT_GetUser(self.ptr.0, user_id.0, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetUser(self.ptr, user_id.0, &mut raw) } == 1 {
             Some(User::from(raw))
         } else {
             None
@@ -244,7 +244,7 @@ impl Client {
     /// Returns a user by username.
     pub fn get_user_by_username(&self, username: &str) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
-        if unsafe { ffi::api().TT_GetUserByUsername(self.ptr.0, username.tt().as_ptr(), &mut raw) }
+        if unsafe { ffi::api().TT_GetUserByUsername(self.ptr, username.tt().as_ptr(), &mut raw) }
             == 1
         {
             Some(User::from(raw))
@@ -256,7 +256,7 @@ impl Client {
     /// Returns user statistics by id.
     pub fn get_user_statistics(&self, user_id: UserId) -> Option<UserStatistics> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserStatistics>() };
-        if unsafe { ffi::api().TT_GetUserStatistics(self.ptr.0, user_id.0, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetUserStatistics(self.ptr, user_id.0, &mut raw) } == 1 {
             Some(UserStatistics::from(raw))
         } else {
             None
@@ -265,37 +265,37 @@ impl Client {
 
     /// Requests a list of user accounts.
     pub fn list_user_accounts(&self, index: i32, count: i32) -> i32 {
-        unsafe { ffi::api().TT_DoListUserAccounts(self.ptr.0, index, count) }
+        unsafe { ffi::api().TT_DoListUserAccounts(self.ptr, index, count) }
     }
 
     /// Creates a user account.
     pub fn create_user_account(&self, account: &UserAccount) -> i32 {
-        unsafe { ffi::api().TT_DoNewUserAccount(self.ptr.0, &account.to_ffi()) }
+        unsafe { ffi::api().TT_DoNewUserAccount(self.ptr, &account.to_ffi()) }
     }
 
     /// Deletes a user account by username.
     pub fn delete_user_account(&self, username: &str) -> i32 {
-        unsafe { ffi::api().TT_DoDeleteUserAccount(self.ptr.0, username.tt().as_ptr()) }
+        unsafe { ffi::api().TT_DoDeleteUserAccount(self.ptr, username.tt().as_ptr()) }
     }
 
     /// Subscribes to a user's streams.
     pub fn subscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
-        unsafe { ffi::api().TT_DoSubscribe(self.ptr.0, user_id.0, mask.raw()) }
+        unsafe { ffi::api().TT_DoSubscribe(self.ptr, user_id.0, mask.raw()) }
     }
 
     /// Unsubscribes from a user's streams.
     pub fn unsubscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
-        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, mask.raw()) }
+        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, user_id.0, mask.raw()) }
     }
 
     /// Unsubscribes from all streams for a user.
     pub fn unsubscribe_all_from_user(&self, user_id: UserId) -> i32 {
-        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, Subscriptions::ALL) }
+        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, user_id.0, Subscriptions::ALL) }
     }
 
     /// Unsubscribes from all streams for all users.
     pub fn unsubscribe_all(&self) -> i32 {
-        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, 0, Subscriptions::ALL) }
+        unsafe { ffi::api().TT_DoUnsubscribe(self.ptr, 0, Subscriptions::ALL) }
     }
 
     pub fn channel_op_ex(
@@ -307,7 +307,7 @@ impl Client {
     ) -> i32 {
         unsafe {
             ffi::api().TT_DoChannelOpEx(
-                self.ptr.0,
+                self.ptr,
                 user_id.0,
                 channel_id.0,
                 password.tt().as_ptr(),
@@ -320,7 +320,7 @@ impl Client {
     pub fn my_subscriptions(&self) -> Subscriptions {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
-        if unsafe { ffi::api().TT_GetUser(self.ptr.0, my_id.0, &mut user) } == 1 {
+        if unsafe { ffi::api().TT_GetUser(self.ptr, my_id.0, &mut user) } == 1 {
             Subscriptions::from_raw(user.uLocalSubscriptions)
         } else {
             Subscriptions::new()

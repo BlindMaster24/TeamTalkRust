@@ -1,5 +1,4 @@
-//! User-centric media storage and recording APIs.
-use crate::Client;
+use super::super::Client;
 use crate::types::UserId;
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
@@ -51,7 +50,7 @@ impl Client {
     ) -> bool {
         unsafe {
             ffi::api().TT_SetUserMediaStorageDir(
-                self.ptr.0,
+                self.ptr,
                 user_id.0,
                 folder.tt().as_ptr(),
                 file_vars.tt().as_ptr(),
@@ -71,7 +70,7 @@ impl Client {
     ) -> bool {
         unsafe {
             ffi::api().TT_SetUserMediaStorageDirEx(
-                self.ptr.0,
+                self.ptr,
                 user_id.0,
                 folder.tt().as_ptr(),
                 file_vars.tt().as_ptr(),

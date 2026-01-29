@@ -9,10 +9,6 @@ public API with compatibility expectations for downstream users.
 
 ### Added
 - `async-tokio` feature for Tokio wake integration in the async wrapper.
-- `Client::split()` method returning `ClientEvents` (polling) and `ClientCommands` (execution) for concurrent usage.
-
-### Changed
-- `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
 
 ## 1.2.0
 
