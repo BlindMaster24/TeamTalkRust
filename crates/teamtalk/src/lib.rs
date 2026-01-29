@@ -30,7 +30,7 @@ pub use client::recording::{
 };
 pub use client::users::LoginParams;
 pub use client::{
-    Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
+    Client, ClientCommands, ClientEvents, ClientEvent, ClientHealth, ClientHooks, ClientInfo,
     ClientManager, ClientRegistry, EventContext, EventSubscriptionId, Message, ReconnectConfig,
     ServerInfo,
 };

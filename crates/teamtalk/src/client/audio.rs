@@ -195,9 +195,7 @@ impl Client {
 
     /// Enables or disables voice transmission.
     pub fn enable_voice_transmission(&self, enable: bool) -> bool {
-        unsafe {
-            ffi::api().TT_EnableVoiceTransmission(self.ptr.0, if enable { 1 } else { 0 }) == 1
-        }
+        unsafe { ffi::api().TT_EnableVoiceTransmission(self.ptr.0, if enable { 1 } else { 0 }) == 1 }
     }
 
     /// Enables or disables voice activation.
@@ -257,9 +255,7 @@ impl Client {
 
     /// Enables or disables 3D sound positioning.
     pub fn enable_3d_sound(&self, enable: bool) -> bool {
-        unsafe {
-            ffi::api().TT_Enable3DSoundPositioning(self.ptr.0, if enable { 1 } else { 0 }) == 1
-        }
+        unsafe { ffi::api().TT_Enable3DSoundPositioning(self.ptr.0, if enable { 1 } else { 0 }) == 1 }
     }
 
     /// Automatically positions users in 3D space.
@@ -288,13 +284,8 @@ impl Client {
         right: bool,
     ) -> bool {
         unsafe {
-            ffi::api().TT_SetUserStereo(
-                self.ptr.0,
-                user_id.0,
-                stream_type,
-                left as i32,
-                right as i32,
-            ) == 1
+            ffi::api().TT_SetUserStereo(self.ptr.0, user_id.0, stream_type, left as i32, right as i32)
+                == 1
         }
     }
 

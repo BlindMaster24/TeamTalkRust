@@ -45,8 +45,7 @@ impl Client {
 
     /// Stops recording for a channel.
     pub fn stop_recording_channel(&self, channel_id: i32) -> bool {
-        self.backend()
-            .stop_recording_channel(self.ptr.0, channel_id)
+        self.backend().stop_recording_channel(self.ptr.0, channel_id)
     }
 }
 

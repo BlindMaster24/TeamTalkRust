@@ -9,19 +9,10 @@ impl Client {
     pub fn get_channel_files(&self, channel_id: ChannelId) -> Vec<RemoteFile> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetChannelFiles(
-                self.ptr.0,
-                channel_id.0,
-                std::ptr::null_mut(),
-                &mut count,
-            );
+            ffi::api().TT_GetChannelFiles(self.ptr.0, channel_id.0, std::ptr::null_mut(), &mut count);
             let mut files = vec![std::mem::zeroed::<ffi::RemoteFile>(); count as usize];
-            if ffi::api().TT_GetChannelFiles(
-                self.ptr.0,
-                channel_id.0,
-                files.as_mut_ptr(),
-                &mut count,
-            ) == 1
+            if ffi::api().TT_GetChannelFiles(self.ptr.0, channel_id.0, files.as_mut_ptr(), &mut count)
+                == 1
             {
                 files.into_iter().map(RemoteFile::from).collect()
             } else {
