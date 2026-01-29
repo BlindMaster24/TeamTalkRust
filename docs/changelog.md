@@ -7,9 +7,6 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
-### Added
-- `async-tokio` feature for Tokio wake integration in the async wrapper.
-
 ## 1.2.0
 
 ### Added

@@ -13,7 +13,6 @@ teamtalk = { version = "1.2.0", features = ["dispatch", "async"] }
 
 - `dispatch`: event dispatcher with handler routing and reconnect support.
 - `async`: async wrapper without a worker thread (single-threaded polling).
-- `async-tokio`: Tokio wake integration for the async wrapper (requires a Tokio runtime).
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
@@ -53,6 +52,7 @@ cargo build --no-default-features --features tls-rustls
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
+
 
 
 

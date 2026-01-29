@@ -2,21 +2,13 @@
 use crate::client::{Client, Message};
 use crate::events::Event;
 use futures::stream::Stream;
-use futures::task::AtomicWaker;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll};
+use std::thread;
 use std::time::Duration;
 
-#[cfg(not(feature = "async-tokio"))]
-use std::thread::{self, JoinHandle};
-
-#[cfg(feature = "async-tokio")]
-use tokio::task::JoinHandle;
-
-#[cfg(feature = "async-tokio")]
-use tokio::time;
 /// Configuration for the async polling loop.
 #[derive(Clone, Copy)]
 pub struct AsyncConfig {
@@ -58,11 +50,6 @@ pub struct AsyncClient {
     stop: Arc<AtomicBool>,
     poll_timeout_ms: i32,
     wake_pending: Arc<AtomicBool>,
-    waker: Arc<AtomicWaker>,
-    #[cfg(not(feature = "async-tokio"))]
-    ticker: Option<JoinHandle<()>>,
-    #[cfg(feature = "async-tokio")]
-    ticker: Option<JoinHandle<()>>,
 }
 
 impl AsyncClient {
@@ -75,37 +62,11 @@ impl AsyncClient {
     pub fn with_config(client: Client, config: AsyncConfig) -> Self {
         let _ = config.buffer;
         let stop = Arc::new(AtomicBool::new(false));
-        let wake_pending = Arc::new(AtomicBool::new(false));
-        let waker = Arc::new(AtomicWaker::new());
-        let delay = Duration::from_millis(config.poll_timeout_ms.max(1) as u64);
-        let ticker_stop = Arc::clone(&stop);
-        let ticker_pending = Arc::clone(&wake_pending);
-        let ticker_waker = Arc::clone(&waker);
-        #[cfg(feature = "async-tokio")]
-        let ticker = Some(tokio::spawn(async move {
-            while !ticker_stop.load(Ordering::Relaxed) {
-                time::sleep(delay).await;
-                if ticker_pending.swap(false, Ordering::Relaxed) {
-                    ticker_waker.wake();
-                }
-            }
-        }));
-        #[cfg(not(feature = "async-tokio"))]
-        let ticker = Some(thread::spawn(move || {
-            while !ticker_stop.load(Ordering::Relaxed) {
-                thread::sleep(delay);
-                if ticker_pending.swap(false, Ordering::Relaxed) {
-                    ticker_waker.wake();
-                }
-            }
-        }));
         Self {
             client: Some(client),
             stop,
             poll_timeout_ms: config.poll_timeout_ms,
-            wake_pending,
-            waker,
-            ticker,
+            wake_pending: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -153,8 +114,16 @@ impl Stream for AsyncClient {
         if let Some((event, message)) = client.poll(this.poll_timeout_ms) {
             return Poll::Ready(Some((event, message)));
         }
-        this.waker.register(cx.waker());
-        this.wake_pending.store(true, Ordering::Relaxed);
+        if !this.wake_pending.swap(true, Ordering::Relaxed) {
+            let waker = cx.waker().clone();
+            let pending = Arc::clone(&this.wake_pending);
+            let delay = Duration::from_millis(this.poll_timeout_ms.max(1) as u64);
+            thread::spawn(move || {
+                thread::sleep(delay);
+                pending.store(false, Ordering::Relaxed);
+                waker.wake();
+            });
+        }
         Poll::Pending
     }
 }
@@ -162,12 +131,6 @@ impl Stream for AsyncClient {
 impl Drop for AsyncClient {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
-        if let Some(ticker) = self.ticker.take() {
-            #[cfg(feature = "async-tokio")]
-            ticker.abort();
-            #[cfg(not(feature = "async-tokio"))]
-            let _ = ticker.join();
-        }
     }
 }
 
