@@ -15,6 +15,7 @@ public API with compatibility expectations for downstream users.
 - `poll_until_event` helper for event waits.
 - Operator convenience helpers with and without operator password.
 - Text mute helper using text subscriptions.
+- `ClientManager::wait_cmd` helper and command ids in manager events.
 
 ## 1.2.0
 

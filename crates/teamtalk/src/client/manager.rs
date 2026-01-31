@@ -1,5 +1,5 @@
 use crate::events::Event;
-use crate::types::ClientId;
+use crate::types::{ClientId, CommandId};
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::time::{Duration, Instant, SystemTime};
@@ -9,6 +9,7 @@ pub struct ClientEvent {
     pub client_id: ClientId,
     pub label: Option<String>,
     pub event: Event,
+    pub command_id: Option<CommandId>,
     pub at: SystemTime,
 }
 
@@ -99,11 +100,18 @@ impl ClientManager {
         for _ in 0..queue_len {
             if let Some(idx) = self.queue.pop_front() {
                 if let Some(client) = self.clients.get(idx) {
-                    if let Some((event, _)) = client.poll(self.poll_timeout_ms) {
+                    if let Some((event, msg)) = client.poll(self.poll_timeout_ms) {
+                        let command_id = match event {
+                            Event::CmdProcessing | Event::CmdError | Event::CmdSuccess => {
+                                Some(CommandId(msg.source()))
+                            }
+                            _ => None,
+                        };
                         let evt = ClientEvent {
                             client_id: client.id(),
                             label: client.label(),
                             event,
+                            command_id,
                             at: now,
                         };
                         let _ = self.tx.send(evt.clone());
@@ -135,4 +143,43 @@ impl ClientManager {
             }
         }
     }
+
+    pub fn wait_cmd(
+        &mut self,
+        client_id: ClientId,
+        cmd_id: CommandId,
+        timeout_ms: i32,
+    ) -> Result<Event, WaitError> {
+        let deadline = if timeout_ms < 0 {
+            None
+        } else {
+            Some(Instant::now() + Duration::from_millis(timeout_ms as u64))
+        };
+        loop {
+            self.run_once();
+            while let Ok(evt) = self.rx.try_recv() {
+                if evt.client_id == client_id
+                    && evt.command_id == Some(cmd_id)
+                    && matches!(evt.event, Event::CmdSuccess | Event::CmdError)
+                {
+                    return match evt.event {
+                        Event::CmdSuccess => Ok(evt.event),
+                        Event::CmdError => Err(WaitError::CommandFailed),
+                        _ => unreachable!(),
+                    };
+                }
+            }
+            if let Some(deadline) = deadline
+                && Instant::now() >= deadline
+            {
+                return Err(WaitError::Timeout);
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WaitError {
+    Timeout,
+    CommandFailed,
 }
