@@ -1224,11 +1224,7 @@ impl From<ffi::TextMessage> for TextMessage {
 }
 
 impl TextMessage {
-    pub fn send_to_user(
-        client: &crate::client::Client,
-        user_id: UserId,
-        text: &str,
-    ) -> CommandId {
+    pub fn send_to_user(client: &crate::client::Client, user_id: UserId, text: &str) -> CommandId {
         MessageBuilder::new(user_id).text(text).send_cmd(client)
     }
 
