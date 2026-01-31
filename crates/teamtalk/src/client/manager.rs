@@ -176,10 +176,101 @@ impl ClientManager {
             }
         }
     }
+
+    pub fn wait_cmd_ok(
+        &mut self,
+        client_id: ClientId,
+        cmd_id: CommandId,
+        timeout_ms: i32,
+    ) -> Result<(), WaitError> {
+        self.wait_cmd(client_id, cmd_id, timeout_ms).map(|_| ())
+    }
+
+    pub fn wait_cmd_any(
+        &mut self,
+        cmd_id: CommandId,
+        timeout_ms: i32,
+    ) -> Result<ClientId, WaitError> {
+        let deadline = if timeout_ms < 0 {
+            None
+        } else {
+            Some(Instant::now() + Duration::from_millis(timeout_ms as u64))
+        };
+        loop {
+            self.run_once();
+            while let Ok(evt) = self.rx.try_recv() {
+                if evt.command_id == Some(cmd_id)
+                    && matches!(evt.event, Event::CmdSuccess | Event::CmdError)
+                {
+                    return match evt.event {
+                        Event::CmdSuccess => Ok(evt.client_id),
+                        Event::CmdError => Err(WaitError::CommandFailed),
+                        _ => unreachable!(),
+                    };
+                }
+            }
+            if let Some(deadline) = deadline
+                && Instant::now() >= deadline
+            {
+                return Err(WaitError::Timeout);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WaitError {
     Timeout,
     CommandFailed,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ClientEvent, ClientManager, WaitError};
+    use crate::events::Event;
+    use crate::types::{ClientId, CommandId};
+    use std::time::{Duration, SystemTime};
+
+    #[test]
+    fn wait_cmd_ok_returns_success() {
+        let mut manager = ClientManager::new();
+        manager.set_tick_sleep(Duration::ZERO);
+        let client_id = ClientId(1);
+        let cmd_id = CommandId(42);
+        let evt = ClientEvent {
+            client_id,
+            label: None,
+            event: Event::CmdSuccess,
+            command_id: Some(cmd_id),
+            at: SystemTime::now(),
+        };
+        manager.tx.send(evt).expect("send");
+        assert!(manager.wait_cmd_ok(client_id, cmd_id, 0).is_ok());
+    }
+
+    #[test]
+    fn wait_cmd_any_returns_client() {
+        let mut manager = ClientManager::new();
+        manager.set_tick_sleep(Duration::ZERO);
+        let cmd_id = CommandId(7);
+        let evt = ClientEvent {
+            client_id: ClientId(2),
+            label: None,
+            event: Event::CmdSuccess,
+            command_id: Some(cmd_id),
+            at: SystemTime::now(),
+        };
+        manager.tx.send(evt).expect("send");
+        let got = manager.wait_cmd_any(cmd_id, 0).expect("ok");
+        assert_eq!(got, ClientId(2));
+    }
+
+    #[test]
+    fn wait_cmd_any_times_out() {
+        let mut manager = ClientManager::new();
+        manager.set_tick_sleep(Duration::ZERO);
+        let cmd_id = CommandId(99);
+        let err = manager.wait_cmd_any(cmd_id, 0).expect_err("timeout");
+        assert_eq!(err, WaitError::Timeout);
+    }
 }

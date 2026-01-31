@@ -16,6 +16,7 @@ public API with compatibility expectations for downstream users.
 - Operator convenience helpers with and without operator password.
 - Text mute helper using text subscriptions.
 - `ClientManager::wait_cmd` helper and command ids in manager events.
+- `ClientManager::wait_cmd_ok` and `ClientManager::wait_cmd_any` helpers.
 
 ## 1.2.0
 
