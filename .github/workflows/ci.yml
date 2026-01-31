@@ -9,6 +9,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: never
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: sccache
 
 jobs:
   validate:
@@ -17,10 +19,16 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+      - name: sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: sync-version-refs
         if: matrix.os == 'ubuntu-latest'
         run: bash ./scripts/update-version.sh
@@ -64,8 +72,14 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+      - name: sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
       - name: Publish teamtalk
         run: |
           cd crates/teamtalk
