@@ -358,6 +358,36 @@ impl Client {
         self.set_user_text_mute(user_id, false)
     }
 
+    /// Grants operator status to a user in a channel (with password).
+    pub fn op_user_ex(&self, user_id: UserId, channel_id: ChannelId, password: &str) -> i32 {
+        self.set_user_operator_ex(user_id, channel_id, password, true)
+    }
+
+    /// Revokes operator status from a user in a channel (with password).
+    pub fn deop_user_ex(&self, user_id: UserId, channel_id: ChannelId, password: &str) -> i32 {
+        self.set_user_operator_ex(user_id, channel_id, password, false)
+    }
+
+    /// Mutes voice streams from a user (local subscription).
+    pub fn mute_user_voice(&self, user_id: UserId) -> i32 {
+        self.unsubscribe(user_id, Subscriptions::from_raw(Subscriptions::VOICE))
+    }
+
+    /// Unmutes voice streams from a user (local subscription).
+    pub fn unmute_user_voice(&self, user_id: UserId) -> i32 {
+        self.subscribe(user_id, Subscriptions::from_raw(Subscriptions::VOICE))
+    }
+
+    /// Mutes media file streams from a user (local subscription).
+    pub fn mute_user_media(&self, user_id: UserId) -> i32 {
+        self.unsubscribe(user_id, Subscriptions::from_raw(Subscriptions::MEDIAFILE))
+    }
+
+    /// Unmutes media file streams from a user (local subscription).
+    pub fn unmute_user_media(&self, user_id: UserId) -> i32 {
+        self.subscribe(user_id, Subscriptions::from_raw(Subscriptions::MEDIAFILE))
+    }
+
     /// Returns the current user's subscription mask.
     pub fn my_subscriptions(&self) -> Subscriptions {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };

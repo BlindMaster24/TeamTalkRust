@@ -20,6 +20,10 @@ public API with compatibility expectations for downstream users.
 - Operator helpers: `op_user`, `deop_user`.
 - Text mute helpers: `mute_user_text`, `unmute_user_text`.
 - `join_channel_path_unprotected` convenience helper.
+- Operator helpers with password: `op_user_ex`, `deop_user_ex`.
+- Voice/media mute helpers: `mute_user_voice`, `unmute_user_voice`, `mute_user_media`, `unmute_user_media`.
+- `join_channel_unprotected` and `leave_to_root` convenience helpers.
+- `TextMessage::send_private` reply helper.
 
 ## 1.2.0
 

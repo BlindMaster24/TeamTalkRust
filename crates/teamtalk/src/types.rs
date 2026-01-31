@@ -1241,6 +1241,13 @@ impl TextMessage {
             .text(text)
             .send_cmd(client)
     }
+
+    /// Sends a private reply to the sender of this message.
+    pub fn send_private(&self, client: &crate::client::Client, text: &str) -> CommandId {
+        MessageBuilder::new(self.from_id)
+            .text(text)
+            .send_cmd(client)
+    }
 }
 
 /// Destination for sending text messages.

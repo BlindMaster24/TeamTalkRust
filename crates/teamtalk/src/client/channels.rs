@@ -67,6 +67,11 @@ impl Client {
         cmd_id
     }
 
+    /// Joins a channel by id without a password.
+    pub fn join_channel_unprotected(&self, channel_id: ChannelId) -> i32 {
+        self.join_channel(channel_id, "")
+    }
+
     /// Joins the root channel.
     pub fn join_root(&self) -> i32 {
         let root_id = self.get_root_channel_id();
@@ -80,6 +85,12 @@ impl Client {
             self.auto_reconnect.borrow_mut().last_channel = None;
         }
         cmd_id
+    }
+
+    /// Leaves the current channel and joins the root channel.
+    pub fn leave_to_root(&self) -> i32 {
+        let _ = self.leave_channel();
+        self.join_root()
     }
 
     /// Creates a new channel.
