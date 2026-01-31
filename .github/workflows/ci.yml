@@ -18,6 +18,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        features: ["", "async", "dispatch", "offline", "all"]
+        exclude:
+          - os: windows-latest
+            features: "offline"
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -39,9 +43,35 @@ jobs:
       - name: fmt
         run: cargo fmt --all -- --check
       - name: clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        shell: bash
+        run: |
+          if [ "${{ matrix.features }}" = "all" ]; then
+            cargo clippy --workspace --all-targets --all-features -- -D warnings
+          elif [ -n "${{ matrix.features }}" ]; then
+            cargo clippy --workspace --all-targets --features "${{ matrix.features }}" -- -D warnings
+          else
+            cargo clippy --workspace --all-targets -- -D warnings
+          fi
       - name: check
-        run: cargo check --workspace --all-targets
+        shell: bash
+        run: |
+          if [ "${{ matrix.features }}" = "all" ]; then
+            cargo check --workspace --all-targets --all-features
+          elif [ -n "${{ matrix.features }}" ]; then
+            cargo check --workspace --all-targets --features "${{ matrix.features }}"
+          else
+            cargo check --workspace --all-targets
+          fi
+      - name: test
+        shell: bash
+        run: |
+          if [ "${{ matrix.features }}" = "all" ]; then
+            cargo test --workspace --all-targets --all-features
+          elif [ -n "${{ matrix.features }}" ]; then
+            cargo test --workspace --all-targets --features "${{ matrix.features }}"
+          else
+            cargo test --workspace --all-targets
+          fi
       - name: doc
         run: cargo doc --no-deps --all-features
       - name: docs-link-style
