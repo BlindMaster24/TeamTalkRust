@@ -121,3 +121,18 @@ The design emphasizes:
 - Keep user-facing docs focused on usage and configuration.
 - Keep developer details in this file.
 - Avoid internal implementation details in user guides.
+
+## Recommended Release Profile (for Apps)
+
+For applications that depend on this SDK, you can use a release profile like:
+
+```toml
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+```
+
+Avoid putting these settings into the SDK itself; keep them in your app crate.
