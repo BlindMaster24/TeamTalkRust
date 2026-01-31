@@ -82,6 +82,11 @@ impl Client {
             .map(|(_, msg)| msg)
     }
 
+    /// Polls until a specific event arrives or the timeout expires.
+    pub fn poll_until_event(&self, event: Event, timeout_ms: i32) -> Option<Message> {
+        self.wait_for(event, timeout_ms)
+    }
+
     fn update_state_for_event(&self, event: Event, msg: &Message) {
         match event {
             Event::ConnectSuccess => {

@@ -71,6 +71,16 @@ impl Client {
         self.cache.borrow().users.values().cloned().collect()
     }
 
+    /// Returns a cached user by username, if present.
+    pub fn cached_user_by_username(&self, username: &str) -> Option<User> {
+        self.cache
+            .borrow()
+            .users
+            .values()
+            .find(|u| u.username == username)
+            .cloned()
+    }
+
     /// Returns a cached channel, if present.
     pub fn cached_channel(&self, channel_id: ChannelId) -> Option<Channel> {
         self.cache.borrow().channels.get(&channel_id).cloned()
@@ -79,6 +89,26 @@ impl Client {
     /// Returns all cached channels.
     pub fn cached_channels(&self) -> Vec<Channel> {
         self.cache.borrow().channels.values().cloned().collect()
+    }
+
+    /// Returns a cached channel by name, if present.
+    pub fn cached_channel_by_name(&self, name: &str) -> Option<Channel> {
+        self.cache
+            .borrow()
+            .channels
+            .values()
+            .find(|c| c.name == name)
+            .cloned()
+    }
+
+    /// Returns a cached channel by path, if present.
+    pub fn cached_channel_by_path(&self, path: &str) -> Option<Channel> {
+        self.cache
+            .borrow()
+            .channels
+            .values()
+            .find(|c| self.get_channel_path(c.id) == path)
+            .cloned()
     }
 
     /// Returns the last cached server properties and statistics.

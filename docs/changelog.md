@@ -7,6 +7,15 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+### Added
+- `CommandId` newtype for command results.
+- `TextMessage` helpers for common send targets.
+- Cache lookups by username, channel name, and channel path.
+- `join_channel_path` convenience helper.
+- `poll_until_event` helper for event waits.
+- Operator convenience helpers with and without operator password.
+- Text mute helper using text subscriptions.
+
 ## 1.2.0
 
 ### Added

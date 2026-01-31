@@ -316,6 +316,28 @@ impl Client {
         }
     }
 
+    pub fn set_user_operator(&self, user_id: UserId, channel_id: ChannelId, make_op: bool) -> i32 {
+        self.set_channel_operator(user_id, channel_id, make_op)
+    }
+
+    pub fn set_user_operator_ex(
+        &self,
+        user_id: UserId,
+        channel_id: ChannelId,
+        password: &str,
+        make_op: bool,
+    ) -> i32 {
+        self.channel_op_ex(user_id, channel_id, password, make_op)
+    }
+
+    pub fn set_user_text_mute(&self, user_id: UserId, mute: bool) -> i32 {
+        if mute {
+            self.unsubscribe(user_id, Subscriptions::all_text())
+        } else {
+            self.subscribe(user_id, Subscriptions::all_text())
+        }
+    }
+
     /// Returns the current user's subscription mask.
     pub fn my_subscriptions(&self) -> Subscriptions {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };

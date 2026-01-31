@@ -14,6 +14,9 @@ pub struct FileId(pub i32);
 /// Strongly typed transfer id.
 pub struct TransferId(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+/// Strongly typed command id.
+pub struct CommandId(pub i32);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 /// Strongly typed client id.
 pub struct ClientId(pub u64);
 
@@ -23,6 +26,18 @@ pub const LOCAL_USER_ID: UserId = UserId(0);
 pub const LOCAL_TX_USER_ID: UserId = UserId(4098);
 /// Reserved muxed audio user id.
 pub const MUXED_USER_ID: UserId = UserId(4097);
+
+impl CommandId {
+    pub fn raw(self) -> i32 {
+        self.0
+    }
+}
+
+impl From<i32> for CommandId {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
 
 /// Speex narrowband minimum bitrate.
 pub const SPEEX_NB_MIN_BITRATE: i32 = 2150;
@@ -1208,6 +1223,30 @@ impl From<ffi::TextMessage> for TextMessage {
     }
 }
 
+impl TextMessage {
+    pub fn send_to_user(
+        client: &crate::client::Client,
+        user_id: UserId,
+        text: &str,
+    ) -> CommandId {
+        MessageBuilder::new(user_id).text(text).send_cmd(client)
+    }
+
+    pub fn send_to_channel(
+        client: &crate::client::Client,
+        channel_id: ChannelId,
+        text: &str,
+    ) -> CommandId {
+        MessageBuilder::new(channel_id).text(text).send_cmd(client)
+    }
+
+    pub fn send_broadcast(client: &crate::client::Client, text: &str) -> CommandId {
+        MessageBuilder::new(MessageTarget::Broadcast)
+            .text(text)
+            .send_cmd(client)
+    }
+}
+
 /// Destination for sending text messages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageTarget {
@@ -1256,6 +1295,11 @@ impl MessageBuilder {
     /// Sends the message using the provided client.
     pub fn send(self, client: &crate::client::Client) -> i32 {
         client.send_text(self.target, &self.text)
+    }
+
+    /// Sends the message and wraps the result in a CommandId.
+    pub fn send_cmd(self, client: &crate::client::Client) -> CommandId {
+        CommandId(self.send(client))
     }
 }
 

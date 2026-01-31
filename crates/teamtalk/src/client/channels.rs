@@ -41,6 +41,15 @@ impl Client {
         ChannelId(unsafe { ffi::api().TT_GetChannelIDFromPath(self.ptr, path.tt().as_ptr()) })
     }
 
+    /// Joins a channel by path.
+    pub fn join_channel_path(&self, path: &str, password: &str) -> i32 {
+        let channel_id = self.get_channel_id_from_path(path);
+        if channel_id.0 <= 0 {
+            return -1;
+        }
+        self.join_channel(channel_id, password)
+    }
+
     /// Joins a channel by id.
     pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
         let cmd_id = self
