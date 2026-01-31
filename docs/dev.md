@@ -10,7 +10,7 @@ This section is for contributors and maintainers.
 - [docs/getting-started.md](getting-started.md): onboarding example and minimal workflow.
 - [docs/configuration.md](configuration.md): SDK binaries, networking, and TLS setup.
 - [docs/tls.md](tls.md): TLS backend selection and troubleshooting.
-- [docs/developer.md](developer.md): contributor-only guidance.
+- [docs/dev.md](dev.md): contributor-only guidance.
 
 ## When Adding a Feature
 
@@ -32,7 +32,7 @@ This section is for contributors and maintainers.
   [https://lefthook.dev/installation/](https://lefthook.dev/installation/)
 - Enable hooks: `lefthook install`
 - Default hooks run formatting, linting, type checks, and doc-link checks.
-- If you are on Windows without bash, create `lefthook-local.yml` to override the doc-link command:
+- On Windows, if you don't have a bash-compatible shell for `scripts/check-doc-links.sh`, copy `lefthook-local.example.yml` to `lefthook-local.yml` and override the doc-link command:
 
 ```yml
 pre-commit:
@@ -44,7 +44,7 @@ pre-commit:
 ## Publishing
 
 - Update the version in [crates/teamtalk/Cargo.toml](../crates/teamtalk/Cargo.toml).
-- Run the full Definition of Done checks from `AGENTS.md`.
+- Run the full Definition of Done checks from `AGENTS.md` (the pre-commit hook runs the same set; run manually if hooks are disabled).
 - Publish with `cargo publish` inside [crates/teamtalk](../crates/teamtalk/).
 - docs.rs builds automatically after publish and uses `all-features = true`.
 

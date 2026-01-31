@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    doc-links:
+      run: pwsh -File scripts/check-doc-links.ps1

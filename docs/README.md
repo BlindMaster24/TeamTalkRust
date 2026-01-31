@@ -1,14 +1,15 @@
 # TeamTalkRust Documentation
 
 Start here:
-- Getting Started: [docs/getting-started.md](getting-started.md)
-- Feature Flags: [docs/features.md](features.md)
-- Configuration: [docs/configuration.md](configuration.md)
-- TLS: [docs/tls.md](tls.md)
-- Recording: [docs/recording/README.md](recording/README.md)
+- Getting Started: [getting-started.md](getting-started.md)
+- Configuration: [configuration.md](configuration.md)
+- Feature Flags: [features.md](features.md)
+- TLS: [tls.md](tls.md)
+- Recording: [recording/README.md](recording/README.md)
+- Extensions: [extensions.md](extensions.md)
+- Changelog: [changelog.md](changelog.md)
+- Developer Notes: [dev.md](dev.md)
 - Examples: [crates/teamtalk/examples](../crates/teamtalk/examples/)
-- Extensions: [docs/extensions.md](extensions.md)
-- Changelog: [docs/changelog.md](changelog.md)
 
 API reference:
 - https://docs.rs/teamtalk
