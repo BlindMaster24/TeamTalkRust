@@ -9,6 +9,7 @@ Start here:
 - Extensions: [extensions.md](extensions.md)
 - Changelog: [changelog.md](changelog.md)
 - Developer Notes: [dev.md](dev.md)
+- Lefthook Windows override example: [lefthook-local.example.yml](../lefthook-local.example.yml)
 - Examples: [crates/teamtalk/examples](../crates/teamtalk/examples/)
 
 API reference:
