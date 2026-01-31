@@ -33,6 +33,7 @@ This section is for contributors and maintainers.
 - Enable hooks: `lefthook install`
 - Default hooks run formatting, linting, type checks, and doc-link checks.
 - On Windows, if you don't have a bash-compatible shell for `scripts/check-doc-links.sh`, copy `lefthook-local.example.yml` to `lefthook-local.yml` and override the doc-link command:
+  - Example file: [lefthook-local.example.yml](../lefthook-local.example.yml)
 
 ```yml
 pre-commit:
