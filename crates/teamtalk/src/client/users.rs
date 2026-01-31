@@ -338,6 +338,26 @@ impl Client {
         }
     }
 
+    /// Grants operator status to a user in a channel.
+    pub fn op_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+        self.set_channel_operator(user_id, channel_id, true)
+    }
+
+    /// Revokes operator status from a user in a channel.
+    pub fn deop_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+        self.set_channel_operator(user_id, channel_id, false)
+    }
+
+    /// Mutes text messages from a user (local subscription).
+    pub fn mute_user_text(&self, user_id: UserId) -> i32 {
+        self.set_user_text_mute(user_id, true)
+    }
+
+    /// Unmutes text messages from a user (local subscription).
+    pub fn unmute_user_text(&self, user_id: UserId) -> i32 {
+        self.set_user_text_mute(user_id, false)
+    }
+
     /// Returns the current user's subscription mask.
     pub fn my_subscriptions(&self) -> Subscriptions {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };

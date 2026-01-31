@@ -17,6 +17,9 @@ public API with compatibility expectations for downstream users.
 - Text mute helper using text subscriptions.
 - `ClientManager::wait_cmd` helper and command ids in manager events.
 - `ClientManager::wait_cmd_ok` and `ClientManager::wait_cmd_any` helpers.
+- Operator helpers: `op_user`, `deop_user`.
+- Text mute helpers: `mute_user_text`, `unmute_user_text`.
+- `join_channel_path_unprotected` convenience helper.
 
 ## 1.2.0
 

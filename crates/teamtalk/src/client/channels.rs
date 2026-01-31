@@ -50,6 +50,11 @@ impl Client {
         self.join_channel(channel_id, password)
     }
 
+    /// Joins a channel by path without a password.
+    pub fn join_channel_path_unprotected(&self, path: &str) -> i32 {
+        self.join_channel_path(path, "")
+    }
+
     /// Joins a channel by id.
     pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
         let cmd_id = self
