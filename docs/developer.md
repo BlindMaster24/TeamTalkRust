@@ -28,7 +28,8 @@ This section is for contributors and maintainers.
 
 ## Local Pre-Commit Checks
 
-- Install lefthook: `cargo install lefthook`
+- Install lefthook using the official guide for your OS (includes manual installs):
+  [https://lefthook.dev/installation/](https://lefthook.dev/installation/)
 - Enable hooks: `lefthook install`
 - Default hooks run formatting, linting, type checks, and doc-link checks.
 - If you are on Windows without bash, create `lefthook-local.yml` to override the doc-link command:
