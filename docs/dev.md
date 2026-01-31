@@ -136,3 +136,11 @@ panic = "abort"
 ```
 
 Avoid putting these settings into the SDK itself; keep them in your app crate.
+
+For development, the default dev profile is typically fine:
+
+```toml
+[profile.dev]
+opt-level = 0
+debug = true
+```
