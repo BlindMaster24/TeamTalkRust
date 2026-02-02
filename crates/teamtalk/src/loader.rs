@@ -2,6 +2,7 @@
 use regex::Regex;
 use reqwest::blocking::Client;
 use sevenz_rust2::decompress;
+use std::env;
 use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
@@ -25,6 +26,13 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         .unwrap_or_default()
         .trim()
         .to_string();
+    let env_version = env_sdk_version();
+    let pinned_version = pinned_sdk_version();
+    let requested_version = requested_version(
+        env_version.clone(),
+        pinned_version.as_deref(),
+        &current_version,
+    );
     let dll_exists = dll_path.exists()
         && fs::metadata(&dll_path)
             .map(|m| m.len() > 1024)
@@ -37,14 +45,39 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         return Err("Offline mode enabled but SDK binary not found".into());
     }
 
+    let download_version = |version: &str| -> Result<(), Box<dyn std::error::Error>> {
+        download_and_extract(&sdk_dir, version, dll_name)?;
+        fs::write(&version_file, version)?;
+        Ok(())
+    };
+
+    if let Some(version) = requested_version.requested.as_deref() {
+        if dll_exists && current_version == version {
+            return Ok(dll_path);
+        }
+
+        if let Err(err) = download_version(version) {
+            eprintln!(
+                "Failed to download requested SDK version {}: {}. Falling back to latest.",
+                version, err
+            );
+        } else {
+            return Ok(dll_path);
+        }
+    } else if requested_version.force_latest {
+        let latest = get_latest_sdk_version()?;
+        println!("Downloading latest SDK: {}", latest);
+        download_version(&latest)?;
+        return Ok(dll_path);
+    }
+
     if dll_exists && !current_version.is_empty() {
         let latest = get_latest_sdk_version()?;
         if current_version == latest {
             return Ok(dll_path);
         }
         println!("Updating SDK: {} -> {}", current_version, latest);
-        download_and_extract(&sdk_dir, &latest, dll_name)?;
-        fs::write(&version_file, &latest)?;
+        download_version(&latest)?;
         return Ok(dll_path);
     }
 
@@ -53,14 +86,13 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
             "DLL missing. Downloading version {} from file...",
             current_version
         );
-        download_and_extract(&sdk_dir, &current_version, dll_name)?;
+        download_version(&current_version)?;
         return Ok(dll_path);
     }
 
     let latest = get_latest_sdk_version()?;
     println!("Fresh SDK setup. Downloading: {}", latest);
-    download_and_extract(&sdk_dir, &latest, dll_name)?;
-    fs::write(&version_file, &latest)?;
+    download_version(&latest)?;
 
     Ok(dll_path)
 }
@@ -86,6 +118,71 @@ fn get_latest_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
         .last()
         .map(|v| v.3.clone())
         .ok_or("No SDK versions found".into())
+}
+
+fn env_sdk_version() -> Option<String> {
+    env::var("TEAMTALK_SDK_VERSION").ok().and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn pinned_sdk_version() -> Option<String> {
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").ok()?;
+    let path = Path::new(&manifest_dir).join("SDK_VERSION.txt");
+    let contents = fs::read_to_string(path).ok()?;
+    let trimmed = contents.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+struct RequestedVersion {
+    requested: Option<String>,
+    force_latest: bool,
+}
+
+fn requested_version(
+    env_version: Option<String>,
+    pinned_version: Option<&str>,
+    file_version: &str,
+) -> RequestedVersion {
+    if let Some(version) = env_version {
+        if version.eq_ignore_ascii_case("latest") {
+            return RequestedVersion {
+                requested: None,
+                force_latest: true,
+            };
+        }
+        return RequestedVersion {
+            requested: Some(version),
+            force_latest: false,
+        };
+    }
+    if let Some(version) = pinned_version
+        && !version.trim().is_empty()
+    {
+        return RequestedVersion {
+            requested: Some(version.trim().to_string()),
+            force_latest: false,
+        };
+    }
+    let trimmed = file_version.trim();
+    let requested = if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    };
+    RequestedVersion {
+        requested,
+        force_latest: false,
+    }
 }
 
 fn download_and_extract(
@@ -178,5 +275,62 @@ fn find_files_recursive(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RequestedVersion, requested_version};
+
+    #[test]
+    fn requested_version_prefers_env() {
+        let result = requested_version(Some("v5.19".to_string()), Some("v5.10"), "");
+        assert_eq!(
+            result.requested.as_deref(),
+            Some("v5.19"),
+            "env version should win"
+        );
+    }
+
+    #[test]
+    fn requested_version_uses_file_when_env_missing() {
+        let result = requested_version(None, Some("v5.12"), "");
+        assert_eq!(result.requested.as_deref(), Some("v5.12"));
+    }
+
+    #[test]
+    fn requested_version_none_when_empty() {
+        let result = requested_version(None, None, "");
+        assert_eq!(result.requested, None);
+    }
+
+    #[test]
+    fn requested_version_allows_latest_env() {
+        let result = requested_version(Some("latest".to_string()), Some("v5.12"), "");
+        assert!(result.requested.is_none());
+        assert!(result.force_latest);
+    }
+
+    #[test]
+    fn requested_version_ignores_blank_pinned() {
+        let result = requested_version(None, Some("   "), "v5.10");
+        assert_eq!(result.requested.as_deref(), Some("v5.10"));
+    }
+
+    #[test]
+    fn requested_version_uses_file_version_when_no_env_or_pin() {
+        let result = requested_version(None, None, "v5.11");
+        assert_eq!(result.requested.as_deref(), Some("v5.11"));
+        assert!(!result.force_latest);
+    }
+
+    #[test]
+    fn requested_version_struct_defaults() {
+        let result = RequestedVersion {
+            requested: None,
+            force_latest: false,
+        };
+        assert!(result.requested.is_none());
+        assert!(!result.force_latest);
     }
 }
