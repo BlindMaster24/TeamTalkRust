@@ -2,6 +2,12 @@
 use std::borrow::Cow;
 use teamtalk_sys as ffi;
 
+#[cfg(not(windows))]
+fn ttchar_bytes(slice: &[ffi::TTCHAR]) -> &[u8] {
+    // Safety: on non-Windows TTCHAR is `char` (1 byte). We only reinterpret the same length.
+    unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, slice.len()) }
+}
+
 /// Creates a zeroed TeamTalk string buffer.
 pub fn tt_buf<const N: usize>() -> [ffi::TTCHAR; N] {
     [0 as ffi::TTCHAR; N]
@@ -48,16 +54,15 @@ pub unsafe fn from_tt(ptr: *const ffi::TTCHAR) -> String {
         while *ptr.add(len) != 0 {
             len += 1;
         }
-        let slice = std::slice::from_raw_parts(ptr, len);
-        #[cfg(windows)]
-        {
-            String::from_utf16_lossy(slice)
-        }
-        #[cfg(not(windows))]
-        {
-            let u8_slice: &[u8] = std::mem::transmute(slice);
-            String::from_utf8_lossy(u8_slice).into_owned()
-        }
+    }
+    let slice = unsafe { std::slice::from_raw_parts(ptr, len) };
+    #[cfg(windows)]
+    {
+        String::from_utf16_lossy(slice)
+    }
+    #[cfg(not(windows))]
+    {
+        String::from_utf8_lossy(ttchar_bytes(slice)).into_owned()
     }
 }
 
@@ -70,8 +75,7 @@ pub fn to_string(arr: &[ffi::TTCHAR]) -> String {
     }
     #[cfg(not(windows))]
     {
-        let u8_slice: &[u8] = unsafe { std::mem::transmute(&arr[..len]) };
-        String::from_utf8_lossy(u8_slice).into_owned()
+        String::from_utf8_lossy(ttchar_bytes(&arr[..len])).into_owned()
     }
 }
 
@@ -84,8 +88,7 @@ pub fn to_cow(arr: &[ffi::TTCHAR]) -> Cow<'_, str> {
     }
     #[cfg(not(windows))]
     {
-        let u8_slice: &[u8] = unsafe { std::mem::transmute(&arr[..len]) };
-        String::from_utf8_lossy(u8_slice)
+        String::from_utf8_lossy(ttchar_bytes(&arr[..len]))
     }
 }
 
@@ -99,8 +102,7 @@ pub fn copy_to_string(arr: &[ffi::TTCHAR], out: &mut String) {
     }
     #[cfg(not(windows))]
     {
-        let u8_slice: &[u8] = unsafe { std::mem::transmute(&arr[..len]) };
-        out.push_str(&String::from_utf8_lossy(u8_slice));
+        out.push_str(&String::from_utf8_lossy(ttchar_bytes(&arr[..len])));
     }
 }
 
