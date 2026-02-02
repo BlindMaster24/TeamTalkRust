@@ -426,11 +426,12 @@ impl Client {
         unsafe { ffi::api().TT_InsertAudioBlock(self.ptr, block) == 1 }
     }
 
-    #[allow(clippy::missing_safety_doc)]
     /// Releases a previously acquired audio block.
     ///
     /// # Safety
-    /// `block` must be a valid pointer returned by `acquire_user_audio_block`.
+    /// - `block` must be a pointer returned by `acquire_user_audio_block`.
+    /// - The block must not be released more than once.
+    /// - The pointer must not be used after release.
     pub unsafe fn release_user_audio_block(&self, block: *mut ffi::AudioBlock) -> bool {
         if block.is_null() {
             return false;
@@ -469,11 +470,11 @@ impl Client {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
     /// Closes a sound loopback test handle.
     ///
     /// # Safety
-    /// `loopback` must be a valid pointer returned by `start_sound_loopback_test`.
+    /// - `loopback` must be a pointer returned by `start_sound_loopback_test`.
+    /// - The handle must not be closed more than once.
     pub unsafe fn close_sound_loopback_test(&self, loopback: *mut ffi::TTSoundLoop) -> bool {
         if loopback.is_null() {
             return false;

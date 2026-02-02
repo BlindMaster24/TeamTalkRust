@@ -71,11 +71,12 @@ impl Client {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
     /// Releases a previously acquired video frame.
     ///
     /// # Safety
-    /// `frame` must be a valid pointer returned by `acquire_video_frame`.
+    /// - `frame` must be a pointer returned by `acquire_video_frame`.
+    /// - The frame must not be released more than once.
+    /// - The pointer must not be used after release.
     pub unsafe fn release_video_frame(&self, frame: *mut ffi::VideoFrame) -> bool {
         if frame.is_null() {
             return false;

@@ -28,12 +28,12 @@ impl Client {
         unsafe { ffi::api().TT_HotKey_IsActive(self.ptr, id) }
     }
 
-    #[allow(clippy::missing_safety_doc)]
-    #[cfg(windows)]
     /// Installs a hotkey test hook.
     ///
     /// # Safety
-    /// `hwnd` and `msg` must be valid for the target window.
+    /// - `hwnd` must be a valid window handle.
+    /// - `msg` must be a valid message ID routed to `hwnd`.
+    /// - The window's message loop must remain alive while the hook is installed.
     pub unsafe fn install_hotkey_test_hook(&self, hwnd: ffi::HWND, msg: u32) -> bool {
         unsafe { ffi::api().TT_HotKey_InstallTestHook(self.ptr, hwnd, msg) == 1 }
     }

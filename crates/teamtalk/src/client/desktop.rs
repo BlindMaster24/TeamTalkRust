@@ -157,12 +157,12 @@ impl Client {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
     #[cfg(windows)]
     /// Starts desktop sharing from a window handle (Windows).
     ///
     /// # Safety
-    /// `hwnd` must be a valid window handle.
+    /// - `hwnd` must be a valid window handle.
+    /// - The window must remain valid while sharing is active.
     pub unsafe fn send_window(&self, hwnd: ffi::HWND, format: ffi::BitmapFormat) -> i32 {
         unsafe {
             ffi::api().TT_SendDesktopWindowFromHWND(
