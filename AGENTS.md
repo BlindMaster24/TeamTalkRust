@@ -28,7 +28,13 @@
   - Toolchains list: `rustup toolchain list`
   - Components list: `rustup component list` and `rustup component list --installed`
   - Targets list: `rustup target list` and `rustup target list --installed`
-  - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+- Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+
+## SDK Version Overrides
+- The loader pins to `SDK_VERSION.txt` at the workspace root by default.
+- Set `TEAMTALK_SDK_VERSION` to override (for example `v5.19` or `latest`).
+- Precedence: env var > `SDK_VERSION.txt` > latest from BearWare.
+- `offline` feature disables downloads and requires `TEAMTALK_DLL/` to be pre-populated.
 
 ## Coding Style & Naming Conventions
 - Rust 2024 edition; follow rustfmt defaults and keep clippy clean.
@@ -159,7 +165,7 @@
 - PRs should explain intent, list key changes, and include commands run.
 - Before committing, run required checks in the Definition of Done.
 - Commit workflow: review `git status`, stage only relevant files, review `git diff --staged`, then commit and push after user confirmation.
-- Keep commits production-grade: one logical change per commit. If a task spans multiple concerns, split into 2–5 focused commits (or more if justified).
+- Keep commits production-grade: one logical change per commit. If a task spans multiple concerns, split into 2-5 focused commits (or more if justified).
 - If asked to push, still confirm that commits are scoped correctly before pushing.
 - Version bumps are always a dedicated commit. Never combine a version bump with other changes, even if requested.
 - Version bump flow (separate commit only): update `docs/changelog.md` (move Unreleased), update `crates/teamtalk/Cargo.toml` version, sync references via `scripts/update-version.*`, run DoD checks, commit with a `chore:` message, tag `vX.Y.Z`, then push commits + tag.
@@ -170,7 +176,7 @@
   - Never mix formatting-only edits with behavior changes unless rustfmt is required.
   - Avoid mixing unrelated files; each commit should have a single intent you can explain in one sentence.
 - Commit sizing:
-  - Prefer smaller, reviewable commits; break large changes into 2–5 commits with clean boundaries.
+  - Prefer smaller, reviewable commits; break large changes into 2-5 commits with clean boundaries.
   - Do not split a single cohesive change across multiple commits just to hit a number.
   - When in doubt, split by module or by feature boundary (e.g., core logic vs. tests vs. docs).
 - Commit messages:
@@ -200,4 +206,3 @@
 
 ## Security & Configuration Tips
 - The loader downloads SDK binaries from `https://bearware.dk`; use `--features offline` and `TEAMTALK_DLL/` when network access is restricted.
-
