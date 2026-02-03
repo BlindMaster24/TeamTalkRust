@@ -15,6 +15,7 @@ pub mod desktop;
 pub mod encryption;
 pub mod files;
 pub mod hooks;
+#[cfg(windows)]
 pub mod hotkeys;
 pub mod manager;
 pub mod media;
