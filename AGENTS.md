@@ -31,7 +31,7 @@
 - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
 
 ## SDK Version Overrides
-- The loader pins to `SDK_VERSION.txt` at the workspace root by default.
+- The loader pins to `crates/teamtalk/SDK_VERSION.txt` by default.
 - Set `TEAMTALK_SDK_VERSION` to override (for example `v5.19` or `latest`).
 - Precedence: env var > `SDK_VERSION.txt` > latest from BearWare.
 - `offline` feature disables downloads and requires `TEAMTALK_DLL/` to be pre-populated.

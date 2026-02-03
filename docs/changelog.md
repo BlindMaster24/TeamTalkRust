@@ -8,22 +8,23 @@ public API with compatibility expectations for downstream users.
 ## Unreleased
 
 ### Added
-- `CommandId` newtype for command results.
-- `TextMessage` helpers for common send targets.
+- `CommandId` newtype plus `MessageBuilder::send_cmd` and `TextMessage::{send_to_user, send_to_channel, send_broadcast, send_private}` helpers.
 - Cache lookups by username, channel name, and channel path.
-- `join_channel_path` convenience helper.
+- Channel helpers: `join_channel_path`, `join_channel_path_unprotected`, `join_channel_unprotected`, `leave_to_root`.
 - `poll_until_event` helper for event waits.
-- Operator convenience helpers with and without operator password.
-- Text mute helper using text subscriptions.
-- `ClientManager::wait_cmd` helper and command ids in manager events.
-- `ClientManager::wait_cmd_ok` and `ClientManager::wait_cmd_any` helpers.
-- Operator helpers: `op_user`, `deop_user`.
-- Text mute helpers: `mute_user_text`, `unmute_user_text`.
-- `join_channel_path_unprotected` convenience helper.
-- Operator helpers with password: `op_user_ex`, `deop_user_ex`.
-- Voice/media mute helpers: `mute_user_voice`, `unmute_user_voice`, `mute_user_media`, `unmute_user_media`.
-- `join_channel_unprotected` and `leave_to_root` convenience helpers.
-- `TextMessage::send_private` reply helper.
+- Operator helpers: `set_user_operator`, `set_user_operator_ex`, `op_user`, `deop_user`, `op_user_ex`, `deop_user_ex`.
+- Text/voice/media mute helpers: `set_user_text_mute`, `mute_user_text`, `unmute_user_text`, `mute_user_voice`, `unmute_user_voice`, `mute_user_media`, `unmute_user_media`.
+- Manager helpers: `ClientManager::{wait_cmd, wait_cmd_ok, wait_cmd_any}` and command id tracking in events.
+- SDK version pin/override via [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt) and `TEAMTALK_SDK_VERSION`.
+
+### Changed
+- `ClientEvent` now carries `command_id` for multi-client command tracking.
+
+### Fixed
+- Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.
+
+### Docs
+- Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
 
 ## 1.2.0
 

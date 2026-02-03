@@ -8,7 +8,7 @@ that folder with the correct DLL and headers.
 
 ### SDK Version Override
 
-By default, the loader uses the pinned version in the SDK version file.
+By default, the loader uses the pinned version in [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt).
 
 Set `TEAMTALK_SDK_VERSION` to override the pinned version:
 
