@@ -83,6 +83,12 @@
 - When introducing new high-level APIs, document both the default and `*_ex` variants.
 - Document all auto-features with explicit opt-in instructions and default state.
 
+## Documentation Updates from a Specific Commit
+- When asked to update docs from a baseline commit, diff from that commit to `HEAD`.
+- Summarize all user-facing changes in `docs/changelog.md` under `Unreleased`.
+- Update affected guides (README + docs/) only when behavior or usage changed.
+- Replace raw `docs/` or `crates/` paths in prose with Markdown links.
+
 ## Agent Documentation Workflow
 - Before editing docs, re-read `AGENTS.md` and confirm current expectations.
 - If the user adds new requirements, ask whether they should be recorded in `AGENTS.md`.
