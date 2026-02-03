@@ -103,11 +103,9 @@ The design emphasizes:
 - Event-driven flow via `Client::poll()`.
 - Strongly typed IDs (`UserId`, `ChannelId`) to avoid mixing values.
 - Explicit conversion between Rust structs and TeamTalk FFI types.
-- `Client` is single-threaded (`!Send`). Keep it on one thread or wrap it in your
-  own synchronization if you need cross-thread usage.
-  - This does not conflict with the async API: async gives non-blocking awaits,
-    but the underlying client must still live on one thread. Use a dedicated
-    worker thread + channel if you need cross-thread access.
+- `Client` is thread-safe (`Send` + `Sync`) and uses internal locking.
+- For concurrent usage, prefer `Client::split()` and keep polling on one thread
+  while sending commands from another.
 
 ### Modules
 

@@ -92,12 +92,14 @@ impl Client {
         (ClientEvents(shared.clone()), ClientCommands(shared))
     }
 
-    #[allow(clippy::missing_safety_doc)]
     #[cfg(windows)]
     /// Creates a client bound to a Windows message window.
     ///
     /// # Safety
-    /// The caller must ensure `hwnd` and `msg` are valid for the target window.
+    /// - `hwnd` must be a valid window handle for the lifetime of the client.
+    /// - `msg` must be a valid message ID routed to `hwnd`.
+    /// - The caller must ensure the window's message loop stays alive while the
+    ///   client is in use.
     pub unsafe fn with_hwnd(hwnd: ffi::HWND, msg: u32) -> Result<Self> {
         crate::init()?;
         let backend: Arc<dyn super::backend::TeamTalkBackend> =
@@ -123,12 +125,12 @@ impl Client {
         }
     }
 
-    #[allow(clippy::missing_safety_doc)]
     #[cfg(windows)]
     /// Swaps the window handle used by the client.
     ///
     /// # Safety
-    /// The caller must ensure `hwnd` is valid for the target window.
+    /// - `hwnd` must be a valid window handle for the lifetime of the client.
+    /// - The previous window handle must no longer be in use by this client.
     pub unsafe fn swap_hwnd(&self, hwnd: ffi::HWND) -> bool {
         unsafe { ffi::api().TT_SwapTeamTalkHWND(self.ptr.0, hwnd) == 1 }
     }
