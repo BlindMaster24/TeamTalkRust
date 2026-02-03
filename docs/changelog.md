@@ -16,6 +16,7 @@ public API with compatibility expectations for downstream users.
 - Text/voice/media mute helpers: `set_user_text_mute`, `mute_user_text`, `unmute_user_text`, `mute_user_voice`, `unmute_user_voice`, `mute_user_media`, `unmute_user_media`.
 - Manager helpers: `ClientManager::{wait_cmd, wait_cmd_ok, wait_cmd_any}` and command id tracking in events.
 - SDK version pin/override via [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt) and `TEAMTALK_SDK_VERSION`.
+- `async-tokio` feature for Tokio wake integration in the async wrapper.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
