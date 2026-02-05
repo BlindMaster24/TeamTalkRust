@@ -319,9 +319,14 @@ impl Client {
             if let Some(handler) = auto.handler.as_mut() {
                 handler.record_attempt();
             }
+            let force_disconnect = auto.force_disconnect;
+            auto.force_disconnect = false;
             drop(auto);
 
             self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
+            if force_disconnect {
+                let _ = self.disconnect();
+            }
             let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
         } else {
             let attempts = handler.attempts();
@@ -376,9 +381,10 @@ impl Client {
             Some(channel) => channel,
             None => return,
         };
+        let password = auto.last_channel_password.clone();
         drop(auto);
 
-        let _ = self.join_channel(channel, "");
+        let _ = self.join_channel(channel, password.as_deref().unwrap_or(""));
     }
 
     /// Sends a debug input tone to the SDK.
@@ -417,7 +423,10 @@ pub(crate) struct AutoReconnectState {
     pub(crate) handler: Option<super::connection::ReconnectHandler>,
     pub(crate) params: Option<super::connection::ConnectParamsOwned>,
     pub(crate) last_channel: Option<crate::types::ChannelId>,
+    pub(crate) last_channel_password: Option<String>,
     pub(crate) login: Option<super::users::LoginParams>,
+    pub(crate) extra_events: Vec<crate::events::Event>,
+    pub(crate) force_disconnect: bool,
 }
 
 /// Wrapper around a raw TeamTalk message with its originating event.
@@ -682,6 +691,13 @@ impl Client {
                 }
             }
             _ => {}
+        }
+
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        if auto.enabled && event.is_reconnect_needed_with(&auto.extra_events) {
+            auto.force_disconnect = true;
+            drop(auto);
+            self.set_connection_state(ConnectionState::Disconnected);
         }
     }
 

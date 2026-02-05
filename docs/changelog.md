@@ -18,12 +18,14 @@ public API with compatibility expectations for downstream users.
 - SDK version pin/override via [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt) and `TEAMTALK_SDK_VERSION`.
 - `async-tokio` feature for Tokio wake integration in the async wrapper.
 - `Client::split()` method returning `ClientEvents` (polling) and `ClientCommands` (execution) for concurrent usage.
+- Auto-reconnect extra events via `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
+- Auto-join remembers channel passwords set via `join_channel`.
 
 ### Fixed
 - Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.

@@ -150,6 +150,21 @@ impl Client {
         let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = true;
         auto.handler = Some(ReconnectHandler::new(config));
+        auto.extra_events.clear();
+        auto.force_disconnect = false;
+    }
+
+    /// Enables automatic reconnection and adds extra events that trigger reconnect.
+    pub fn enable_auto_reconnect_with_events(
+        &self,
+        config: ReconnectConfig,
+        extra_events: Vec<crate::events::Event>,
+    ) {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.enabled = true;
+        auto.handler = Some(ReconnectHandler::new(config));
+        auto.extra_events = extra_events;
+        auto.force_disconnect = false;
     }
 
     /// Disables automatic reconnection.
@@ -157,6 +172,8 @@ impl Client {
         let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = false;
         auto.handler = None;
+        auto.extra_events.clear();
+        auto.force_disconnect = false;
     }
 
     /// Returns true if automatic reconnection is enabled.
@@ -172,6 +189,16 @@ impl Client {
     /// Returns the stored reconnection parameters, if any.
     pub fn reconnect_params(&self) -> Option<ConnectParamsOwned> {
         self.auto_reconnect.lock().unwrap().params.clone()
+    }
+
+    /// Sets extra events that should trigger automatic reconnection.
+    pub fn set_auto_reconnect_events(&self, extra_events: Vec<crate::events::Event>) {
+        self.auto_reconnect.lock().unwrap().extra_events = extra_events;
+    }
+
+    /// Returns the extra events that trigger automatic reconnection.
+    pub fn auto_reconnect_events(&self) -> Vec<crate::events::Event> {
+        self.auto_reconnect.lock().unwrap().extra_events.clone()
     }
 
     /// Returns the last remembered channel, if any.
