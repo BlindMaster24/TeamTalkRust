@@ -6,6 +6,53 @@
 - `crates/teamtalk-sys/` contains bindgen-based FFI and loads `TeamTalk.h`.
 - `TEAMTALK_DLL/` stores downloaded SDK binaries and headers (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
 - `docs/` contains user guides; `README.md` links to docs and entry points.
+## Module Structure Guidelines (for this repo)
+- Prefer small, focused modules; split files when a module grows beyond ~400–600 lines or mixes multiple responsibilities.
+- Keep public API surface shallow: expose through `lib.rs` and module `mod.rs`, hide internals in submodules with `pub(crate)`.
+- Group by domain (client, events, types, utils) over technical layers; new features should follow existing domain boundaries.
+- If a type group grows, split into a folder with `mod.rs` and separate files (e.g., `types/voice.rs`, `types/channels.rs`).
+- Avoid circular dependencies between modules; if needed, extract shared types into `types` or shared helpers into `utils`.
+- Keep FFI wrappers in `teamtalk-sys`; keep safe abstractions in `teamtalk` (no unsafe in high-level modules).
+- Examples live in `crates/teamtalk/examples/`; integration tests in `crates/teamtalk/tests/`.
+- Prefer `*_ex` variants for high-level APIs to expose full parameters, as per project rules.
+## Library Architecture & API Design (Rust)
+- Keep crates layered: `teamtalk-sys` = raw FFI, `teamtalk` = safe, ergonomic SDK.
+- Public API should be minimal, stable, and documented; everything else stays `pub(crate)`.
+- Prefer newtype wrappers for IDs and handles; avoid raw primitives at boundaries.
+- Use traits when you need polymorphism or testability; avoid traits as a default abstraction.
+- Prefer composition over deep inheritance‑style trait hierarchies.
+- Expose configuration via structs/builders; avoid long parameter lists.
+- Make default behavior explicit; optional behavior behind feature flags.
+- Favor deterministic behavior; avoid background tasks unless explicitly started.
+- Document invariants and safety for any public API or unsafe boundary.
+## Documentation Sources & Validation
+- If guidance is unclear, check official docs or primary sources (Rust book, std docs, crate docs).
+- When the user asks for best practices or “proper” patterns, verify against authoritative references.
+- If advice depends on a specific crate, consult its official docs/changelog before suggesting API usage.
+- When the user asks to “check blogs/books,” summarize the key points and cite the source domain/title in the response.
+- Prefer official references first; use blogs only to supplement or clarify.
+- If sources conflict, present both and explain the tradeoff.
+## External Research & Verification (when requested)
+- If the user asks to “look it up” or “verify,” do it before answering.
+- Use primary sources (official docs, RFCs, upstream repos) for API or behavior claims.
+- Record the exact version or date when advice is time‑sensitive.
+## Release Hygiene
+- Order of operations: code → tests → docs → changelog → version bump (separate commit).
+- Release commit must only contain version + changelog + synced references.
+- No unrelated refactors in release commits.
+## API Review Checklist (before shipping)
+- Backward compatibility assessed (breaking vs additive).
+- Deprecation plan and migration notes where needed.
+- Feature flags updated and documented.
+- Examples updated and compile.
+## Error & Logging Rules
+- Public error types are stable and documented.
+- Error messages must be actionable and avoid leaking secrets.
+- Logging should use consistent levels and include context identifiers.
+## Backport / Hotfix Rules
+- Minimal, targeted fix in a dedicated commit.
+- Explain scope and risk in commit body.
+- Prefer revert+fix to history rewriting.
 
 ## Build, Test, and Development Commands
 - `cargo build` builds the workspace (`teamtalk`, `teamtalk-sys`).
@@ -171,6 +218,54 @@
 - PRs should explain intent, list key changes, and include commands run.
 - Before committing, run required checks in the Definition of Done.
 - Commit workflow: review `git status`, stage only relevant files, review `git diff --staged`, then commit and push after user confirmation.
+- If any uncertainty about what changed, review `git diff` and `git diff --staged` before naming or creating commits.
+- When preparing changes requested “since a commit”, inspect the actual diff (`git diff <base>..HEAD`) and read the relevant commits (not just their titles).
+- **Commit splitting policy (strict):**
+  - One commit per concern: code, tests, docs, and config changes are separate commits unless they must land together to keep builds green.
+  - If a change touches multiple subsystems (e.g., client + sys crate), split by subsystem unless one commit is required for correctness.
+  - Each commit must be explainable in one sentence and be buildable (or clearly marked why not in the body).
+- **API change definition (project):**
+  - Any change to `pub` API, feature flags, user-visible behavior, or documented usage counts as an API change.
+  - API changes require matching docs updates and changelog entry in the same PR/commit set.
+- **Docs update scope (wide):**
+  - When API changes land, re-audit README + all `docs/` pages for accuracy.
+  - Do not whitelist specific files; verify the entire `docs/` directory for correctness.
+- **Formatting commits:**
+  - Formatting-only changes are allowed only when required by rustfmt or CI.
+  - If required, keep formatting-only edits in a dedicated commit, never mixed with behavior changes.
+- **Staging checklist (before commit):**
+  - `git status -sb` to confirm scope.
+  - `git diff` to review all working-tree changes.
+  - `git diff --staged` to confirm only intended files are staged.
+  - Ensure the staged diff matches the commit message intent.
+- **Commit message rules (practical):**
+  - Summary ≤ 72 chars, imperative, one intent.
+  - Use body when rationale, tradeoffs, or migrations are involved.
+  - For multi-step work, include a short body line describing the step.
+- **Docs accuracy rule:**
+  - If docs mention an API/behavior, confirm it exists in code or update docs.
+  - Never leave docs describing removed/renamed APIs.
+- **Example usage rule:**
+  - If a new public API is added, add/update an example or doc snippet that compiles.
+- **Safety sanity checks (before commit):**
+  - Search for accidental debug artifacts (`TODO`, `FIXME`, `println!`, `dbg!`, `unwrap` in library code).
+  - Ensure no secrets, tokens, or local paths are introduced in diffs.
+  - Avoid committing generated artifacts unless explicitly required.
+- **Dependency updates:**
+  - Use a dedicated commit for dependency bumps unless required by the same change.
+  - Document user-visible dependency impacts in `docs/changelog.md` when relevant.
+- **Refactor discipline:**
+  - Refactors must not change behavior; if they do, split or document and test.
+  - Keep refactor commits small and isolated from feature work.
+- **Review discipline:**
+  - Before requesting review or pushing, re-scan the diff for scope creep and unintended changes.
+  - If a change is risky or user-visible, add a brief commit body explaining impact and mitigation.
+  - Use explicit test evidence in PR/commit context (commands run + outcomes).
+- **Test discipline:**
+  - Match tests to behavior: new behavior → new/updated tests; bugfix → regression test when feasible.
+  - Prefer focused unit tests; use integration tests only for public API or feature interactions.
+  - Avoid network/IO tests unless explicitly required; mock or isolate.
+  - If tests are skipped, explain why and how to validate manually.
 - Keep commits production-grade: one logical change per commit. If a task spans multiple concerns, split into 2-5 focused commits (or more if justified).
 - If asked to push, still confirm that commits are scoped correctly before pushing.
 - Version bumps are always a dedicated commit. Never combine a version bump with other changes, even if requested.
@@ -189,8 +284,9 @@
   - Use imperative mood and <= 72 characters in the summary.
   - Use a body when rationale or migration guidance matters.
   - Include references to breaking changes and how to migrate.
-- Validation before push:
-  - Run DoD checks; if any are skipped, state why before commit.
+ - Validation before push:
+  - Default: rely on lefthook for DoD checks on commit.
+  - If lefthook is disabled or skipped, run the full DoD before pushing.
   - Confirm staged diff matches intent; never push partial/unfinished work.
   - Prefer clean history: avoid "WIP" commits in main history.
   - Use a dedicated commit for dependency updates unless they are required by the same change.
