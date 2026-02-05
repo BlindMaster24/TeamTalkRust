@@ -59,6 +59,16 @@
 - Run benchmarks in release mode (default `cargo bench`) and keep inputs deterministic.
 - Avoid benchmarking in shared CI unless results are stable; prefer local runs with recorded context.
 - If performance-sensitive code changes, add or update a benchmark and summarize results in the PR/commit context.
+## Miri (UB Detection) Usage
+- Miri is an interpreter that detects undefined behavior; useful for FFI and unsafe-heavy code.
+- Requires nightly toolchain and component:
+  - `rustup toolchain install nightly --component miri`
+  - or `rustup +nightly component add miri`
+- Run tests under Miri: `cargo +nightly miri test` (same flags as `cargo test`).
+- Run a binary under Miri: `cargo +nightly miri run`.
+- First run may download extra sysroot; consider `cargo miri setup` to prepare.
+- If you switch between Miri and normal builds, run `cargo clean` to avoid mixed artifacts.
+- Miri is single-threaded and slow; use sparingly or with nextest if configured.
 
 ## Build, Test, and Development Commands
 - `cargo build` builds the workspace (`teamtalk`, `teamtalk-sys`).
