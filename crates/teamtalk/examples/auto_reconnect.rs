@@ -21,10 +21,11 @@ fn main() -> teamtalk::Result<()> {
     let username = env_or("TT_USER", "guest");
     let password = env_or("TT_PASS", "guest");
     let client_name = env_or("TT_CLIENT", "TeamTalkRust");
+    let channel_password = env_or("TT_CHAN_PASS", "");
     let root_channel = ChannelId(1);
 
     let client = Client::new()?;
-    client.enable_auto_reconnect(ReconnectConfig::default());
+    client.enable_auto_reconnect_with_events(ReconnectConfig::default(), vec![Event::MySelfKicked]);
     client.set_login_params(LoginParams::new(
         &nickname,
         &username,
@@ -37,7 +38,8 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, _)) = client.poll(100)
             && matches!(event, Event::MySelfLoggedIn)
         {
-            client.join_channel(root_channel, "");
+            // Auto-join stores the password once, then reuses it on reconnect.
+            client.join_channel(root_channel, &channel_password);
         }
     }
 }
