@@ -71,6 +71,11 @@ Note: message payloads are event-specific. Only call the accessor that matches
 the event you received (for example, `msg.text()` for `Event::TextMessage`).
 Other accessors return `None`.
 
+If you plan to use auto-reconnect, prefer `connect_remember` and
+`login_remember` so the client can restore state after reconnect. For protected
+channels, call `join_channel` once with the password or use `set_last_channel`
+to store the channel and password explicitly.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:
@@ -95,7 +100,6 @@ loop {
 
 Store the returned `EventSubscriptionId` to drop the handler later, or use
 `client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
-
 
 
 

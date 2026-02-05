@@ -1,6 +1,11 @@
 #[cfg(feature = "dispatch")]
 use std::env;
 #[cfg(feature = "dispatch")]
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
+#[cfg(feature = "dispatch")]
 use teamtalk::dispatch::{ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher};
 #[cfg(feature = "dispatch")]
 use teamtalk::types::ChannelId;
@@ -31,6 +36,7 @@ fn main() -> teamtalk::Result<()> {
     let client_name = env_or("TT_CLIENT", "TeamTalkRust");
     let channel_password = env_or("TT_CHAN_PASS", "");
     let root_channel = ChannelId(1);
+    let should_join = Arc::new(AtomicBool::new(true));
 
     let client = Client::new()?;
     client.set_login_params(LoginParams::new(
@@ -39,6 +45,7 @@ fn main() -> teamtalk::Result<()> {
         &password,
         &client_name,
     ));
+    client.set_last_channel(root_channel, Some(&channel_password));
     client.connect_remember(&host, tcp, udp, false)?;
 
     let config = ClientConfig::new().reconnect_with_events(
@@ -47,11 +54,32 @@ fn main() -> teamtalk::Result<()> {
         vec![Event::MySelfKicked],
     );
 
+    let should_join_on_login = should_join.clone();
     let mut dispatcher = Dispatcher::with_config(client, config)
-        .on_connect_success(|_| DispatchFlow::Continue)
-        .on_event(Event::MySelfLoggedIn, move |ctx| {
+        .on_connect_success(move |ctx| {
             if let Some(client) = ctx.client() {
-                // Manual join stores the password once, then reuses it on reconnect.
+                client.login_with_params().ok();
+            }
+            DispatchFlow::Continue
+        })
+        .on_event(Event::MySelfKicked, {
+            let should_join = should_join.clone();
+            move |_| {
+                should_join.store(true, Ordering::Relaxed);
+                DispatchFlow::Continue
+            }
+        })
+        .on_event(Event::ConnectionLost, {
+            let should_join = should_join.clone();
+            move |_| {
+                should_join.store(true, Ordering::Relaxed);
+                DispatchFlow::Continue
+            }
+        })
+        .on_event(Event::MySelfLoggedIn, move |ctx| {
+            if let Some(client) = ctx.client()
+                && should_join_on_login.swap(false, Ordering::Relaxed)
+            {
                 client.join_channel(root_channel, &channel_password);
             }
             DispatchFlow::Continue

@@ -21,6 +21,7 @@ public API with compatibility expectations for downstream users.
 - Auto-reconnect extra events via `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
 - Explicit auto-join state helper: `set_last_channel(ChannelId, Option<&str>)`.
 - `reconnect_protected_channel` example showing reconnect + login + protected auto-join flow.
+- `async_tokio_event_stream` example showing async polling with Tokio wake integration.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
@@ -29,6 +30,7 @@ public API with compatibility expectations for downstream users.
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
+- `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
 
 ### Fixed
 - Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.
