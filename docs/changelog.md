@@ -32,6 +32,7 @@ public API with compatibility expectations for downstream users.
 
 ### Docs
 - Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
+- Added `dispatch_reconnect` example showing reconnect with kick handling.
 
 ## 1.2.0
 
