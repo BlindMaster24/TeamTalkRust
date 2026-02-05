@@ -206,9 +206,21 @@ impl Client {
         self.auto_reconnect.lock().unwrap().last_channel
     }
 
+    /// Remembers the channel and optional password used for auto-join after reconnect.
+    pub fn set_last_channel(&self, channel: crate::types::ChannelId, password: Option<&str>) {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.last_channel = Some(channel);
+        auto.last_channel_password = match password {
+            Some(value) if !value.is_empty() => Some(value.to_string()),
+            _ => None,
+        };
+    }
+
     /// Clears the remembered channel.
     pub fn clear_last_channel(&self) {
-        self.auto_reconnect.lock().unwrap().last_channel = None;
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.last_channel = None;
+        auto.last_channel_password = None;
     }
 
     /// Connects and remembers the parameters for automatic reconnection.
