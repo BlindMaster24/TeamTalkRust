@@ -97,6 +97,23 @@
 - `cargo add <crate>` / `cargo remove <crate>` manage dependencies.
 - `cargo update` updates the lockfile.
 - `cargo tree` shows dependency graph.
+## Cargo Cheatsheet by Task
+- **Quick sanity (local):**
+  - `cargo fmt --all -- --check`
+  - `cargo check --workspace --all-targets`
+- **Full DoD (before push/release):**
+  - `cargo fmt --all -- --check`
+  - `cargo check --workspace --all-targets`
+  - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+  - `cargo test --workspace --all-targets --all-features`
+  - `cargo doc --no-deps --all-features`
+  - `scripts/check-doc-links.ps1` (Windows) or `scripts/check-doc-links.sh` (Unix)
+- **Docs only:**
+  - `cargo doc --no-deps --all-features --open`
+  - `scripts/build-docs.ps1` / `scripts/build-docs.sh`
+- **Dependency inspection:**
+  - `cargo tree`
+  - `cargo metadata`
 
 ## SDK Version Overrides
 - The loader pins to `crates/teamtalk/SDK_VERSION.txt` by default.
