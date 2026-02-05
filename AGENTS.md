@@ -53,6 +53,12 @@
 - Minimal, targeted fix in a dedicated commit.
 - Explain scope and risk in commit body.
 - Prefer revert+fix to history rewriting.
+## Benchmarking & Performance Practices
+- Benchmarks live only under `benches/` and run via `cargo bench`.
+- Use stable-friendly tooling (Criterion) unless the project explicitly requires nightly `#[bench]`.
+- Run benchmarks in release mode (default `cargo bench`) and keep inputs deterministic.
+- Avoid benchmarking in shared CI unless results are stable; prefer local runs with recorded context.
+- If performance-sensitive code changes, add or update a benchmark and summarize results in the PR/commit context.
 
 ## Build, Test, and Development Commands
 - `cargo build` builds the workspace (`teamtalk`, `teamtalk-sys`).
@@ -76,6 +82,21 @@
   - Components list: `rustup component list` and `rustup component list --installed`
   - Targets list: `rustup target list` and `rustup target list --installed`
 - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+## Cargo Help & Command Discovery
+- `cargo --list` lists all installed Cargo subcommands (including third-party ones like `clippy`, `fmt`, `llvm-cov`, `sqlx`).
+- `cargo help` shows general usage and built-in commands.
+- `cargo help <command>` shows detailed help for a specific command (e.g. `cargo help test`, `cargo help doc`).
+## Core Cargo Commands (practical)
+- `cargo build` builds the workspace.
+- `cargo check --workspace --all-targets` runs fast type checks (DoD).
+- `cargo fmt --all -- --check` verifies formatting (DoD).
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` runs lints (DoD).
+- `cargo test --workspace --all-targets --all-features` runs tests (DoD).
+- `cargo doc --no-deps --all-features` builds docs (DoD).
+- `cargo doc --no-deps --all-features --open` opens docs locally.
+- `cargo add <crate>` / `cargo remove <crate>` manage dependencies.
+- `cargo update` updates the lockfile.
+- `cargo tree` shows dependency graph.
 
 ## SDK Version Overrides
 - The loader pins to `crates/teamtalk/SDK_VERSION.txt` by default.
