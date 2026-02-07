@@ -25,6 +25,7 @@ public API with compatibility expectations for downstream users.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
+- `Client::send_text` and `send_to_*` now send long text as multipart messages using `TextMessage.bMore` instead of truncating to a single packet.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
