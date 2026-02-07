@@ -50,12 +50,10 @@ cargo build --no-default-features --features tls-rustls
 - Cache helpers: user/channel caches with `refresh_*` and `cached_*` accessors.
 - Server info snapshot: `Client::server_info` from cached properties and stats.
 - Message builder: `MessageBuilder` for outgoing text messages.
+- Outgoing long text is chunked automatically and sent as multipart
+  `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
-
-
-
-
 

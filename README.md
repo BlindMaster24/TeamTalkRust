@@ -94,6 +94,11 @@ let mut buf = String::with_capacity(1024);
 teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 ```
 
+### Text Message Sending
+
+- Use one high-level call (`send_to_user` / `send_to_channel` / `send_to_all`) for a logical message.
+- Do not manually split long text unless you explicitly need custom behavior; repeated manual sends can look like spam and may trigger TeamTalk server flood protection.
+- Current `teamtalk` from git `main` chunks long text automatically and sends multipart messages via `TextMessage.bMore`.
 ## Project Structure
 
 - [crates/teamtalk-sys](crates/teamtalk-sys/): Low-level bindgen bindings to the SDK.
@@ -116,9 +121,4 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 ## License
 
 MIT
-
-
-
-
-
 

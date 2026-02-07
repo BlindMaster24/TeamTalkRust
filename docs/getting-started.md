@@ -76,6 +76,12 @@ If you plan to use auto-reconnect, prefer `connect_remember` and
 channels, call `join_channel` once with the password or use `set_last_channel`
 to store the channel and password explicitly.
 
+For outgoing text, prefer a single high-level call (`send_to_user`,
+`send_to_channel`, `send_to_all`) for one logical message. The client handles
+multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
+splitting unless you need custom behavior, since repeated sends may trigger
+server flood protection.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:
@@ -100,8 +106,4 @@ loop {
 
 Store the returned `EventSubscriptionId` to drop the handler later, or use
 `client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
-
-
-
-
 
