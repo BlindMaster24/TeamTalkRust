@@ -271,6 +271,8 @@ struct MockBackendState {
     leave_result: i32,
     last_login: Option<(String, String, String, String)>,
     last_text_message: Option<ffi::TextMessage>,
+    text_messages: Vec<ffi::TextMessage>,
+    text_message_results: std::collections::VecDeque<i32>,
     last_status: Option<(i32, String)>,
 }
 
@@ -346,6 +348,15 @@ impl MockBackend {
 
     pub fn last_text_message(&self) -> Option<ffi::TextMessage> {
         self.state.lock().unwrap().last_text_message
+    }
+
+    pub fn text_messages(&self) -> Vec<ffi::TextMessage> {
+        self.state.lock().unwrap().text_messages.clone()
+    }
+
+    pub fn set_text_message_results(&self, results: impl IntoIterator<Item = i32>) {
+        let mut state = self.state.lock().unwrap();
+        state.text_message_results = results.into_iter().collect();
     }
 
     pub fn last_status(&self) -> Option<(i32, String)> {
@@ -445,7 +456,8 @@ impl TeamTalkBackend for MockBackend {
     fn do_text_message(&self, _ptr: *mut ffi::TTInstance, message: &ffi::TextMessage) -> i32 {
         let mut state = self.state.lock().unwrap();
         state.last_text_message = Some(*message);
-        1
+        state.text_messages.push(*message);
+        state.text_message_results.pop_front().unwrap_or(1)
     }
 
     fn do_change_status(&self, _ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32 {

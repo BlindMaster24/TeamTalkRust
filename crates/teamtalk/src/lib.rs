@@ -28,7 +28,7 @@ pub use client::recording::{
     SilencePolicy, SyncedUserRecording, SyncedUserRecordingBus, SyncedUserRecordingOptions,
     SyncedUserRecordingSession, UserRecordingOptions, UserRecordingSession,
 };
-pub use client::users::LoginParams;
+pub use client::users::{LoginParams, SendTextOptions};
 pub use client::{
     Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
     ClientManager, ClientRegistry, EventContext, EventSubscriptionId, Message, ReconnectConfig,

@@ -1,11 +1,121 @@
 //! User management APIs.
 use super::Client;
 use crate::types::{
-    ChannelId, MessageTarget, Subscriptions, User, UserAccount, UserId, UserStatistics, UserStatus,
+    ChannelId, MessageTarget, Subscriptions, TT_STRLEN, User, UserAccount, UserId, UserStatistics,
+    UserStatus,
 };
 use crate::utils::ToTT;
 use std::env;
 use teamtalk_sys as ffi;
+
+const TT_TEXT_MAX_PAYLOAD: usize = TT_STRLEN - 1;
+
+/// Options for multipart text sending.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SendTextOptions {
+    /// Additional retry attempts for the first chunk only.
+    pub first_chunk_retries: u32,
+}
+
+impl SendTextOptions {
+    /// Creates default send options.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            first_chunk_retries: 0,
+        }
+    }
+
+    /// Sets the number of extra retries for the first chunk.
+    #[must_use]
+    pub const fn with_first_chunk_retries(mut self, retries: u32) -> Self {
+        self.first_chunk_retries = retries;
+        self
+    }
+}
+
+impl Default for SendTextOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(windows)]
+fn ttchar_units(ch: char) -> usize {
+    ch.len_utf16()
+}
+
+#[cfg(not(windows))]
+fn ttchar_units(ch: char) -> usize {
+    ch.len_utf8()
+}
+
+fn split_text_chunks(text: &str, max_units: usize) -> Vec<String> {
+    if text.is_empty() {
+        return vec![String::new()];
+    }
+
+    let mut chunks = Vec::new();
+    let mut current = String::new();
+    let mut current_tt_units = 0usize;
+    #[cfg(windows)]
+    let mut current_utf8_bytes = 0usize;
+
+    for ch in text.chars() {
+        let ch_tt_units = ttchar_units(ch);
+        #[cfg(windows)]
+        let ch_utf8_bytes = ch.len_utf8();
+        #[cfg(windows)]
+        let would_exceed = current_tt_units + ch_tt_units > max_units
+            || current_utf8_bytes + ch_utf8_bytes > max_units;
+        #[cfg(not(windows))]
+        let would_exceed = current_tt_units + ch_tt_units > max_units;
+
+        if would_exceed && !current.is_empty() {
+            chunks.push(std::mem::take(&mut current));
+            current_tt_units = 0;
+            #[cfg(windows)]
+            {
+                current_utf8_bytes = 0;
+            }
+        }
+
+        current.push(ch);
+        current_tt_units += ch_tt_units;
+        #[cfg(windows)]
+        {
+            current_utf8_bytes += ch_utf8_bytes;
+        }
+    }
+
+    if !current.is_empty() {
+        chunks.push(current);
+    }
+
+    if chunks.is_empty() {
+        chunks.push(String::new());
+    }
+
+    chunks
+}
+
+fn text_message_for_target(target: MessageTarget) -> ffi::TextMessage {
+    let mut msg = ffi::TextMessage::default();
+    match target {
+        MessageTarget::User(id) => {
+            msg.nMsgType = ffi::TextMsgType::MSGTYPE_USER;
+            msg.nToUserID = id.0;
+        }
+        MessageTarget::Channel(id) => {
+            msg.nMsgType = ffi::TextMsgType::MSGTYPE_CHANNEL;
+            msg.nChannelID = id.0;
+        }
+        MessageTarget::Broadcast => {
+            msg.nMsgType = ffi::TextMsgType::MSGTYPE_BROADCAST;
+        }
+    }
+    msg
+}
 
 /// Stored login parameters for automatic login.
 #[derive(Debug, Clone)]
@@ -185,26 +295,49 @@ impl Client {
 
     /// Sends a text message to a target.
     pub fn send_text<T: Into<MessageTarget>>(&self, target: T, text: &str) -> i32 {
-        let mut msg = unsafe { std::mem::zeroed::<ffi::TextMessage>() };
-        match target.into() {
-            MessageTarget::User(id) => {
-                msg.nMsgType = ffi::TextMsgType::MSGTYPE_USER;
-                msg.nToUserID = id.0;
+        self.send_text_with_options(target, text, SendTextOptions::default())
+    }
+
+    /// Sends a text message to a target using explicit options.
+    pub fn send_text_with_options<T: Into<MessageTarget>>(
+        &self,
+        target: T,
+        text: &str,
+        options: SendTextOptions,
+    ) -> i32 {
+        let target = target.into();
+        let chunks = split_text_chunks(text, TT_TEXT_MAX_PAYLOAD);
+        let total_chunks = chunks.len();
+        let mut last_cmd_id = 0;
+
+        for (index, chunk) in chunks.into_iter().enumerate() {
+            let mut msg = text_message_for_target(target);
+            msg.bMore = if index + 1 < total_chunks { 1 } else { 0 };
+            let tt = chunk.tt();
+            unsafe {
+                let len = tt.len().min(TT_TEXT_MAX_PAYLOAD);
+                std::ptr::copy_nonoverlapping(tt.as_ptr(), msg.szMessage.as_mut_ptr(), len);
             }
-            MessageTarget::Channel(id) => {
-                msg.nMsgType = ffi::TextMsgType::MSGTYPE_CHANNEL;
-                msg.nChannelID = id.0;
-            }
-            MessageTarget::Broadcast => {
-                msg.nMsgType = ffi::TextMsgType::MSGTYPE_BROADCAST;
+
+            let mut retries_left = if index == 0 {
+                options.first_chunk_retries
+            } else {
+                0
+            };
+            loop {
+                let cmd_id = self.backend().do_text_message(self.ptr.0, &msg);
+                if cmd_id > 0 {
+                    last_cmd_id = cmd_id;
+                    break;
+                }
+                if retries_left == 0 {
+                    return cmd_id;
+                }
+                retries_left -= 1;
             }
         }
-        let t = text.tt();
-        unsafe {
-            let len = t.len().min(511);
-            std::ptr::copy_nonoverlapping(t.as_ptr(), msg.szMessage.as_mut_ptr(), len);
-            self.backend().do_text_message(self.ptr.0, &msg)
-        }
+
+        last_cmd_id
     }
 
     /// Sends a text message to a user.
