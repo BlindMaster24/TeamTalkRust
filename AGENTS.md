@@ -32,6 +32,13 @@
 - When the user asks to “check blogs/books,” summarize the key points and cite the source domain/title in the response.
 - Prefer official references first; use blogs only to supplement or clarify.
 - If sources conflict, present both and explain the tradeoff.
+## Context7 MCP Usage (Default)
+- Always use Context7 MCP by default when the task involves library/API documentation, code generation, setup steps, configuration steps, or framework-specific usage.
+- Do not wait for the user to explicitly request Context7 for these cases.
+- First resolve the library id via Context7, then query docs with concrete version-aware prompts.
+- Prefer Context7/official docs over memory for API signatures, feature flags, config keys, and migration guidance.
+- If Context7 and local code differ, treat local code as source of truth for current repository behavior and document the mismatch.
+- If Context7 is unavailable or insufficient, fall back to official upstream docs/changelogs and mention the fallback in the response.
 ## External Research & Verification (when requested)
 - If the user asks to “look it up” or “verify,” do it before answering.
 - Use primary sources (official docs, RFCs, upstream repos) for API or behavior claims.
