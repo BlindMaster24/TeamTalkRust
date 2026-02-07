@@ -5,14 +5,24 @@ use std::sync::Arc;
 use teamtalk::client::Client;
 use teamtalk::client::backend::MockBackend;
 use teamtalk::client::ffi;
+use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
-use teamtalk::types::{Channel, ChannelId, UserPresence, UserStatus};
+use teamtalk::types::{
+    Channel, ChannelId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
+};
 use teamtalk::utils::strings::to_string;
 
 fn test_channel(id: i32, name: &str) -> Channel {
     let mut channel = Channel::builder(name).build();
     channel.id = ChannelId(id);
     channel
+}
+
+fn joined_messages_text(messages: &[ffi::TextMessage]) -> String {
+    messages
+        .iter()
+        .map(|msg| to_string(&msg.szMessage))
+        .collect::<String>()
 }
 
 #[test]
@@ -127,17 +137,141 @@ fn join_channel_does_not_change_state_on_failure() {
 }
 
 #[test]
-fn send_text_builds_expected_message() {
+fn send_text_short_message_uses_single_packet() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend.clone()).expect("client");
 
-    let cmd_id = client.send_to_user(teamtalk::types::UserId(99), "hello");
+    let cmd_id = client.send_to_user(UserId(99), "hello");
 
     assert_eq!(cmd_id, 1);
-    let msg = backend.last_text_message().expect("text message");
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 1);
+    let msg = messages[0];
     assert_eq!(msg.nMsgType, ffi::TextMsgType::MSGTYPE_USER);
     assert_eq!(msg.nToUserID, 99);
+    assert_eq!(msg.bMore, 0);
     assert_eq!(to_string(&msg.szMessage), "hello");
+}
+
+#[test]
+fn send_text_long_message_splits_and_sets_more_flag() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let text = "a".repeat(TT_STRLEN + 25);
+
+    let cmd_id = client.send_to_channel(ChannelId(7), &text);
+
+    assert_eq!(cmd_id, 1);
+    let messages = backend.text_messages();
+    assert!(messages.len() > 1);
+    for msg in &messages[..messages.len() - 1] {
+        assert_eq!(msg.bMore, 1);
+    }
+    assert_eq!(messages[messages.len() - 1].bMore, 0);
+    assert_eq!(joined_messages_text(&messages), text);
+}
+
+#[test]
+fn send_text_boundary_exact_limit_is_single_packet() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let text = "b".repeat(TT_STRLEN - 1);
+
+    let cmd_id = client.send_to_all(&text);
+
+    assert_eq!(cmd_id, 1);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].bMore, 0);
+    assert_eq!(joined_messages_text(&messages), text);
+}
+
+#[test]
+fn send_text_boundary_limit_plus_one_is_two_packets() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let text = "c".repeat(TT_STRLEN);
+
+    let cmd_id = client.send_to_all(&text);
+
+    assert_eq!(cmd_id, 1);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 2);
+    assert_eq!(messages[0].bMore, 1);
+    assert_eq!(messages[1].bMore, 0);
+    assert_eq!(joined_messages_text(&messages), text);
+}
+
+#[test]
+fn send_text_empty_string_still_sends_single_message() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+
+    let cmd_id = client.send_to_all("");
+
+    assert_eq!(cmd_id, 1);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].bMore, 0);
+    assert!(to_string(&messages[0].szMessage).is_empty());
+}
+
+#[test]
+fn send_text_preserves_unicode_and_newlines() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let sample = "Привет🙂\r\nline two\n終わり🙂";
+    let text = sample.repeat(80);
+
+    let cmd_id = client.send_to_all(&text);
+
+    assert_eq!(cmd_id, 1);
+    let messages = backend.text_messages();
+    assert!(messages.len() > 1);
+    assert_eq!(joined_messages_text(&messages), text);
+}
+
+#[test]
+fn send_text_stops_after_failed_chunk() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_text_message_results([1, -1, 1]);
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let text = "d".repeat(TT_STRLEN * 2 + 10);
+
+    let cmd_id = client.send_to_all(&text);
+
+    assert_eq!(cmd_id, -1);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 2);
+}
+
+#[test]
+fn send_text_with_options_retries_first_chunk() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_text_message_results([-1, -1, 77]);
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let options = SendTextOptions::new().with_first_chunk_retries(2);
+
+    let cmd_id = client.send_text_with_options(MessageTarget::Broadcast, "retry", options);
+
+    assert_eq!(cmd_id, 77);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 3);
+}
+
+#[test]
+fn send_text_with_options_does_not_retry_non_first_chunk() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_text_message_results([1, -1, 1]);
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let options = SendTextOptions::new().with_first_chunk_retries(5);
+    let text = "e".repeat(TT_STRLEN * 2 + 10);
+
+    let cmd_id = client.send_text_with_options(MessageTarget::Broadcast, &text, options);
+
+    assert_eq!(cmd_id, -1);
+    let messages = backend.text_messages();
+    assert_eq!(messages.len(), 2);
 }
 
 #[test]
