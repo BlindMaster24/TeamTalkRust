@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use teamtalk::client::connection::{ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
+use teamtalk::client::connection::{
+    ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectWorkflowConfig,
+};
 
 #[test]
 fn reconnect_handler_resets_after_stable_connection() {
@@ -55,4 +57,25 @@ fn connect_params_from_env_parses_values() {
         std::env::remove_var("TT_UDP");
         std::env::remove_var("TT_ENCRYPTED");
     }
+}
+
+#[test]
+fn reconnect_workflow_config_defaults_follow_reconnect_defaults() {
+    let defaults = ReconnectConfig::default();
+    let workflow = ReconnectWorkflowConfig::default();
+
+    assert_eq!(workflow.login.max_attempts, defaults.max_attempts);
+    assert_eq!(workflow.login.min_delay, defaults.min_delay);
+    assert_eq!(workflow.login.max_delay, defaults.max_delay);
+    assert_eq!(
+        workflow.login.stability_threshold,
+        defaults.stability_threshold
+    );
+    assert_eq!(workflow.join.max_attempts, defaults.max_attempts);
+    assert_eq!(workflow.join.min_delay, defaults.min_delay);
+    assert_eq!(workflow.join.max_delay, defaults.max_delay);
+    assert_eq!(
+        workflow.join.stability_threshold,
+        defaults.stability_threshold
+    );
 }

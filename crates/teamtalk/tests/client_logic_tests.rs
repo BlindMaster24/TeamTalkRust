@@ -1,10 +1,13 @@
 #![cfg(feature = "mock")]
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use teamtalk::client::Client;
 use teamtalk::client::backend::MockBackend;
+use teamtalk::client::connection::{ConnectParamsOwned, ReconnectConfig, ReconnectWorkflowConfig};
 use teamtalk::client::ffi;
+use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
@@ -311,5 +314,99 @@ fn set_status_message_uses_default_when_user_missing() {
             UserStatus::default().to_bits() as i32,
             "fallback".to_string()
         ))
+    );
+}
+
+#[test]
+fn reconnect_workflow_config_roundtrip() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    let workflow = ReconnectWorkflowConfig {
+        login: ReconnectConfig {
+            max_attempts: 3,
+            min_delay: Duration::from_millis(10),
+            max_delay: Duration::from_millis(50),
+            stability_threshold: Duration::from_millis(100),
+        },
+        join: ReconnectConfig {
+            max_attempts: 5,
+            min_delay: Duration::from_millis(20),
+            max_delay: Duration::from_millis(120),
+            stability_threshold: Duration::from_millis(200),
+        },
+    };
+
+    client.set_reconnect_workflow_config(workflow.clone());
+    let actual = client.reconnect_workflow_config();
+
+    assert_eq!(actual.login.max_attempts, workflow.login.max_attempts);
+    assert_eq!(actual.login.min_delay, workflow.login.min_delay);
+    assert_eq!(actual.login.max_delay, workflow.login.max_delay);
+    assert_eq!(
+        actual.login.stability_threshold,
+        workflow.login.stability_threshold
+    );
+    assert_eq!(actual.join.max_attempts, workflow.join.max_attempts);
+    assert_eq!(actual.join.min_delay, workflow.join.min_delay);
+    assert_eq!(actual.join.max_delay, workflow.join.max_delay);
+    assert_eq!(
+        actual.join.stability_threshold,
+        workflow.join.stability_threshold
+    );
+}
+
+#[test]
+fn enable_full_auto_reconnect_sets_in_session_params() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    let connect = ReconnectConfig {
+        max_attempts: 7,
+        min_delay: Duration::from_millis(5),
+        max_delay: Duration::from_millis(200),
+        stability_threshold: Duration::from_millis(500),
+    };
+    let workflow = ReconnectWorkflowConfig {
+        login: ReconnectConfig {
+            max_attempts: 4,
+            min_delay: Duration::from_millis(11),
+            max_delay: Duration::from_millis(60),
+            stability_threshold: Duration::from_millis(120),
+        },
+        join: ReconnectConfig {
+            max_attempts: 6,
+            min_delay: Duration::from_millis(13),
+            max_delay: Duration::from_millis(90),
+            stability_threshold: Duration::from_millis(160),
+        },
+    };
+    let connect_params = ConnectParamsOwned::new("example.org", 10333, 10334, true);
+    let login_params = LoginParams::new("bot", "user", "secret", "TeamTalkRust");
+
+    client.enable_full_auto_reconnect(
+        connect,
+        workflow.clone(),
+        connect_params,
+        login_params.clone(),
+    );
+
+    assert!(client.auto_reconnect_enabled());
+    let reconnect = client.reconnect_params().expect("reconnect params");
+    assert_eq!(reconnect.host, "example.org");
+    assert_eq!(reconnect.tcp, 10333);
+    assert_eq!(reconnect.udp, 10334);
+    assert!(reconnect.encrypted);
+    let login = client.login_params().expect("login params");
+    assert_eq!(login.nickname, login_params.nickname);
+    assert_eq!(login.username, login_params.username);
+    assert_eq!(login.password, login_params.password);
+    assert_eq!(login.client_name, login_params.client_name);
+    let actual_workflow = client.reconnect_workflow_config();
+    assert_eq!(
+        actual_workflow.login.max_attempts,
+        workflow.login.max_attempts
+    );
+    assert_eq!(
+        actual_workflow.join.max_attempts,
+        workflow.join.max_attempts
     );
 }
