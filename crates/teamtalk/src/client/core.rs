@@ -285,10 +285,20 @@ impl Client {
     }
 
     pub(crate) fn handle_auto_reconnect(&self) {
-        if *self.state.lock().unwrap() != ConnectionState::Disconnected {
-            return;
+        match *self.state.lock().unwrap() {
+            ConnectionState::Disconnected => self.handle_connect_recovery(),
+            ConnectionState::Connected => self.handle_login_recovery(),
+            ConnectionState::LoggedIn => self.handle_join_recovery(),
+            ConnectionState::Joined(_) => self.handle_recovery_completed(),
+            _ => {}
         }
+    }
 
+    fn empty_message(event: Event) -> Message {
+        Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() })
+    }
+
+    fn handle_connect_recovery(&self) {
         let mut auto = self.auto_reconnect.lock().unwrap();
         if !auto.enabled {
             return;
@@ -307,84 +317,201 @@ impl Client {
         if handler.can_attempt() {
             let attempt = handler.attempts() + 1;
             let delay = handler.current_delay();
-            let before_event = Event::BeforeReconnect { attempt, delay };
-            let msg = Message::from_raw(before_event, unsafe {
-                std::mem::zeroed::<ffi::TTMessage>()
-            });
-            drop(auto);
-
-            self.invoke_hooks(before_event, &msg);
-
-            let mut auto = self.auto_reconnect.lock().unwrap();
-            if let Some(handler) = auto.handler.as_mut() {
-                handler.record_attempt();
-            }
+            handler.record_attempt();
             let force_disconnect = auto.force_disconnect;
             auto.force_disconnect = false;
+            auto.login_gave_up = false;
+            auto.join_gave_up = false;
+            auto.recovery_completed = false;
             drop(auto);
+
+            let before_event = Event::BeforeReconnect { attempt, delay };
+            let msg = Self::empty_message(before_event);
+            self.invoke_hooks(before_event, &msg);
 
             self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
             if force_disconnect {
                 let _ = self.disconnect();
             }
             let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
-        } else {
-            let attempts = handler.attempts();
-            let failed_event = Event::ReconnectFailed { attempts };
-            let msg = Message::from_raw(failed_event, unsafe {
-                std::mem::zeroed::<ffi::TTMessage>()
-            });
-            drop(auto);
-            self.invoke_hooks(failed_event, &msg);
-
-            let mut auto = self.auto_reconnect.lock().unwrap();
-            auto.enabled = false;
-            auto.handler = None;
+            return;
         }
+
+        if !handler.exhausted() {
+            return;
+        }
+
+        let attempts = handler.attempts();
+        drop(auto);
+        let failed_event = Event::ReconnectFailed { attempts };
+        let msg = Self::empty_message(failed_event);
+        self.invoke_hooks(failed_event, &msg);
+
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.enabled = false;
+        auto.handler = None;
+        auto.login_handler = None;
+        auto.join_handler = None;
     }
 
-    pub(crate) fn handle_auto_login(&self) {
-        if *self.state.lock().unwrap() != ConnectionState::Connected {
-            return;
-        }
+    fn handle_login_recovery(&self) {
+        let (params, attempt, delay, gave_up_now) = {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            if !auto.enabled || auto.login_gave_up {
+                return;
+            }
 
-        let auto = self.auto_reconnect.lock().unwrap();
-        if !auto.enabled {
-            return;
-        }
+            let params = match auto.login.as_ref() {
+                Some(params) => params.clone(),
+                None => return,
+            };
 
-        let params: super::users::LoginParams = match auto.login.as_ref() {
-            Some(params) => params.clone(),
-            None => return,
+            let login_config = auto.workflow.login.clone();
+            let handler = auto
+                .login_handler
+                .get_or_insert_with(|| super::connection::ReconnectHandler::new(login_config));
+            if handler.can_attempt() {
+                let attempt = handler.attempts() + 1;
+                let delay = handler.current_delay();
+                handler.record_attempt();
+                (params, attempt, delay, false)
+            } else if handler.exhausted() {
+                let attempts = handler.attempts();
+                let delay = handler.current_delay();
+                auto.login_gave_up = true;
+                (params, attempts, delay, true)
+            } else {
+                return;
+            }
         };
-        drop(auto);
 
-        let _ = self.login(
+        if gave_up_now {
+            let event = Event::AutoLoginFailed { attempts: attempt };
+            let msg = Self::empty_message(event);
+            self.invoke_hooks(event, &msg);
+            return;
+        }
+
+        let before_event = Event::BeforeAutoLogin { attempt, delay };
+        let msg = Self::empty_message(before_event);
+        self.invoke_hooks(before_event, &msg);
+
+        let cmd_id = self.login(
             &params.nickname,
             &params.username,
             &params.password,
             &params.client_name,
         );
+        if cmd_id <= 0 {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            auto.pending_login_cmd = None;
+            drop(auto);
+            self.set_connection_state(ConnectionState::Connected);
+            let failed = Event::AutoLoginFailed { attempts: attempt };
+            let msg = Self::empty_message(failed);
+            self.invoke_hooks(failed, &msg);
+        } else {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            auto.pending_login_cmd = Some(cmd_id);
+        }
     }
 
-    pub(crate) fn handle_auto_join(&self) {
-        if *self.state.lock().unwrap() != ConnectionState::LoggedIn {
-            return;
-        }
+    fn handle_join_recovery(&self) {
+        let (channel, password, attempt, delay, gave_up_now) = {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            if !auto.enabled || auto.join_gave_up {
+                return;
+            }
 
-        let auto = self.auto_reconnect.lock().unwrap();
-        if !auto.enabled {
-            return;
-        }
+            let channel = match auto.last_channel {
+                Some(channel) => channel,
+                None => return,
+            };
+            let password = auto.last_channel_password.clone();
 
-        let channel = match auto.last_channel {
-            Some(channel) => channel,
-            None => return,
+            let join_config = auto.workflow.join.clone();
+            let handler = auto
+                .join_handler
+                .get_or_insert_with(|| super::connection::ReconnectHandler::new(join_config));
+            if handler.can_attempt() {
+                let attempt = handler.attempts() + 1;
+                let delay = handler.current_delay();
+                handler.record_attempt();
+                (channel, password, attempt, delay, false)
+            } else if handler.exhausted() {
+                let attempts = handler.attempts();
+                let delay = handler.current_delay();
+                auto.join_gave_up = true;
+                (channel, password, attempts, delay, true)
+            } else {
+                return;
+            }
         };
-        let password = auto.last_channel_password.clone();
-        drop(auto);
 
-        let _ = self.join_channel(channel, password.as_deref().unwrap_or(""));
+        if gave_up_now {
+            let event = Event::AutoJoinFailed { attempts: attempt };
+            let msg = Self::empty_message(event);
+            self.invoke_hooks(event, &msg);
+            return;
+        }
+
+        let before_event = Event::BeforeAutoJoin { attempt, delay };
+        let msg = Self::empty_message(before_event);
+        self.invoke_hooks(before_event, &msg);
+
+        let cmd_id = self.join_channel(channel, password.as_deref().unwrap_or(""));
+        if cmd_id <= 0 {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            auto.pending_join_cmd = None;
+            drop(auto);
+            self.set_connection_state(ConnectionState::LoggedIn);
+            let failed = Event::AutoJoinFailed { attempts: attempt };
+            let msg = Self::empty_message(failed);
+            self.invoke_hooks(failed, &msg);
+        } else {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            auto.pending_join_cmd = Some(cmd_id);
+        }
+    }
+
+    fn handle_recovery_completed(&self) {
+        let (reconnect_attempts, login_attempts, join_attempts) = {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            if !auto.enabled || auto.recovery_completed {
+                return;
+            }
+
+            auto.recovery_completed = true;
+            auto.login_gave_up = false;
+            auto.join_gave_up = false;
+            let reconnect_attempts = auto
+                .handler
+                .as_ref()
+                .map_or(0, |handler| handler.attempts());
+            let login_attempts = auto
+                .login_handler
+                .as_ref()
+                .map_or(0, |handler| handler.attempts());
+            let join_attempts = auto
+                .join_handler
+                .as_ref()
+                .map_or(0, |handler| handler.attempts());
+            if let Some(handler) = auto.login_handler.as_mut() {
+                handler.reset();
+            }
+            if let Some(handler) = auto.join_handler.as_mut() {
+                handler.reset();
+            }
+            (reconnect_attempts, login_attempts, join_attempts)
+        };
+
+        let event = Event::AutoRecoverCompleted {
+            reconnect_attempts,
+            login_attempts,
+            join_attempts,
+        };
+        let msg = Self::empty_message(event);
+        self.invoke_hooks(event, &msg);
     }
 
     /// Sends a debug input tone to the SDK.
@@ -421,10 +548,18 @@ impl Client {
 pub(crate) struct AutoReconnectState {
     pub(crate) enabled: bool,
     pub(crate) handler: Option<super::connection::ReconnectHandler>,
+    pub(crate) login_handler: Option<super::connection::ReconnectHandler>,
+    pub(crate) join_handler: Option<super::connection::ReconnectHandler>,
     pub(crate) params: Option<super::connection::ConnectParamsOwned>,
     pub(crate) last_channel: Option<crate::types::ChannelId>,
     pub(crate) last_channel_password: Option<String>,
     pub(crate) login: Option<super::users::LoginParams>,
+    pub(crate) workflow: super::connection::ReconnectWorkflowConfig,
+    pub(crate) login_gave_up: bool,
+    pub(crate) join_gave_up: bool,
+    pub(crate) recovery_completed: bool,
+    pub(crate) pending_login_cmd: Option<i32>,
+    pub(crate) pending_join_cmd: Option<i32>,
     pub(crate) extra_events: Vec<crate::events::Event>,
     pub(crate) force_disconnect: bool,
 }
@@ -655,31 +790,59 @@ impl Client {
         match event {
             Event::ConnectSuccess => {
                 self.set_connection_state(ConnectionState::Connected);
-                self.handle_auto_login();
-                if self.auto_reconnect_enabled() {
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                if let Some(handler) = auto.handler.as_mut() {
+                    handler.mark_connected();
+                }
+                auto.login_gave_up = false;
+                auto.join_gave_up = false;
+                if auto.enabled {
                     let msg =
                         Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() });
-                    let auto = self.auto_reconnect.lock().unwrap();
                     let attempts = auto.handler.as_ref().map(|h| h.attempts()).unwrap_or(0);
                     drop(auto);
                     if attempts > 0 {
                         self.invoke_hooks(Event::AfterReconnect { attempt: attempts }, &msg);
                     }
+                } else {
+                    drop(auto);
                 }
             }
             Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
-                self.set_connection_state(ConnectionState::Disconnected)
+                self.set_connection_state(ConnectionState::Disconnected);
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                if let Some(handler) = auto.handler.as_mut() {
+                    handler.mark_disconnected();
+                }
+                auto.pending_login_cmd = None;
+                auto.pending_join_cmd = None;
             }
             Event::MySelfLoggedIn => {
                 self.set_connection_state(ConnectionState::LoggedIn);
-                self.handle_auto_join();
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                auto.pending_login_cmd = None;
+                if let Some(handler) = auto.login_handler.as_mut() {
+                    handler.mark_connected();
+                }
             }
-            Event::MySelfLoggedOut => self.set_connection_state(ConnectionState::Connected),
+            Event::MySelfLoggedOut => {
+                self.set_connection_state(ConnectionState::Connected);
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                auto.pending_join_cmd = None;
+                if let Some(handler) = auto.join_handler.as_mut() {
+                    handler.mark_disconnected();
+                }
+            }
             Event::UserJoined => {
                 if let Some(user) = msg.user()
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::Joined(user.channel_id));
+                    let mut auto = self.auto_reconnect.lock().unwrap();
+                    auto.pending_join_cmd = None;
+                    if let Some(handler) = auto.join_handler.as_mut() {
+                        handler.mark_connected();
+                    }
                     self.invoke_joined_hook(user.channel_id);
                 }
             }
@@ -688,6 +851,46 @@ impl Client {
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::LoggedIn);
+                    let mut auto = self.auto_reconnect.lock().unwrap();
+                    if let Some(handler) = auto.join_handler.as_mut() {
+                        handler.mark_disconnected();
+                    }
+                }
+            }
+            Event::CmdError => {
+                let source = msg.source();
+                let mut next_state = None;
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                if auto.pending_login_cmd == Some(source) {
+                    auto.pending_login_cmd = None;
+                    if let Some(handler) = auto.login_handler.as_mut() {
+                        handler.mark_disconnected();
+                    }
+                    if auto.enabled {
+                        next_state = Some(ConnectionState::Connected);
+                    }
+                } else if auto.pending_join_cmd == Some(source) {
+                    auto.pending_join_cmd = None;
+                    if let Some(handler) = auto.join_handler.as_mut() {
+                        handler.mark_disconnected();
+                    }
+                    if auto.enabled {
+                        next_state = Some(ConnectionState::LoggedIn);
+                    }
+                }
+                drop(auto);
+                if let Some(state) = next_state {
+                    self.set_connection_state(state);
+                }
+            }
+            Event::CmdSuccess => {
+                let source = msg.source();
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                if auto.pending_login_cmd == Some(source) {
+                    auto.pending_login_cmd = None;
+                }
+                if auto.pending_join_cmd == Some(source) {
+                    auto.pending_join_cmd = None;
                 }
             }
             _ => {}

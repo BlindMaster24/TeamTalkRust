@@ -375,6 +375,11 @@ impl ScriptManager {
             | Event::Reconnecting { .. }
             | Event::AfterReconnect { .. }
             | Event::ReconnectFailed { .. }
+            | Event::BeforeAutoLogin { .. }
+            | Event::AutoLoginFailed { .. }
+            | Event::BeforeAutoJoin { .. }
+            | Event::AutoJoinFailed { .. }
+            | Event::AutoRecoverCompleted { .. }
             | Event::Unknown(_) => {}
         }
         Ok(table)
@@ -610,6 +615,11 @@ fn event_name(event: Event) -> &'static str {
         Event::Reconnecting { .. } => "Reconnecting",
         Event::AfterReconnect { .. } => "AfterReconnect",
         Event::ReconnectFailed { .. } => "ReconnectFailed",
+        Event::BeforeAutoLogin { .. } => "BeforeAutoLogin",
+        Event::AutoLoginFailed { .. } => "AutoLoginFailed",
+        Event::BeforeAutoJoin { .. } => "BeforeAutoJoin",
+        Event::AutoJoinFailed { .. } => "AutoJoinFailed",
+        Event::AutoRecoverCompleted { .. } => "AutoRecoverCompleted",
         Event::Unknown(_) => "Unknown",
     }
 }

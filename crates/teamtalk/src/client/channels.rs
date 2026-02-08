@@ -57,6 +57,7 @@ impl Client {
             } else {
                 auto.last_channel_password = Some(password.to_string());
             }
+            auto.join_gave_up = false;
             self.set_connection_state(ConnectionState::Joining(id));
         }
         cmd_id
@@ -89,6 +90,8 @@ impl Client {
             let mut auto = self.auto_reconnect.lock().unwrap();
             auto.last_channel = None;
             auto.last_channel_password = None;
+            auto.pending_join_cmd = None;
+            auto.join_gave_up = false;
         }
         cmd_id
     }

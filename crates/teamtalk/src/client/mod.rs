@@ -28,7 +28,9 @@ pub mod video;
 
 pub use bus::{EventContext, EventSubscriptionGroup, EventSubscriptionId, SubscriptionBuilder};
 pub use cache::ServerInfo;
-pub use connection::{ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler};
+pub use connection::{
+    ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectWorkflowConfig,
+};
 pub use core::{Client, ClientCommands, ClientEvents, Message};
 pub use hooks::ClientHooks;
 pub use manager::{ClientEvent, ClientHealth, ClientManager};

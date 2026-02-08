@@ -60,10 +60,39 @@ pub enum Event {
     SoundDeviceNewDefaultOutput,
     SoundDeviceNewDefaultInputComDevice,
     SoundDeviceNewDefaultOutputComDevice,
-    BeforeReconnect { attempt: u32, delay: Duration },
-    Reconnecting { attempt: u32, delay: Duration },
-    AfterReconnect { attempt: u32 },
-    ReconnectFailed { attempts: u32 },
+    BeforeReconnect {
+        attempt: u32,
+        delay: Duration,
+    },
+    Reconnecting {
+        attempt: u32,
+        delay: Duration,
+    },
+    AfterReconnect {
+        attempt: u32,
+    },
+    ReconnectFailed {
+        attempts: u32,
+    },
+    BeforeAutoLogin {
+        attempt: u32,
+        delay: Duration,
+    },
+    AutoLoginFailed {
+        attempts: u32,
+    },
+    BeforeAutoJoin {
+        attempt: u32,
+        delay: Duration,
+    },
+    AutoJoinFailed {
+        attempts: u32,
+    },
+    AutoRecoverCompleted {
+        reconnect_attempts: u32,
+        login_attempts: u32,
+        join_attempts: u32,
+    },
     Unknown(ffi::ClientEvent),
 }
 

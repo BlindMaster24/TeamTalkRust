@@ -26,6 +26,25 @@ impl Default for ReconnectConfig {
     }
 }
 
+/// Full in-session recovery workflow configuration.
+///
+/// The default keeps login and join retries aligned with reconnect defaults.
+#[derive(Clone)]
+pub struct ReconnectWorkflowConfig {
+    pub login: ReconnectConfig,
+    pub join: ReconnectConfig,
+}
+
+impl Default for ReconnectWorkflowConfig {
+    fn default() -> Self {
+        let defaults = ReconnectConfig::default();
+        Self {
+            login: defaults.clone(),
+            join: defaults,
+        }
+    }
+}
+
 pub struct ReconnectHandler {
     pub config: ReconnectConfig,
     backoff: ExponentialBackoff,
@@ -81,6 +100,14 @@ impl ReconnectHandler {
         self.backoff.next_delay();
     }
 
+    /// Resets attempts and backoff state.
+    pub fn reset(&mut self) {
+        self.attempts = 0;
+        self.last_attempt = None;
+        self.connected_at = None;
+        self.backoff.reset();
+    }
+
     /// Returns the current backoff delay.
     pub fn current_delay(&self) -> Duration {
         self.backoff.current_delay()
@@ -89,6 +116,11 @@ impl ReconnectHandler {
     /// Returns the number of attempts.
     pub fn attempts(&self) -> u32 {
         self.attempts
+    }
+
+    /// Returns true when no more attempts are allowed.
+    pub fn exhausted(&self) -> bool {
+        self.attempts >= self.config.max_attempts
     }
 }
 
@@ -144,6 +176,16 @@ impl<'a> From<&ConnectParams<'a>> for ConnectParamsOwned {
     }
 }
 
+fn reset_auto_recovery_handlers(auto: &mut super::core::AutoReconnectState) {
+    auto.login_handler = Some(ReconnectHandler::new(auto.workflow.login.clone()));
+    auto.join_handler = Some(ReconnectHandler::new(auto.workflow.join.clone()));
+    auto.login_gave_up = false;
+    auto.join_gave_up = false;
+    auto.recovery_completed = false;
+    auto.pending_login_cmd = None;
+    auto.pending_join_cmd = None;
+}
+
 impl Client {
     /// Enables automatic reconnection using the provided config.
     pub fn enable_auto_reconnect(&self, config: ReconnectConfig) {
@@ -152,6 +194,7 @@ impl Client {
         auto.handler = Some(ReconnectHandler::new(config));
         auto.extra_events.clear();
         auto.force_disconnect = false;
+        reset_auto_recovery_handlers(&mut auto);
     }
 
     /// Enables automatic reconnection and adds extra events that trigger reconnect.
@@ -165,6 +208,7 @@ impl Client {
         auto.handler = Some(ReconnectHandler::new(config));
         auto.extra_events = extra_events;
         auto.force_disconnect = false;
+        reset_auto_recovery_handlers(&mut auto);
     }
 
     /// Disables automatic reconnection.
@@ -172,8 +216,41 @@ impl Client {
         let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = false;
         auto.handler = None;
+        auto.login_handler = None;
+        auto.join_handler = None;
+        auto.login_gave_up = false;
+        auto.join_gave_up = false;
+        auto.recovery_completed = false;
+        auto.pending_login_cmd = None;
+        auto.pending_join_cmd = None;
         auto.extra_events.clear();
         auto.force_disconnect = false;
+    }
+
+    /// Sets per-phase retry behavior for in-session recovery.
+    pub fn set_reconnect_workflow_config(&self, workflow: ReconnectWorkflowConfig) {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.workflow = workflow;
+        reset_auto_recovery_handlers(&mut auto);
+    }
+
+    /// Returns per-phase retry behavior for in-session recovery.
+    pub fn reconnect_workflow_config(&self) -> ReconnectWorkflowConfig {
+        self.auto_reconnect.lock().unwrap().workflow.clone()
+    }
+
+    /// Enables full in-session recovery and stores connect/login params in memory.
+    pub fn enable_full_auto_reconnect(
+        &self,
+        connect_config: ReconnectConfig,
+        workflow: ReconnectWorkflowConfig,
+        connect_params: ConnectParamsOwned,
+        login_params: super::users::LoginParams,
+    ) {
+        self.enable_auto_reconnect(connect_config);
+        self.set_reconnect_workflow_config(workflow);
+        self.set_reconnect_params(connect_params);
+        self.set_login_params(login_params);
     }
 
     /// Returns true if automatic reconnection is enabled.
@@ -214,6 +291,8 @@ impl Client {
             Some(value) if !value.is_empty() => Some(value.to_string()),
             _ => None,
         };
+        auto.join_gave_up = false;
+        auto.pending_join_cmd = None;
     }
 
     /// Clears the remembered channel.
@@ -221,6 +300,8 @@ impl Client {
         let mut auto = self.auto_reconnect.lock().unwrap();
         auto.last_channel = None;
         auto.last_channel_password = None;
+        auto.pending_join_cmd = None;
+        auto.join_gave_up = false;
     }
 
     /// Connects and remembers the parameters for automatic reconnection.

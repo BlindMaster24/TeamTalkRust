@@ -71,6 +71,11 @@ pub struct ClientHooks {
     on_reconnecting: Option<MessageHook>,
     on_after_reconnect: Option<MessageHook>,
     on_reconnect_failed: Option<MessageHook>,
+    on_before_auto_login: Option<MessageHook>,
+    on_auto_login_failed: Option<MessageHook>,
+    on_before_auto_join: Option<MessageHook>,
+    on_auto_join_failed: Option<MessageHook>,
+    on_auto_recover_completed: Option<MessageHook>,
 }
 
 impl ClientHooks {
@@ -533,6 +538,51 @@ impl ClientHooks {
         self
     }
 
+    /// Registers a handler before an automatic login retry.
+    pub fn on_before_auto_login(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_before_auto_login = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler when automatic login gives up.
+    pub fn on_auto_login_failed(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_auto_login_failed = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler before an automatic join retry.
+    pub fn on_before_auto_join(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_before_auto_join = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler when automatic join gives up.
+    pub fn on_auto_join_failed(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_auto_join_failed = Some(Box::new(hook));
+        self
+    }
+
+    /// Registers a handler after full in-session recovery reaches Joined.
+    pub fn on_auto_recover_completed(
+        mut self,
+        hook: impl FnMut(&Client, &Message) + Send + 'static,
+    ) -> Self {
+        self.on_auto_recover_completed = Some(Box::new(hook));
+        self
+    }
+
     pub(crate) fn fire(&mut self, client: &Client, event: Event, msg: &Message) {
         match event {
             Event::ConnectSuccess => {
@@ -829,6 +879,31 @@ impl ClientHooks {
             }
             Event::ReconnectFailed { .. } => {
                 if let Some(hook) = self.on_reconnect_failed.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::BeforeAutoLogin { .. } => {
+                if let Some(hook) = self.on_before_auto_login.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::AutoLoginFailed { .. } => {
+                if let Some(hook) = self.on_auto_login_failed.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::BeforeAutoJoin { .. } => {
+                if let Some(hook) = self.on_before_auto_join.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::AutoJoinFailed { .. } => {
+                if let Some(hook) = self.on_auto_join_failed.as_mut() {
+                    hook(client, msg);
+                }
+            }
+            Event::AutoRecoverCompleted { .. } => {
+                if let Some(hook) = self.on_auto_recover_completed.as_mut() {
                     hook(client, msg);
                 }
             }
