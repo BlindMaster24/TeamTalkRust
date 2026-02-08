@@ -42,6 +42,8 @@ cargo build --no-default-features --features tls-rustls
 - Synced per-user recording: `SyncedUserRecordingSession` with `PcmS16Le`/`WavS16Le` output and silence policies.
 - Auto-reconnect support via `enable_auto_reconnect`, `enable_auto_reconnect_with_events`, and `connect_remember`.
 - Auto-login and rejoin using stored `LoginParams` and remembered channels (including passwords set via `join_channel`).
+- Full in-session recovery via `enable_full_auto_reconnect` (connect + login + join workflow).
+- Per-phase retry policy via `ReconnectWorkflowConfig` (`login` and `join` configs).
 - Explicit auto-join state helpers: `set_last_channel` and `clear_last_channel`.
 - Typed errors with SDK code + message.
 - Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
@@ -55,5 +57,6 @@ cargo build --no-default-features --features tls-rustls
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
+- Auto phase hooks/events: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
 

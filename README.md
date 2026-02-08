@@ -99,6 +99,13 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - Use one high-level call (`send_to_user` / `send_to_channel` / `send_to_all`) for a logical message.
 - Do not manually split long text unless you explicitly need custom behavior; repeated manual sends can look like spam and may trigger TeamTalk server flood protection.
 - Current `teamtalk` from git `main` chunks long text automatically and sends multipart messages via `TextMessage.bMore`.
+
+### In-Session Auto Recovery
+
+- `enable_full_auto_reconnect(...)` enables reconnect + auto-login + auto-join as a single in-session workflow.
+- Recovery state is memory-only: connect/login/channel credentials are reused while the process runs, but not persisted across restarts.
+- Per-phase retry tuning is available via `ReconnectWorkflowConfig` (`login` and `join` policies).
+- New hooks/events expose phase progress and failures: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 ## Project Structure
 
 - [crates/teamtalk-sys](crates/teamtalk-sys/): Low-level bindgen bindings to the SDK.

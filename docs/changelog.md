@@ -22,6 +22,8 @@ public API with compatibility expectations for downstream users.
 - Explicit auto-join state helper: `set_last_channel(ChannelId, Option<&str>)`.
 - `reconnect_protected_channel` example showing reconnect + login + protected auto-join flow.
 - `async_tokio_event_stream` example showing async polling with Tokio wake integration.
+- In-session full recovery API: `enable_full_auto_reconnect` and `ReconnectWorkflowConfig` (separate login/join retry policies).
+- Auto-recovery phase events/hooks: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
