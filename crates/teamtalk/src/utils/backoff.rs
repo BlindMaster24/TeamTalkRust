@@ -1,5 +1,5 @@
 //! Exponential backoff helper.
-use rand::{Rng, thread_rng};
+use rand::{RngExt, rng};
 use std::time::Duration;
 
 /// Exponential backoff with jitter and a maximum cap.
@@ -62,7 +62,7 @@ impl ExponentialBackoff {
             return Duration::ZERO;
         }
 
-        let jittered = thread_rng().gen_range(0..=max_millis);
+        let jittered = rng().random_range(0..=max_millis);
         self.current_val = Duration::from_millis(jittered);
         self.current_val
     }
