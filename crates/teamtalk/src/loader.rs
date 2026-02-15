@@ -54,6 +54,15 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         fs::write(&version_file, version)?;
         Ok(())
     };
+    let mut latest_cache: Option<String> = None;
+    let mut latest_version = || -> Result<String, Box<dyn std::error::Error>> {
+        if let Some(version) = latest_cache.as_ref() {
+            return Ok(version.clone());
+        }
+        let version = get_latest_sdk_version()?;
+        latest_cache = Some(version.clone());
+        Ok(version)
+    };
 
     if let Some(version) = requested_version.requested.as_deref() {
         if dll_exists && docs_complete && current_version == version {
@@ -69,33 +78,23 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
             return Ok(dll_path);
         }
     } else if requested_version.force_latest {
-        let latest = get_latest_sdk_version()?;
+        let latest = latest_version()?;
         println!("Downloading latest SDK: {}", latest);
         download_version(&latest)?;
         return Ok(dll_path);
     }
 
-    if dll_exists && !docs_complete && !current_version.is_empty() {
-        println!(
-            "Documentation missing or incomplete. Re-downloading SDK: {}",
-            current_version
-        );
-        download_version(&current_version)?;
-        return Ok(dll_path);
-    }
-
-    if dll_exists && !docs_complete {
-        let latest = get_latest_sdk_version()?;
-        println!(
-            "Documentation missing or incomplete. Downloading latest SDK: {}",
-            latest
-        );
-        download_version(&latest)?;
-        return Ok(dll_path);
-    }
-
     if dll_exists && !current_version.is_empty() {
-        let latest = get_latest_sdk_version()?;
+        if !docs_complete {
+            println!(
+                "Documentation missing or incomplete. Re-downloading SDK: {}",
+                current_version
+            );
+            download_version(&current_version)?;
+            return Ok(dll_path);
+        }
+
+        let latest = latest_version()?;
         if current_version == latest {
             return Ok(dll_path);
         }
@@ -104,16 +103,25 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         return Ok(dll_path);
     }
 
-    if !dll_exists && !current_version.is_empty() {
-        println!(
-            "DLL missing. Downloading version {} from file...",
-            current_version
-        );
-        download_version(&current_version)?;
+    if !dll_exists || !docs_complete {
+        let repair_version = if current_version.is_empty() {
+            latest_version()?
+        } else {
+            current_version.clone()
+        };
+        let repair_reason = if !dll_exists && !docs_complete {
+            "SDK binaries or documentation are missing"
+        } else if !dll_exists {
+            "SDK binary is missing"
+        } else {
+            "Documentation is missing or incomplete"
+        };
+        println!("{}. Downloading SDK: {}", repair_reason, repair_version);
+        download_version(&repair_version)?;
         return Ok(dll_path);
     }
 
-    let latest = get_latest_sdk_version()?;
+    let latest = latest_version()?;
     println!("Fresh SDK setup. Downloading: {}", latest);
     download_version(&latest)?;
 
