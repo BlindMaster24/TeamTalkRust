@@ -383,11 +383,11 @@ impl Client {
             return true;
         }
 
+        // TeamTalk requires TT_Disconnect before each reconnect attempt after
+        // failed/lost connection events.
+        let _ = self.disconnect();
         if self.has_connection_flags() {
-            let _ = self.disconnect();
-            if self.has_connection_flags() {
-                return true;
-            }
+            return true;
         }
 
         handler.record_attempt();
