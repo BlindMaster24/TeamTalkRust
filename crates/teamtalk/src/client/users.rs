@@ -20,6 +20,16 @@ fn can_login_in_state(state: crate::events::ConnectionState) -> bool {
     )
 }
 
+fn can_logout_in_state(state: crate::events::ConnectionState) -> bool {
+    matches!(
+        state,
+        crate::events::ConnectionState::LoggingIn
+            | crate::events::ConnectionState::LoggedIn
+            | crate::events::ConnectionState::Joining(_)
+            | crate::events::ConnectionState::Joined(_)
+    )
+}
+
 /// Options for multipart text sending.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SendTextOptions {
@@ -227,6 +237,9 @@ impl Client {
 
     /// Logs out from the server.
     pub fn logout(&self) -> i32 {
+        if !can_logout_in_state(self.connection_state()) {
+            return 0;
+        }
         let cmd_id = self.backend().do_logout(self.ptr.0);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::Connected);
@@ -561,7 +574,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::can_login_in_state;
+    use super::{can_login_in_state, can_logout_in_state};
     use crate::events::ConnectionState;
     use crate::types::ChannelId;
 
@@ -575,5 +588,17 @@ mod tests {
         assert!(!can_login_in_state(ConnectionState::Joining(ChannelId(1))));
         assert!(!can_login_in_state(ConnectionState::Joined(ChannelId(1))));
         assert!(can_login_in_state(ConnectionState::Disconnected));
+    }
+
+    #[test]
+    fn logout_guard_allows_only_logged_states() {
+        assert!(!can_logout_in_state(ConnectionState::Idle));
+        assert!(!can_logout_in_state(ConnectionState::Connecting));
+        assert!(!can_logout_in_state(ConnectionState::Connected));
+        assert!(can_logout_in_state(ConnectionState::LoggingIn));
+        assert!(can_logout_in_state(ConnectionState::LoggedIn));
+        assert!(can_logout_in_state(ConnectionState::Joining(ChannelId(1))));
+        assert!(can_logout_in_state(ConnectionState::Joined(ChannelId(1))));
+        assert!(!can_logout_in_state(ConnectionState::Disconnected));
     }
 }

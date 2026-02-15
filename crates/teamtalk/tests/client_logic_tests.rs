@@ -457,3 +457,15 @@ fn join_channel_returns_zero_while_join_is_in_progress() {
         ConnectionState::Joining(ChannelId(1))
     );
 }
+
+#[test]
+fn logout_returns_zero_when_not_logged_in() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_logout_result(55);
+    let client = Client::with_backend(backend).expect("client");
+
+    let cmd_id = client.logout();
+
+    assert_eq!(cmd_id, 0);
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
+}
