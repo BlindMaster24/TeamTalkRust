@@ -60,6 +60,7 @@ public API with compatibility expectations for downstream users.
 - Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
 - Added `dispatch_reconnect` example showing reconnect with kick handling.
 - Added explicit license setup guidance (`set_license` before `connect*`/`login`).
+- README quick start now documents license call ordering, and `connect_login` supports `TT_LICENSE_NAME`/`TT_LICENSE_KEY`.
 
 ## 1.2.0
 

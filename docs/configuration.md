@@ -46,6 +46,11 @@ client.connect("127.0.0.1", 10333, 10333, false)?;
 This keeps license setup explicit and ensures the session starts with the
 expected license metadata.
 
+The `connect_login` example also supports environment-based setup:
+
+- `TT_LICENSE_NAME`
+- `TT_LICENSE_KEY`
+
 ## TLS
 
 For encrypted connections, configure the encryption context using certificate
