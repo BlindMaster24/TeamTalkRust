@@ -42,6 +42,7 @@ public API with compatibility expectations for downstream users.
 - `login` now fails fast (returns `0`) when called while a login/join flow is already in progress.
 - `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
   channel kick (`nSource > 0`) -> `LoggedIn`, server kick (`nSource <= 0`) -> `Connected`.
+- `join_channel` now returns `0` when a previous join is still in progress (`ConnectionState::Joining(_)`), avoiding duplicate join commands.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
