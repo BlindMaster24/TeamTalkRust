@@ -202,6 +202,20 @@ fn validate_client_keep_alive(keep_alive: &crate::types::ClientKeepAlive) -> Res
     Ok(())
 }
 
+fn dedupe_events(events: Vec<crate::events::Event>) -> Vec<crate::events::Event> {
+    let mut unique = Vec::with_capacity(events.len());
+    for event in events {
+        if unique
+            .iter()
+            .any(|existing| std::mem::discriminant(existing) == std::mem::discriminant(&event))
+        {
+            continue;
+        }
+        unique.push(event);
+    }
+    unique
+}
+
 fn ensure_connect_not_busy(has_connection_flags: bool) -> Result<(), Error> {
     if has_connection_flags {
         return Err(Error::CommandFailed {
@@ -247,7 +261,7 @@ impl Client {
         let mut auto = self.auto_reconnect.lock().unwrap();
         auto.enabled = true;
         auto.handler = Some(ReconnectHandler::new(config));
-        auto.extra_events = extra_events;
+        auto.extra_events = dedupe_events(extra_events);
         auto.force_disconnect = false;
         reset_auto_recovery_handlers(&mut auto);
     }
@@ -311,7 +325,7 @@ impl Client {
 
     /// Sets extra events that should trigger automatic reconnection.
     pub fn set_auto_reconnect_events(&self, extra_events: Vec<crate::events::Event>) {
-        self.auto_reconnect.lock().unwrap().extra_events = extra_events;
+        self.auto_reconnect.lock().unwrap().extra_events = dedupe_events(extra_events);
     }
 
     /// Adds one extra event that should trigger automatic reconnection.
@@ -621,8 +635,9 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::{ensure_connect_not_busy, validate_client_keep_alive};
+    use super::{dedupe_events, ensure_connect_not_busy, validate_client_keep_alive};
     use crate::events::Error;
+    use crate::events::Event;
     use crate::types::ClientKeepAlive;
 
     #[test]
@@ -688,5 +703,20 @@ mod tests {
     fn connect_guard_rejects_connecting_or_connected_client() {
         let err = ensure_connect_not_busy(true).expect_err("connect should be rejected");
         assert!(matches!(err, Error::CommandFailed { code: -1, .. }));
+    }
+
+    #[test]
+    fn dedupe_events_keeps_first_event_per_kind() {
+        let deduped = dedupe_events(vec![
+            Event::MySelfKicked,
+            Event::UserLeft,
+            Event::MySelfKicked,
+            Event::UserLeft,
+            Event::ConnectionLost,
+        ]);
+        assert_eq!(
+            deduped,
+            vec![Event::MySelfKicked, Event::UserLeft, Event::ConnectionLost]
+        );
     }
 }

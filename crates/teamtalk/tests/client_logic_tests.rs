@@ -441,6 +441,25 @@ fn remove_auto_reconnect_event_removes_matching_kind() {
 }
 
 #[test]
+fn set_auto_reconnect_events_deduplicates_by_event_kind() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+
+    client.set_auto_reconnect_events(vec![
+        teamtalk::Event::MySelfKicked,
+        teamtalk::Event::MySelfKicked,
+        teamtalk::Event::UserLeft,
+        teamtalk::Event::UserLeft,
+    ]);
+
+    let events = client.auto_reconnect_events();
+    assert_eq!(
+        events,
+        vec![teamtalk::Event::MySelfKicked, teamtalk::Event::UserLeft]
+    );
+}
+
+#[test]
 fn join_channel_returns_zero_while_join_is_in_progress() {
     let backend = Arc::new(MockBackend::new());
     backend.set_join_result(11);
