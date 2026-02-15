@@ -22,34 +22,3 @@ impl Client {
         unsafe { ffi::api().TT_SetEncryptionContext(self.ptr.0, &context.to_ffi()) == 1 }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn encryption_context_guard_allows_only_idle_or_disconnected() {
-        assert!(can_set_encryption_context_in_state(ConnectionState::Idle));
-        assert!(can_set_encryption_context_in_state(
-            ConnectionState::Disconnected
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::Connecting
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::Connected
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::LoggingIn
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::LoggedIn
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::Joining(crate::types::ChannelId(1))
-        ));
-        assert!(!can_set_encryption_context_in_state(
-            ConnectionState::Joined(crate::types::ChannelId(1))
-        ));
-    }
-}

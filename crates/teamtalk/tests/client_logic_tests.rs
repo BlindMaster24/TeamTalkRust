@@ -11,7 +11,8 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
+    Channel, ChannelId, EncryptionContext, MessageTarget, TT_STRLEN, UserId, UserPresence,
+    UserStatus,
 };
 use teamtalk::utils::strings::to_string;
 
@@ -109,6 +110,20 @@ fn login_from_env_uses_env() {
         Some(value) => unsafe { std::env::set_var("TT_CLIENT", value) },
         None => unsafe { std::env::remove_var("TT_CLIENT") },
     }
+}
+
+#[test]
+fn set_encryption_context_returns_false_after_login_starts() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_login_result(9);
+    let client = Client::with_backend(backend).expect("client");
+    let _ = client.login("nick", "user", "pass", "client");
+
+    let context = EncryptionContext::default();
+    let ok = client.set_encryption_context(&context);
+
+    assert!(!ok);
+    assert_eq!(client.connection_state(), ConnectionState::LoggingIn);
 }
 
 #[test]
