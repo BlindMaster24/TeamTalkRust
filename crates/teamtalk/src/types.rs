@@ -1611,6 +1611,8 @@ impl ClientFlags {
     pub const CONNECTING: u32 = 0x00002000;
     /// Connected.
     pub const CONNECTED: u32 = 0x00004000;
+    /// Connecting or connected.
+    pub const CONNECTION: u32 = Self::CONNECTING | Self::CONNECTED;
     /// Authorized.
     pub const AUTHORIZED: u32 = 0x00008000;
     /// Streaming audio.

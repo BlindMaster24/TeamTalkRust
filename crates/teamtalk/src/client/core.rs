@@ -299,59 +299,78 @@ impl Client {
     }
 
     fn handle_connect_recovery(&self) {
-        let mut auto = self.auto_reconnect.lock().unwrap();
-        if !auto.enabled {
-            return;
+        let (params, force_disconnect) = {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            if !auto.enabled {
+                return;
+            }
+
+            let params: super::connection::ConnectParamsOwned = match auto.params.as_ref() {
+                Some(params) => params.clone(),
+                None => return,
+            };
+
+            let handler: &mut super::connection::ReconnectHandler = match auto.handler.as_mut() {
+                Some(handler) => handler,
+                None => return,
+            };
+
+            if handler.can_attempt() {
+                (params, auto.force_disconnect)
+            } else if handler.exhausted() {
+                let attempts = handler.attempts();
+                drop(auto);
+                let failed_event = Event::ReconnectFailed { attempts };
+                let msg = Self::empty_message(failed_event);
+                self.invoke_hooks(failed_event, &msg);
+
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                auto.enabled = false;
+                auto.handler = None;
+                auto.login_handler = None;
+                auto.join_handler = None;
+                return;
+            } else {
+                return;
+            }
+        };
+
+        if force_disconnect || self.has_connection_flags() {
+            let _ = self.disconnect();
+            if self.has_connection_flags() {
+                return;
+            }
         }
 
-        let params: super::connection::ConnectParamsOwned = match auto.params.as_ref() {
-            Some(params) => params.clone(),
-            None => return,
-        };
+        let (attempt, delay) = {
+            let mut auto = self.auto_reconnect.lock().unwrap();
+            if !auto.enabled {
+                return;
+            }
 
-        let handler: &mut super::connection::ReconnectHandler = match auto.handler.as_mut() {
-            Some(handler) => handler,
-            None => return,
-        };
+            let handler = match auto.handler.as_mut() {
+                Some(handler) => handler,
+                None => return,
+            };
+            if !handler.can_attempt() {
+                return;
+            }
 
-        if handler.can_attempt() {
             let attempt = handler.attempts() + 1;
             let delay = handler.current_delay();
             handler.record_attempt();
-            let force_disconnect = auto.force_disconnect;
             auto.force_disconnect = false;
             auto.login_gave_up = false;
             auto.join_gave_up = false;
             auto.recovery_completed = false;
-            drop(auto);
+            (attempt, delay)
+        };
 
-            let before_event = Event::BeforeReconnect { attempt, delay };
-            let msg = Self::empty_message(before_event);
-            self.invoke_hooks(before_event, &msg);
-
-            self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
-            if force_disconnect {
-                let _ = self.disconnect();
-            }
-            let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
-            return;
-        }
-
-        if !handler.exhausted() {
-            return;
-        }
-
-        let attempts = handler.attempts();
-        drop(auto);
-        let failed_event = Event::ReconnectFailed { attempts };
-        let msg = Self::empty_message(failed_event);
-        self.invoke_hooks(failed_event, &msg);
-
-        let mut auto = self.auto_reconnect.lock().unwrap();
-        auto.enabled = false;
-        auto.handler = None;
-        auto.login_handler = None;
-        auto.join_handler = None;
+        let before_event = Event::BeforeReconnect { attempt, delay };
+        let msg = Self::empty_message(before_event);
+        self.invoke_hooks(before_event, &msg);
+        self.invoke_hooks(Event::Reconnecting { attempt, delay }, &msg);
+        let _ = self.connect(&params.host, params.tcp, params.udp, params.encrypted);
     }
 
     fn handle_login_recovery(&self) {

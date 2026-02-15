@@ -373,14 +373,25 @@ impl Client {
         (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
     }
 
+    pub(crate) fn has_connection_flags(&self) -> bool {
+        self.get_flags().has(crate::types::ClientFlags::CONNECTION)
+    }
+
     /// Handles reconnect logic using provided parameters.
     pub fn handle_reconnect(&self, params: &ConnectParams, handler: &mut ReconnectHandler) -> bool {
-        if handler.can_attempt() {
-            let _ = self.disconnect();
-            handler.record_attempt();
-            let _ = self.connect(params.host, params.tcp, params.udp, params.encrypted);
+        if !handler.can_attempt() {
+            return true;
         }
 
+        if self.has_connection_flags() {
+            let _ = self.disconnect();
+            if self.has_connection_flags() {
+                return true;
+            }
+        }
+
+        handler.record_attempt();
+        let _ = self.connect(params.host, params.tcp, params.udp, params.encrypted);
         true
     }
 

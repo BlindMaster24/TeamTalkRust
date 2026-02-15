@@ -24,6 +24,7 @@ public API with compatibility expectations for downstream users.
 - `async_tokio_event_stream` example showing async polling with Tokio wake integration.
 - In-session full recovery API: `enable_full_auto_reconnect` and `ReconnectWorkflowConfig` (separate login/join retry policies).
 - Auto-recovery phase events/hooks: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
+- `ClientFlags::CONNECTION` helper bit (`CONNECTING | CONNECTED`) for connection-state checks.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
@@ -34,6 +35,7 @@ public API with compatibility expectations for downstream users.
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
 - `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
+- Reconnect paths now enforce a disconnect barrier before retrying `TT_Connect`, matching TeamTalk C-API reconnect requirements.
 
 ### Fixed
 - Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.
