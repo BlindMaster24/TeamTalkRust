@@ -71,6 +71,13 @@ Note: message payloads are event-specific. Only call the accessor that matches
 the event you received (for example, `msg.text()` for `Event::TextMessage`).
 Other accessors return `None`.
 
+For SDK and command errors (`Event::ConnectCryptError`, `Event::CmdError`,
+`Event::InternalError`), use `msg.error_message()` to read error code/text from
+the `TTMessage` payload.
+
+For `Event::MySelfKicked`, `msg.user()` now returns the kicker user when the
+SDK includes it in the event payload.
+
 If you plan to use auto-reconnect, prefer `connect_remember` and
 `login_remember` so the client can restore state after reconnect. For protected
 channels, call `join_channel` once with the password or use `set_last_channel`
@@ -81,6 +88,9 @@ For outgoing text, prefer a single high-level call (`send_to_user`,
 multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
 splitting unless you need custom behavior, since repeated sends may trigger
 server flood protection.
+
+When querying UDP payload limits, prefer `query_server_max_payload()`. The
+current TeamTalk SDK only supports server query mode (`user_id = 0`).
 
 ## Event Bus Helpers
 

@@ -28,10 +28,14 @@ public API with compatibility expectations for downstream users.
 - `ClientFlags::CONNECTION` helper bit (`CONNECTING | CONNECTED`) for connection-state checks.
 - Keep-alive helpers: `Client::ping` and `Client::set_client_keep_alive_and_ping`.
 - `ClientStatistics` now includes TCP/UDP server silence seconds.
+- `Message::error_message()` accessor for `ConnectCryptError`/`CmdError`/`InternalError`.
+- `Client::query_server_max_payload()` helper for SDK-supported payload query mode.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
 - `Client::send_text` and `send_to_*` now send long text as multipart messages using `TextMessage.bMore` instead of truncating to a single packet.
+- Message payload accessors now verify `TTMessage.ttType` before decoding unions.
+- `Message::user()` now decodes `Event::MySelfKicked` when kicker payload is present.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
@@ -42,6 +46,7 @@ public API with compatibility expectations for downstream users.
 
 ### Fixed
 - Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.
+- `Client::set_client_keep_alive()` now rejects invalid timeout relationships before calling `TT_SetClientKeepAlive`.
 
 ### Docs
 - Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
