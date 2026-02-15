@@ -9,7 +9,10 @@ use teamtalk::loader::find_or_download_dll;
 
 fn cwd_lock() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    match LOCK.get_or_init(|| Mutex::new(())).lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
 }
 
 fn temp_dir() -> PathBuf {
@@ -61,6 +64,14 @@ fn offline_existing_dll_returns_path() {
         fs::create_dir_all(&sdk_dir).unwrap();
         let dll_path = sdk_dir.join(dll_name());
         fs::write(&dll_path, vec![0u8; 2048]).unwrap();
+        let docs_dir = sdk_dir.join("Documentation");
+        fs::create_dir_all(&docs_dir).unwrap();
+        fs::write(docs_dir.join("index.html"), b"docs").unwrap();
+        fs::write(
+            sdk_dir.join("TEAMTALK_DOCUMENTATION_MANIFEST.txt"),
+            "index.html\n",
+        )
+        .unwrap();
         let result = find_or_download_dll().unwrap();
         let abs = env::current_dir().unwrap().join(result);
         assert_eq!(abs, dll_path);

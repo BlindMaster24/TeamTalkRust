@@ -7,6 +7,9 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
+const DOCS_DIR_NAME: &str = "Documentation";
+const DOCS_MANIFEST_NAME: &str = "TEAMTALK_DOCUMENTATION_MANIFEST.txt";
+
 /// Finds the TeamTalk SDK binaries or downloads them if missing.
 pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let dll_name = if cfg!(windows) {
@@ -37,12 +40,13 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         && fs::metadata(&dll_path)
             .map(|m| m.len() > 1024)
             .unwrap_or(false);
+    let docs_complete = documentation_is_complete(&sdk_dir);
 
     if cfg!(feature = "offline") {
-        if dll_exists {
+        if dll_exists && docs_complete {
             return Ok(dll_path);
         }
-        return Err("Offline mode enabled but SDK binary not found".into());
+        return Err("Offline mode enabled but SDK files or documentation are missing".into());
     }
 
     let download_version = |version: &str| -> Result<(), Box<dyn std::error::Error>> {
@@ -52,7 +56,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     };
 
     if let Some(version) = requested_version.requested.as_deref() {
-        if dll_exists && current_version == version {
+        if dll_exists && docs_complete && current_version == version {
             return Ok(dll_path);
         }
 
@@ -67,6 +71,25 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     } else if requested_version.force_latest {
         let latest = get_latest_sdk_version()?;
         println!("Downloading latest SDK: {}", latest);
+        download_version(&latest)?;
+        return Ok(dll_path);
+    }
+
+    if dll_exists && !docs_complete && !current_version.is_empty() {
+        println!(
+            "Documentation missing or incomplete. Re-downloading SDK: {}",
+            current_version
+        );
+        download_version(&current_version)?;
+        return Ok(dll_path);
+    }
+
+    if dll_exists && !docs_complete {
+        let latest = get_latest_sdk_version()?;
+        println!(
+            "Documentation missing or incomplete. Downloading latest SDK: {}",
+            latest
+        );
         download_version(&latest)?;
         return Ok(dll_path);
     }
@@ -244,6 +267,15 @@ fn download_and_extract(
         fs::copy(&src, target_dir.join(header_name))?;
     }
 
+    let docs_src = find_directory_recursive(&temp_dir, DOCS_DIR_NAME)
+        .ok_or("Documentation directory not found in SDK archive")?;
+    let docs_dst = target_dir.join(DOCS_DIR_NAME);
+    let docs_files = copy_directory_recursive(&docs_src, &docs_dst)?;
+    if docs_files.is_empty() {
+        return Err("Documentation directory is empty in SDK archive".into());
+    }
+    write_documentation_manifest(target_dir, &docs_files)?;
+
     fs::remove_dir_all(&temp_dir)?;
     Ok(())
 }
@@ -278,9 +310,118 @@ fn find_files_recursive(
     }
 }
 
+fn find_directory_recursive(dir: &Path, dir_name: &str) -> Option<PathBuf> {
+    if dir.file_name().and_then(|name| name.to_str()) == Some(dir_name) {
+        return Some(dir.to_path_buf());
+    }
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            if let Some(found) = find_directory_recursive(&path, dir_name) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+fn copy_directory_recursive(
+    src_dir: &Path,
+    dst_dir: &Path,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    if dst_dir.exists() {
+        fs::remove_dir_all(dst_dir)?;
+    }
+    let mut copied_files = Vec::new();
+    copy_directory_recursive_inner(src_dir, src_dir, dst_dir, &mut copied_files)?;
+    copied_files.sort();
+    Ok(copied_files)
+}
+
+fn copy_directory_recursive_inner(
+    root_src: &Path,
+    src_dir: &Path,
+    dst_dir: &Path,
+    copied_files: &mut Vec<String>,
+) -> std::io::Result<()> {
+    fs::create_dir_all(dst_dir)?;
+    for entry in fs::read_dir(src_dir)? {
+        let entry = entry?;
+        let src_path = entry.path();
+        let dst_path = dst_dir.join(entry.file_name());
+        if src_path.is_dir() {
+            copy_directory_recursive_inner(root_src, &src_path, &dst_path, copied_files)?;
+        } else {
+            fs::copy(&src_path, &dst_path)?;
+            if let Ok(relative) = src_path.strip_prefix(root_src) {
+                copied_files.push(relative.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn docs_manifest_path(sdk_dir: &Path) -> PathBuf {
+    sdk_dir.join(DOCS_MANIFEST_NAME)
+}
+
+fn write_documentation_manifest(
+    sdk_dir: &Path,
+    docs_files: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let manifest = docs_files.join("\n");
+    fs::write(docs_manifest_path(sdk_dir), manifest)?;
+    Ok(())
+}
+
+fn documentation_is_complete(sdk_dir: &Path) -> bool {
+    let docs_dir = sdk_dir.join(DOCS_DIR_NAME);
+    if !docs_dir.is_dir() {
+        return false;
+    }
+    let manifest = match fs::read_to_string(docs_manifest_path(sdk_dir)) {
+        Ok(manifest) => manifest,
+        Err(_) => return false,
+    };
+    let mut has_entries = false;
+    for line in manifest.lines() {
+        let rel = line.trim();
+        if rel.is_empty() {
+            continue;
+        }
+        has_entries = true;
+        let file_path: PathBuf = rel.split('/').collect();
+        let full_path = docs_dir.join(file_path);
+        if !full_path.is_file() {
+            return false;
+        }
+        if fs::metadata(full_path).map(|meta| meta.len()).unwrap_or(0) == 0 {
+            return false;
+        }
+    }
+    has_entries
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{RequestedVersion, requested_version};
+    use super::{
+        DOCS_MANIFEST_NAME, RequestedVersion, copy_directory_recursive, documentation_is_complete,
+        find_directory_recursive, requested_version,
+    };
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_temp_dir(prefix: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        std::env::temp_dir().join(format!("teamtalk_loader_{prefix}_{nonce}"))
+    }
 
     #[test]
     fn requested_version_prefers_env() {
@@ -332,5 +473,65 @@ mod tests {
         };
         assert!(result.requested.is_none());
         assert!(!result.force_latest);
+    }
+
+    #[test]
+    fn find_directory_recursive_finds_nested_documentation() {
+        let root = unique_temp_dir("find_docs");
+        let docs = root.join("sdk").join("Documentation").join("C-API");
+        fs::create_dir_all(&docs).expect("create docs");
+
+        let found = find_directory_recursive(&root, "Documentation");
+        assert_eq!(found, Some(root.join("sdk").join("Documentation")));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn copy_directory_recursive_replaces_previous_contents() {
+        let root = unique_temp_dir("copy_docs");
+        let src = root.join("src");
+        let dst = root.join("dst");
+        fs::create_dir_all(src.join("C-API")).expect("create src");
+        fs::write(src.join("index.html"), "docs").expect("write src");
+        fs::write(src.join("C-API").join("group__events.html"), "events").expect("write src");
+        fs::create_dir_all(&dst).expect("create dst");
+        fs::write(dst.join("stale.txt"), "stale").expect("write stale");
+
+        let copied = copy_directory_recursive(&src, &dst).expect("copy docs");
+
+        assert!(dst.join("index.html").exists());
+        assert!(dst.join("C-API").join("group__events.html").exists());
+        assert!(!dst.join("stale.txt").exists());
+        assert_eq!(
+            copied,
+            vec![
+                "C-API/group__events.html".to_string(),
+                "index.html".to_string()
+            ]
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn documentation_is_complete_uses_manifest_entries() {
+        let root = unique_temp_dir("docs_manifest");
+        let docs = root.join("Documentation");
+        fs::create_dir_all(docs.join("C-API")).expect("create docs");
+        fs::write(docs.join("index.html"), "index").expect("write docs");
+        fs::write(docs.join("C-API").join("group__events.html"), "events").expect("write docs");
+        fs::write(
+            root.join(DOCS_MANIFEST_NAME),
+            "index.html\nC-API/group__events.html\n",
+        )
+        .expect("write manifest");
+
+        assert!(documentation_is_complete(&root));
+
+        fs::remove_file(docs.join("index.html")).expect("remove file");
+        assert!(!documentation_is_complete(&root));
+
+        let _ = fs::remove_dir_all(&root);
     }
 }

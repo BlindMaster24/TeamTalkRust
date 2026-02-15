@@ -2,9 +2,12 @@
 
 ## SDK Binaries
 
-By default, the SDK downloads TeamTalk binaries into `TEAMTALK_DLL/` on first
-use. In offline environments, enable the `offline` feature and pre-populate
-that folder with the correct DLL and headers.
+By default, the SDK downloads TeamTalk runtime files into `TEAMTALK_DLL/` on first
+use. This includes the shared library, import library, `TeamTalk.h`, and the
+SDK `Documentation/` folder. The loader stores a documentation manifest and
+verifies that every expected doc file is present on startup; if files are
+missing, it re-downloads the SDK archive to repair the folder. In offline
+environments, enable the `offline` feature and pre-populate that folder.
 
 ### SDK Version Override
 
