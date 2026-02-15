@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 
 fn main() {
@@ -63,7 +64,17 @@ fn main() {
         .expect("Unable to generate bindings");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let bindings_path = out_path.join("bindings.rs");
     bindings
-        .write_to_file(out_path.join("bindings.rs"))
+        .write_to_file(&bindings_path)
         .expect("Couldn't write bindings!");
+
+    let generated = fs::read_to_string(&bindings_path).expect("Couldn't read generated bindings");
+    let patched = generated.replace(
+        "::libloading::Library::new(path)",
+        "::libloading::Library::new(path.as_ref())",
+    );
+    if patched != generated {
+        fs::write(&bindings_path, patched).expect("Couldn't patch generated bindings");
+    }
 }
