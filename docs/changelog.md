@@ -48,6 +48,7 @@ public API with compatibility expectations for downstream users.
 - `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 - `leave_channel` now returns `0` when the client is not currently joining/joined in a channel, avoiding invalid leave commands.
 - Auto-reconnect extra event lists now deduplicate by event kind in `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
+- `set_encryption_context` now returns `false` unless called before connect/login state (`Idle` or `Disconnected`), matching TeamTalk C-API sequencing.
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
 - `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
