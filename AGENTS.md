@@ -32,6 +32,42 @@
 - When the user asks to “check blogs/books,” summarize the key points and cite the source domain/title in the response.
 - Prefer official references first; use blogs only to supplement or clarify.
 - If sources conflict, present both and explain the tradeoff.
+## TeamTalk.h Comment Audit Workflow
+- Use this workflow when asked to verify SDK behavior from TeamTalk comments or check if wrappers miss important requirements.
+- Primary source order:
+  - `TEAMTALK_DLL/TeamTalk.h` (canonical API signatures + behavior comments).
+  - `TEAMTALK_DLL/Documentation/C-API/` (narrative docs, examples, cross-links).
+  - `crates/teamtalk-sys/` generated bindings (verify symbol exposure and type shape).
+  - `crates/teamtalk/src/` safe wrappers and event/state logic (verify behavior mapping).
+- Why this order:
+  - Header comments stay closest to API changes and constraints.
+  - Documentation can lag or summarize, while `.h` stays authoritative for exact function contracts.
+- Required audit sequence:
+  1. Extract target area in `TeamTalk.h` (connection, reconnect, login, channels, keep-alive, events).
+  2. Capture exact requirement from comments (preconditions, ordering, retries, pointer validity, ownership, threading).
+  3. Map each requirement to Rust wrapper entry points in `crates/teamtalk/src/client/`.
+  4. Verify wrapper behavior and state transitions in code (not only method names).
+  5. Verify tests exist for the behavior (`crates/teamtalk/tests/` or `#[cfg(test)]`).
+  6. Verify user docs reflect behavior (`README.md`, `docs/getting-started.md`, `docs/features.md`, `docs/configuration.md`, `docs/developer.md`, `docs/changelog.md`).
+  7. Record gaps as: missing API, wrong behavior, missing tests, missing docs, or unclear error surface.
+- Commands to use during audit:
+  - `rg -n "<TT_FunctionName|keyword>" TEAMTALK_DLL/TeamTalk.h`
+  - `rg -n "<keyword>" TEAMTALK_DLL/Documentation/C-API`
+  - `rg -n "<TT_FunctionName|method|event>" crates/teamtalk-sys crates/teamtalk/src crates/teamtalk/tests`
+  - `cargo test --workspace --all-targets --all-features` after behavior changes.
+- Comment-to-wrapper mapping checklist (must verify each):
+  - Precondition enforcement (for example: disconnect-before-reconnect barriers).
+  - Return value handling and typed error mapping.
+  - Event ordering assumptions and connection-state transitions.
+  - Retry/backoff semantics and termination conditions.
+  - Security-sensitive handling (in-memory secrets only, no secret logging, no persistent password writes unless explicit config).
+  - Platform-specific or feature-flag behavior.
+- Deliverable format for audit tasks:
+  - "Source requirement" (header comment or C-API section).
+  - "Current Rust behavior" (file + function).
+  - "Gap/Risk" (if any).
+  - "Fix plan" (code/test/docs updates).
+- If header and documentation disagree, follow `TeamTalk.h` and note the mismatch explicitly in docs/changelog when it affects users.
 ## Context7 MCP Usage (Default)
 - Always use Context7 MCP by default when the task involves library/API documentation, code generation, setup steps, configuration steps, or framework-specific usage.
 - Do not wait for the user to explicitly request Context7 for these cases.
