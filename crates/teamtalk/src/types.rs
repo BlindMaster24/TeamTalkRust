@@ -1539,6 +1539,8 @@ impl ServerProperties {
 pub struct ClientStatistics {
     pub udp_ping: i32,
     pub tcp_ping: i32,
+    pub tcp_server_silence_sec: i32,
+    pub udp_server_silence_sec: i32,
     pub udp_sent: i64,
     pub udp_recv: i64,
     pub voice_sent: i64,
@@ -1558,6 +1560,8 @@ impl From<ffi::ClientStatistics> for ClientStatistics {
         Self {
             udp_ping: s.nUdpPingTimeMs,
             tcp_ping: s.nTcpPingTimeMs,
+            tcp_server_silence_sec: s.nTcpServerSilenceSec,
+            udp_server_silence_sec: s.nUdpServerSilenceSec,
             udp_sent: s.nUdpBytesSent,
             udp_recv: s.nUdpBytesRecv,
             voice_sent: s.nVoiceBytesSent,

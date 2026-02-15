@@ -6,6 +6,8 @@ fn client_statistics_from_ffi() {
     let raw = ffi::ClientStatistics {
         nUdpPingTimeMs: 1,
         nTcpPingTimeMs: 2,
+        nTcpServerSilenceSec: 15,
+        nUdpServerSilenceSec: 16,
         nUdpBytesSent: 3,
         nUdpBytesRecv: 4,
         nVoiceBytesSent: 5,
@@ -23,6 +25,8 @@ fn client_statistics_from_ffi() {
     let stats = ClientStatistics::from(raw);
     assert_eq!(stats.udp_ping, 1);
     assert_eq!(stats.tcp_ping, 2);
+    assert_eq!(stats.tcp_server_silence_sec, 15);
+    assert_eq!(stats.udp_server_silence_sec, 16);
     assert_eq!(stats.udp_sent, 3);
     assert_eq!(stats.udp_recv, 4);
     assert_eq!(stats.voice_sent, 5);

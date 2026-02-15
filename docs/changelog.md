@@ -25,6 +25,8 @@ public API with compatibility expectations for downstream users.
 - In-session full recovery API: `enable_full_auto_reconnect` and `ReconnectWorkflowConfig` (separate login/join retry policies).
 - Auto-recovery phase events/hooks: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - `ClientFlags::CONNECTION` helper bit (`CONNECTING | CONNECTED`) for connection-state checks.
+- Keep-alive helpers: `Client::ping` and `Client::set_client_keep_alive_and_ping`.
+- `ClientStatistics` now includes TCP/UDP server silence seconds.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.

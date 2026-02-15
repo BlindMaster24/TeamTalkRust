@@ -69,6 +69,11 @@ impl Client {
         unsafe { ffi::api().TT_DoQueryServerStats(self.ptr.0) }
     }
 
+    /// Pings the server and waits for processing events.
+    pub fn ping(&self) -> i32 {
+        unsafe { ffi::api().TT_DoPing(self.ptr.0) }
+    }
+
     /// Queries the max payload for a user.
     pub fn query_max_payload(&self, user_id: UserId) -> bool {
         unsafe { ffi::api().TT_QueryMaxPayload(self.ptr.0, user_id.0) == 1 }

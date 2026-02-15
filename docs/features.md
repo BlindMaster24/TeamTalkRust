@@ -45,6 +45,7 @@ cargo build --no-default-features --features tls-rustls
 - Full in-session recovery via `enable_full_auto_reconnect` (connect + login + join workflow).
 - Per-phase retry policy via `ReconnectWorkflowConfig` (`login` and `join` configs).
 - Explicit auto-join state helpers: `set_last_channel` and `clear_last_channel`.
+- Keep-alive helpers: `ping` and `set_client_keep_alive_and_ping`.
 - Typed errors with SDK code + message.
 - Env helpers: `ConnectParamsOwned::from_env` and `LoginParams::from_env`.
 - Multi-client tracking: `ClientId`, labels, and `ClientRegistry`.

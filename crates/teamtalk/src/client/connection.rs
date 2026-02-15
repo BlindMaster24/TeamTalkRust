@@ -481,6 +481,23 @@ impl Client {
         }
     }
 
+    /// Sets keep-alive parameters and issues a ping to restart timers.
+    pub fn set_client_keep_alive_and_ping(
+        &self,
+        keep_alive: &crate::types::ClientKeepAlive,
+    ) -> Result<i32, crate::events::Error> {
+        self.set_client_keep_alive(keep_alive)?;
+        let cmd_id = self.ping();
+        if cmd_id > 0 {
+            Ok(cmd_id)
+        } else {
+            Err(crate::events::Error::CommandFailed {
+                code: -1,
+                message: "Ping failed".to_string(),
+            })
+        }
+    }
+
     /// Returns client keep-alive parameters.
     pub fn get_client_keep_alive(&self) -> Option<crate::types::ClientKeepAlive> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ClientKeepAlive>() };
