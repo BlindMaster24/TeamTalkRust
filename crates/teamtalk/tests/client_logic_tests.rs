@@ -410,3 +410,32 @@ fn enable_full_auto_reconnect_sets_in_session_params() {
         workflow.join.max_attempts
     );
 }
+
+#[test]
+fn add_auto_reconnect_event_deduplicates_by_event_kind() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+
+    client.add_auto_reconnect_event(teamtalk::Event::MySelfKicked);
+    client.add_auto_reconnect_event(teamtalk::Event::MySelfKicked);
+
+    let events = client.auto_reconnect_events();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0], teamtalk::Event::MySelfKicked);
+}
+
+#[test]
+fn remove_auto_reconnect_event_removes_matching_kind() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.set_auto_reconnect_events(vec![
+        teamtalk::Event::MySelfKicked,
+        teamtalk::Event::UserLeft,
+    ]);
+
+    assert!(client.remove_auto_reconnect_event(teamtalk::Event::MySelfKicked));
+    assert!(!client.remove_auto_reconnect_event(teamtalk::Event::MySelfKicked));
+
+    let events = client.auto_reconnect_events();
+    assert_eq!(events, vec![teamtalk::Event::UserLeft]);
+}

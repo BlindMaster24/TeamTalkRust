@@ -314,6 +314,28 @@ impl Client {
         self.auto_reconnect.lock().unwrap().extra_events = extra_events;
     }
 
+    /// Adds one extra event that should trigger automatic reconnection.
+    pub fn add_auto_reconnect_event(&self, event: crate::events::Event) {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        if auto
+            .extra_events
+            .iter()
+            .any(|existing| std::mem::discriminant(existing) == std::mem::discriminant(&event))
+        {
+            return;
+        }
+        auto.extra_events.push(event);
+    }
+
+    /// Removes one extra event trigger by event kind.
+    pub fn remove_auto_reconnect_event(&self, event: crate::events::Event) -> bool {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        let before = auto.extra_events.len();
+        auto.extra_events
+            .retain(|existing| std::mem::discriminant(existing) != std::mem::discriminant(&event));
+        auto.extra_events.len() != before
+    }
+
     /// Returns the extra events that trigger automatic reconnection.
     pub fn auto_reconnect_events(&self) -> Vec<crate::events::Event> {
         self.auto_reconnect.lock().unwrap().extra_events.clone()
