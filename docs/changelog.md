@@ -43,6 +43,7 @@ public API with compatibility expectations for downstream users.
 - `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
   channel kick (`nSource > 0`) -> `LoggedIn`, server kick (`nSource <= 0`) -> `Connected`.
 - `join_channel` now returns `0` when a previous join is still in progress (`ConnectionState::Joining(_)`), avoiding duplicate join commands.
+- `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
