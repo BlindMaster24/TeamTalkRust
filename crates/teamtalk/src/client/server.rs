@@ -75,8 +75,17 @@ impl Client {
     }
 
     /// Queries the max payload for a user.
+    ///
+    /// Note: current TeamTalk SDK versions only support querying the
+    /// server payload (`user_id = 0`). For that default path use
+    /// `query_server_max_payload()`.
     pub fn query_max_payload(&self, user_id: UserId) -> bool {
         unsafe { ffi::api().TT_QueryMaxPayload(self.ptr.0, user_id.0) == 1 }
+    }
+
+    /// Queries the max payload supported by the server (`user_id = 0`).
+    pub fn query_server_max_payload(&self) -> bool {
+        unsafe { ffi::api().TT_QueryMaxPayload(self.ptr.0, 0) == 1 }
     }
 
     /// Pumps a message into the Windows message loop (Windows only).

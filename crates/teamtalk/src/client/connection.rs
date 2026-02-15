@@ -1,6 +1,6 @@
 //! Connection and reconnect helpers.
 use super::Client;
-use crate::events::ConnectionState;
+use crate::events::{ConnectionState, Error};
 use crate::utils::{ToTT, backoff::ExponentialBackoff};
 use std::env;
 use std::time::{Duration, Instant};
@@ -184,6 +184,22 @@ fn reset_auto_recovery_handlers(auto: &mut super::core::AutoReconnectState) {
     auto.recovery_completed = false;
     auto.pending_login_cmd = None;
     auto.pending_join_cmd = None;
+}
+
+fn validate_client_keep_alive(keep_alive: &crate::types::ClientKeepAlive) -> Result<(), Error> {
+    if keep_alive.lost_ms <= 0 {
+        return Err(Error::InvalidParam);
+    }
+    if keep_alive.udp_interval_ms <= 0 {
+        return Err(Error::InvalidParam);
+    }
+    if keep_alive.lost_ms <= keep_alive.udp_interval_ms {
+        return Err(Error::InvalidParam);
+    }
+    if keep_alive.tcp_interval_ms > 0 && keep_alive.lost_ms <= keep_alive.tcp_interval_ms {
+        return Err(Error::InvalidParam);
+    }
+    Ok(())
 }
 
 impl Client {
@@ -471,6 +487,7 @@ impl Client {
         &self,
         keep_alive: &crate::types::ClientKeepAlive,
     ) -> Result<(), crate::events::Error> {
+        validate_client_keep_alive(keep_alive)?;
         if unsafe { ffi::api().TT_SetClientKeepAlive(self.ptr.0, &keep_alive.to_ffi()) == 1 } {
             Ok(())
         } else {
@@ -506,5 +523,66 @@ impl Client {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_client_keep_alive;
+    use crate::events::Error;
+    use crate::types::ClientKeepAlive;
+
+    #[test]
+    fn validate_keep_alive_accepts_valid_values() {
+        let keep_alive = ClientKeepAlive {
+            lost_ms: 12_000,
+            tcp_interval_ms: 5_000,
+            udp_interval_ms: 4_000,
+            udp_rtx_ms: 500,
+            udp_connect_rtx_ms: 500,
+            udp_timeout_ms: 5_000,
+        };
+        assert!(validate_client_keep_alive(&keep_alive).is_ok());
+    }
+
+    #[test]
+    fn validate_keep_alive_rejects_non_positive_lost_ms() {
+        let keep_alive = ClientKeepAlive {
+            lost_ms: 0,
+            tcp_interval_ms: 1_000,
+            udp_interval_ms: 500,
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_client_keep_alive(&keep_alive),
+            Err(Error::InvalidParam)
+        ));
+    }
+
+    #[test]
+    fn validate_keep_alive_rejects_invalid_udp_interval() {
+        let keep_alive = ClientKeepAlive {
+            lost_ms: 4_000,
+            udp_interval_ms: 4_000,
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_client_keep_alive(&keep_alive),
+            Err(Error::InvalidParam)
+        ));
+    }
+
+    #[test]
+    fn validate_keep_alive_rejects_invalid_tcp_interval() {
+        let keep_alive = ClientKeepAlive {
+            lost_ms: 4_000,
+            tcp_interval_ms: 4_000,
+            udp_interval_ms: 1_000,
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_client_keep_alive(&keep_alive),
+            Err(Error::InvalidParam)
+        ));
     }
 }
