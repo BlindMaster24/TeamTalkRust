@@ -103,6 +103,20 @@
 - `cargo --list` lists all installed Cargo subcommands (including third-party ones like `clippy`, `fmt`, `llvm-cov`, `sqlx`).
 - `cargo help` shows general usage and built-in commands.
 - `cargo help <command>` shows detailed help for a specific command (e.g. `cargo help test`, `cargo help doc`).
+## Cargo Dependency Tooling (`cargo-edit` + crates.io search)
+- `cargo search <name>` searches crates.io and shows the latest published version(s). Use `--limit N` to see more results.
+- `cargo info <crate>` shows crate metadata (latest version, features, repository, docs link, and more).
+- `cargo add <crate>` / `cargo remove <crate>` come from `cargo-edit` and modify `Cargo.toml` directly.
+- `cargo upgrade` (from `cargo-edit`) updates dependency requirements in `Cargo.toml`; by default it can include major updates.
+- Install tooling: `cargo install cargo-edit`; verify commands with `cargo --list`.
+- Safe non-major policy:
+  - Update manifest constraints without major jumps: `cargo upgrade --workspace --incompatible false`.
+  - Then refresh lockfile: `cargo update`.
+  - Then run DoD checks (`fmt`, `check`, `clippy`, `test`, `doc`, doc links).
+- `cargo update` alone does not change `Cargo.toml`; it only updates `Cargo.lock` within already-allowed semver ranges.
+- Prefer pinning dependency features explicitly in `Cargo.toml`; avoid implicit default features unless intentional.
+- Before upgrading dependencies, inspect current tree with `cargo tree` and re-check after upgrade for changed transitive graph.
+- Keep dependency updates in a dedicated commit when possible.
 ## Core Cargo Commands (practical)
 - `cargo build` builds the workspace.
 - `cargo check --workspace --all-targets` runs fast type checks (DoD).
