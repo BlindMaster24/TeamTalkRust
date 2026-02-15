@@ -41,6 +41,7 @@ cargo build --no-default-features --features tls-rustls
 - Audio block streaming: `stream_audio_blocks`, sinks (`CallbackSink`, `WriterSink`, `UdpSink`).
 - Synced per-user recording: `SyncedUserRecordingSession` with `PcmS16Le`/`WavS16Le` output and silence policies.
 - Auto-reconnect support via `enable_auto_reconnect`, `enable_auto_reconnect_with_events`, and `connect_remember`.
+- Auto-reconnect trigger helpers: `set_auto_reconnect_events`, `add_auto_reconnect_event`, `remove_auto_reconnect_event`.
 - Manual reconnect helpers with disconnect barrier: `reconnect`, `reconnect_with_params`, `reconnect_ex`, `reconnect_sys_id`.
 - Auto-login and rejoin using stored `LoginParams` and remembered channels (including passwords set via `join_channel`).
 - Full in-session recovery via `enable_full_auto_reconnect` (connect + login + join workflow).

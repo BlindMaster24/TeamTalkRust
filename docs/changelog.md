@@ -21,6 +21,7 @@ public API with compatibility expectations for downstream users.
 - `Client::split()` method returning `ClientEvents` (polling) and `ClientCommands` (execution) for concurrent usage.
 - Auto-reconnect extra events via `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
 - Explicit auto-join state helper: `set_last_channel(ChannelId, Option<&str>)`.
+- Auto-reconnect event list helpers: `add_auto_reconnect_event` and `remove_auto_reconnect_event`.
 - `reconnect_protected_channel` example showing reconnect + login + protected auto-join flow.
 - `async_tokio_event_stream` example showing async polling with Tokio wake integration.
 - In-session full recovery API: `enable_full_auto_reconnect` and `ReconnectWorkflowConfig` (separate login/join retry policies).
