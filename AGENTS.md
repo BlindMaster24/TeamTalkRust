@@ -4,7 +4,7 @@
 - `crates/teamtalk/` is the high-level Rust SDK; core modules live under `src/client/`, `src/events.rs`, `src/types.rs`, and `src/utils/`.
 - `crates/teamtalk/tests/` holds integration tests; `crates/teamtalk/examples/` holds runnable examples.
 - `crates/teamtalk-sys/` contains bindgen-based FFI and loads `TeamTalk.h`.
-- `TEAMTALK_DLL/` stores downloaded SDK binaries and headers (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
+- `TEAMTALK_DLL/` stores downloaded SDK runtime files, import/static libs, `TeamTalk.h`, and `Documentation/` (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
 - `docs/` contains user guides; `README.md` links to docs and entry points.
 ## Module Structure Guidelines (for this repo)
 - Prefer small, focused modules; split files when a module grows beyond ~400–600 lines or mixes multiple responsibilities.
@@ -150,6 +150,8 @@
 - The loader pins to `crates/teamtalk/SDK_VERSION.txt` by default.
 - Set `TEAMTALK_SDK_VERSION` to override (for example `v5.19` or `latest`).
 - Precedence: env var > `SDK_VERSION.txt` > latest from BearWare.
+- Loader payload in `TEAMTALK_DLL/`: `TeamTalk5.dll`/`libTeamTalk5.so`, `TeamTalk5.lib`/`libTeamTalk5.a`, `TeamTalk.h`, `Documentation/`, and `TEAMTALK_DOCUMENTATION_MANIFEST.txt`.
+- If any required SDK binary or documentation file is missing, the loader restores the selected version automatically (online mode).
 - `offline` feature disables downloads and requires `TEAMTALK_DLL/` to be pre-populated.
 
 ## Coding Style & Naming Conventions
