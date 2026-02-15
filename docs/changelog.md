@@ -38,6 +38,7 @@ public API with compatibility expectations for downstream users.
 - `Client::send_text` and `send_to_*` now send long text as multipart messages using `TextMessage.bMore` instead of truncating to a single packet.
 - Message payload accessors now verify `TTMessage.ttType` before decoding unions.
 - `Message::user()` now decodes `Event::MySelfKicked` when kicker payload is present.
+- `ClientEvent` now carries `command_id` for multi-client command tracking.
 - `connect`, `connect_ex`, and `connect_sys_id` now fail fast with `CommandFailed` when the client is already connecting or connected.
 - `login` now fails fast (returns `0`) when called while a login/join flow is already in progress.
 - `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
@@ -46,9 +47,6 @@ public API with compatibility expectations for downstream users.
 - `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 - `leave_channel` now returns `0` when the client is not currently joining/joined in a channel, avoiding invalid leave commands.
 - Auto-reconnect extra event lists now deduplicate by event kind in `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
-
-### Changed
-- `ClientEvent` now carries `command_id` for multi-client command tracking.
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
 - `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
@@ -61,6 +59,7 @@ public API with compatibility expectations for downstream users.
 ### Docs
 - Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
 - Added `dispatch_reconnect` example showing reconnect with kick handling.
+- Added explicit license setup guidance (`set_license` before `connect*`/`login`).
 
 ## 1.2.0
 

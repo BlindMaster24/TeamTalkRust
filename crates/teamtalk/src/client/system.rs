@@ -13,6 +13,9 @@ impl Client {
     }
 
     /// Sets license information for the SDK.
+    ///
+    /// Call this before `connect*`/`login` on startup so the first session
+    /// uses the configured license metadata.
     pub fn set_license(&self, name: &str, key: &str) -> bool {
         unsafe { ffi::api().TT_SetLicenseInformation(name.tt().as_ptr(), key.tt().as_ptr()) == 1 }
     }

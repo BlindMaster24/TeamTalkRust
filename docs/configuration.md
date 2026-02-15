@@ -32,6 +32,20 @@ SDK.
 The client connects via TCP and UDP ports (default `10333`). Use explicit
 ports in production and document them in your environment.
 
+## License Information
+
+If you use a TeamTalk license key, set it during startup before the first
+`connect*`/`login` call:
+
+```rust
+let client = Client::new()?;
+client.set_license("Company Name", "license-key");
+client.connect("127.0.0.1", 10333, 10333, false)?;
+```
+
+This keeps license setup explicit and ensures the session starts with the
+expected license metadata.
+
 ## TLS
 
 For encrypted connections, configure the encryption context using certificate
