@@ -47,7 +47,7 @@
   2. Capture exact requirement from comments (preconditions, ordering, retries, pointer validity, ownership, threading).
   3. Map each requirement to Rust wrapper entry points in `crates/teamtalk/src/client/`.
   4. Verify wrapper behavior and state transitions in code (not only method names).
-  5. Verify tests exist for the behavior (`crates/teamtalk/tests/` or `#[cfg(test)]`).
+  5. Verify tests exist for the behavior in `crates/teamtalk/tests/`.
   6. Verify user docs reflect behavior (`README.md`, `docs/getting-started.md`, `docs/features.md`, `docs/configuration.md`, `docs/developer.md`, `docs/changelog.md`).
   7. Record gaps as: missing API, wrong behavior, missing tests, missing docs, or unclear error surface.
 - Commands to use during audit:
@@ -314,7 +314,8 @@
    - Tag and push: `git tag vX.Y.Z` then `git push` and `git push --tags`
 
 ## Testing Guidelines
-- Place tests under `crates/<crate>/tests` or `#[cfg(test)]` modules.
+- Place tests under `crates/<crate>/tests` only.
+- Do not add `#[cfg(test)]` unit-test modules inside library source files.
 - Prefer focused unit tests and feature-gated tests for optional modules.
 - Name tests by behavior, for example `recording_start_on_command`.
 - Add at least one usage example for every new high-level API, even if no tests are added.
