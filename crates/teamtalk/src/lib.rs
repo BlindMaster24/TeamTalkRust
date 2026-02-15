@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 use std::path::Path;
+use utils::ToTT;
 
 pub mod client;
 pub mod events;
@@ -50,6 +51,18 @@ pub fn init() -> Result<()> {
     let dll_path = dll_path.to_str().ok_or(Error::InitFailed)?;
     teamtalk_sys::load(dll_path).map_err(|_| Error::InitFailed)?;
     Ok(())
+}
+
+/// Sets TeamTalk license information before creating any `Client`.
+///
+/// TeamTalk C-API requires license information to be configured before
+/// `TT_InitTeamTalk`/`TT_InitTeamTalkPoll`, which in this crate happens inside
+/// `Client::new()` and `Client::with_hwnd()`.
+pub fn set_license(name: &str, key: &str) -> Result<bool> {
+    init()?;
+    Ok(unsafe {
+        teamtalk_sys::api().TT_SetLicenseInformation(name.tt().as_ptr(), key.tt().as_ptr()) == 1
+    })
 }
 
 /// Initializes the TeamTalk SDK using a custom DLL path.

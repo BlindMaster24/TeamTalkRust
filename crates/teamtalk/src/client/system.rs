@@ -14,8 +14,10 @@ impl Client {
 
     /// Sets license information for the SDK.
     ///
-    /// Call this before `connect*`/`login` on startup so the first session
-    /// uses the configured license metadata.
+    /// Prefer calling [`crate::set_license`] before creating a `Client`, since
+    /// TeamTalk C-API requires license configuration before `TT_InitTeamTalk`.
+    /// Calling this method on an already-created client may be too late for
+    /// that client instance.
     pub fn set_license(&self, name: &str, key: &str) -> bool {
         unsafe { ffi::api().TT_SetLicenseInformation(name.tt().as_ptr(), key.tt().as_ptr()) == 1 }
     }

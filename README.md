@@ -51,9 +51,9 @@ use teamtalk::types::ChannelId;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     teamtalk::init()?;
+    // If you use a TeamTalk license key, set it before creating Client.
+    // teamtalk::set_license("Company Name", "license-key")?;
     let client = Client::new()?;
-    // If you use a TeamTalk license key, set it before connect/login.
-    // client.set_license("Company Name", "license-key");
     client.connect("127.0.0.1", 10333, 10333, false)?;
 
     loop {
@@ -74,8 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-If you use a TeamTalk license key, call `client.set_license(...)` once during
-startup before the first `connect*`/`login` call.
+If you use a TeamTalk license key, call `teamtalk::set_license(...)` before
+creating `Client`.
 
 ## Advanced Usage
 

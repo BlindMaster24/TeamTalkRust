@@ -78,8 +78,8 @@ the `TTMessage` payload.
 For `Event::MySelfKicked`, `msg.user()` now returns the kicker user when the
 SDK includes it in the event payload.
 
-If you use a TeamTalk license key, call `client.set_license(...)` once during
-startup before the first `connect*`/`login` call.
+If you use a TeamTalk license key, call `teamtalk::set_license(...)` before
+creating `Client`.
 
 If you plan to use auto-reconnect, prefer `connect_remember` and
 `login_remember` so the client can restore state after reconnect. For protected

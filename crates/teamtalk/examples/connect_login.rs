@@ -26,10 +26,10 @@ fn main() -> teamtalk::Result<()> {
     let license_key = env_or("TT_LICENSE_KEY", "");
 
     // Initialize and connect.
-    let client = Client::new()?;
     if !license_name.is_empty() && !license_key.is_empty() {
-        client.set_license(&license_name, &license_key);
+        teamtalk::set_license(&license_name, &license_key)?;
     }
+    let client = Client::new()?;
     client.connect(&host, tcp, udp, false)?;
 
     // Event loop: login, join root, then wait.

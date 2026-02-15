@@ -32,6 +32,7 @@ public API with compatibility expectations for downstream users.
 - `ClientStatistics` now includes TCP/UDP server silence seconds.
 - `Message::error_message()` accessor for `ConnectCryptError`/`CmdError`/`InternalError`.
 - `Client::query_server_max_payload()` helper for SDK-supported payload query mode.
+- `teamtalk::set_license(name, key)` helper to set license information before `Client::new()`.
 
 ### Changed
 - `Client` is now thread-safe (`Send` + `Sync`) and uses internal locking.
@@ -59,7 +60,7 @@ public API with compatibility expectations for downstream users.
 ### Docs
 - Developer notes moved to [dev.md](dev.md) with updated lefthook guidance and doc links.
 - Added `dispatch_reconnect` example showing reconnect with kick handling.
-- Added explicit license setup guidance (`set_license` before `connect*`/`login`).
+- Added explicit license setup guidance (`teamtalk::set_license` before `Client::new()`).
 - README quick start now documents license call ordering, and `connect_login` supports `TT_LICENSE_NAME`/`TT_LICENSE_KEY`.
 
 ## 1.2.0
