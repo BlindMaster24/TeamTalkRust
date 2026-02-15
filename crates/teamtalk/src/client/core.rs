@@ -911,6 +911,23 @@ impl Client {
                     }
                 }
             }
+            Event::MySelfKicked => {
+                let next_state = kicked_next_state(msg.source());
+                self.set_connection_state(next_state);
+                let mut auto = self.auto_reconnect.lock().unwrap();
+                auto.pending_join_cmd = None;
+                if matches!(next_state, ConnectionState::Connected) {
+                    auto.pending_login_cmd = None;
+                }
+                if let Some(handler) = auto.join_handler.as_mut() {
+                    handler.mark_disconnected();
+                }
+                if matches!(next_state, ConnectionState::Connected)
+                    && let Some(handler) = auto.login_handler.as_mut()
+                {
+                    handler.mark_disconnected();
+                }
+            }
             Event::CmdError => {
                 let source = msg.source();
                 let mut next_state = None;
@@ -983,6 +1000,14 @@ impl Client {
     }
 }
 
+fn kicked_next_state(source: i32) -> ConnectionState {
+    if source > 0 {
+        ConnectionState::LoggedIn
+    } else {
+        ConnectionState::Connected
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Event, Message, ffi};
@@ -1043,5 +1068,25 @@ mod tests {
         let payload = msg.error_message().expect("client error payload");
         assert_eq!(payload.code, 10004);
         assert_eq!(payload.message, "queue overflow");
+    }
+
+    #[test]
+    fn kicked_from_channel_moves_to_logged_in_state() {
+        assert_eq!(
+            super::kicked_next_state(10),
+            crate::events::ConnectionState::LoggedIn
+        );
+    }
+
+    #[test]
+    fn kicked_from_server_moves_to_connected_state() {
+        assert_eq!(
+            super::kicked_next_state(0),
+            crate::events::ConnectionState::Connected
+        );
+        assert_eq!(
+            super::kicked_next_state(-1),
+            crate::events::ConnectionState::Connected
+        );
     }
 }
