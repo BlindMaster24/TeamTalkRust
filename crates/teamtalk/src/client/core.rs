@@ -590,6 +590,10 @@ pub struct Message {
 }
 
 impl Message {
+    fn has_tt_type(&self, expected: ffi::TTType) -> bool {
+        self.raw.ttType == expected
+    }
+
     /// Wraps a raw TeamTalk message.
     pub(crate) fn from_raw(event: crate::events::Event, raw: ffi::TTMessage) -> Self {
         Self { event, raw }
@@ -607,7 +611,9 @@ impl Message {
 
     /// Returns the text message payload if present.
     pub fn text(&self) -> Option<crate::types::TextMessage> {
-        if matches!(self.event, crate::events::Event::TextMessage) {
+        if matches!(self.event, crate::events::Event::TextMessage)
+            && self.has_tt_type(ffi::TTType::__TEXTMESSAGE)
+        {
             unsafe {
                 Some(crate::types::TextMessage::from(
                     self.raw.__bindgen_anon_1.textmessage,
@@ -625,7 +631,8 @@ impl Message {
             crate::events::Event::ChannelCreated
                 | crate::events::Event::ChannelUpdated
                 | crate::events::Event::ChannelRemoved
-        ) {
+        ) && self.has_tt_type(ffi::TTType::__CHANNEL)
+        {
             unsafe {
                 Some(crate::types::Channel::from(
                     self.raw.__bindgen_anon_1.channel,
@@ -638,7 +645,9 @@ impl Message {
 
     /// Returns the server properties payload if present.
     pub fn server_properties(&self) -> Option<crate::types::ServerProperties> {
-        if matches!(self.event, crate::events::Event::ServerUpdate) {
+        if matches!(self.event, crate::events::Event::ServerUpdate)
+            && self.has_tt_type(ffi::TTType::__SERVERPROPERTIES)
+        {
             unsafe {
                 Some(crate::types::ServerProperties::from(
                     self.raw.__bindgen_anon_1.serverproperties,
@@ -651,7 +660,9 @@ impl Message {
 
     /// Returns the server statistics payload if present.
     pub fn server_statistics(&self) -> Option<crate::types::ServerStatistics> {
-        if matches!(self.event, crate::events::Event::ServerStatistics) {
+        if matches!(self.event, crate::events::Event::ServerStatistics)
+            && self.has_tt_type(ffi::TTType::__SERVERSTATISTICS)
+        {
             unsafe {
                 Some(crate::types::ServerStatistics::from(
                     self.raw.__bindgen_anon_1.serverstatistics,
@@ -664,7 +675,9 @@ impl Message {
 
     /// Returns the file transfer payload if present.
     pub fn file_transfer(&self) -> Option<crate::types::FileTransfer> {
-        if matches!(self.event, crate::events::Event::FileTransfer) {
+        if matches!(self.event, crate::events::Event::FileTransfer)
+            && self.has_tt_type(ffi::TTType::__FILETRANSFER)
+        {
             unsafe {
                 Some(crate::types::FileTransfer::from(
                     self.raw.__bindgen_anon_1.filetransfer,
@@ -685,8 +698,10 @@ impl Message {
                 | crate::events::Event::UserJoined
                 | crate::events::Event::UserLeft
                 | crate::events::Event::UserStateChange
+                | crate::events::Event::MySelfKicked
                 | crate::events::Event::UserFirstVoiceStreamPacket
-        ) {
+        ) && self.has_tt_type(ffi::TTType::__USER)
+        {
             unsafe { Some(crate::types::User::from(self.raw.__bindgen_anon_1.user)) }
         } else {
             None
@@ -700,10 +715,30 @@ impl Message {
             crate::events::Event::UserAccount
                 | crate::events::Event::UserAccountCreated
                 | crate::events::Event::UserAccountRemoved
-        ) {
+        ) && self.has_tt_type(ffi::TTType::__USERACCOUNT)
+        {
             unsafe {
                 Some(crate::types::UserAccount::from(
                     self.raw.__bindgen_anon_1.useraccount,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns the SDK error payload if present.
+    pub fn error_message(&self) -> Option<crate::types::ErrorMessage> {
+        if matches!(
+            self.event,
+            crate::events::Event::ConnectCryptError
+                | crate::events::Event::CmdError
+                | crate::events::Event::InternalError
+        ) && self.has_tt_type(ffi::TTType::__CLIENTERRORMSG)
+        {
+            unsafe {
+                Some(crate::types::ErrorMessage::from(
+                    self.raw.__bindgen_anon_1.clienterrormsg,
                 ))
             }
         } else {
@@ -945,5 +980,68 @@ impl Client {
             code,
             message: self.get_error_message(code),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Event, Message, ffi};
+    use crate::types::UserId;
+    use crate::utils::ToTT;
+
+    #[test]
+    fn user_accessor_includes_kick_payload_when_present() {
+        let mut user = ffi::User {
+            nUserID: 42,
+            ..Default::default()
+        };
+        let nick = "kicker".tt();
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                nick.as_ptr(),
+                user.szNickname.as_mut_ptr(),
+                nick.len().min(user.szNickname.len()),
+            );
+        }
+        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        raw.ttType = ffi::TTType::__USER;
+        raw.__bindgen_anon_1.user = user;
+
+        let msg = Message::from_raw(Event::MySelfKicked, raw);
+        let payload = msg.user().expect("kicked user payload");
+        assert_eq!(payload.id, UserId(42));
+        assert_eq!(payload.nickname, "kicker");
+    }
+
+    #[test]
+    fn user_accessor_ignores_kick_without_user_payload() {
+        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        raw.ttType = ffi::TTType::__NONE;
+        let msg = Message::from_raw(Event::MySelfKicked, raw);
+        assert!(msg.user().is_none());
+    }
+
+    #[test]
+    fn error_message_accessor_reads_client_error_union() {
+        let mut err = ffi::ClientErrorMsg {
+            nErrorNo: 10004,
+            ..Default::default()
+        };
+        let text = "queue overflow".tt();
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                text.as_ptr(),
+                err.szErrorMsg.as_mut_ptr(),
+                text.len().min(err.szErrorMsg.len()),
+            );
+        }
+        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        raw.ttType = ffi::TTType::__CLIENTERRORMSG;
+        raw.__bindgen_anon_1.clienterrormsg = err;
+
+        let msg = Message::from_raw(Event::InternalError, raw);
+        let payload = msg.error_message().expect("client error payload");
+        assert_eq!(payload.code, 10004);
+        assert_eq!(payload.message, "queue overflow");
     }
 }
