@@ -39,6 +39,8 @@ public API with compatibility expectations for downstream users.
 - `Message::user()` now decodes `Event::MySelfKicked` when kicker payload is present.
 - `connect`, `connect_ex`, and `connect_sys_id` now fail fast with `CommandFailed` when the client is already connecting or connected.
 - `login` now fails fast (returns `0`) when called while a login/join flow is already in progress.
+- `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
+  channel kick (`nSource > 0`) -> `LoggedIn`, server kick (`nSource <= 0`) -> `Connected`.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
