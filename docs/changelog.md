@@ -27,6 +27,7 @@ public API with compatibility expectations for downstream users.
 - Auto-recovery phase events/hooks: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - `ClientFlags::CONNECTION` helper bit (`CONNECTING | CONNECTED`) for connection-state checks.
 - Keep-alive helpers: `Client::ping` and `Client::set_client_keep_alive_and_ping`.
+- Manual reconnect helpers: `reconnect`, `reconnect_with_params`, `reconnect_ex`, `reconnect_sys_id`.
 - `ClientStatistics` now includes TCP/UDP server silence seconds.
 - `Message::error_message()` accessor for `ConnectCryptError`/`CmdError`/`InternalError`.
 - `Client::query_server_max_payload()` helper for SDK-supported payload query mode.
@@ -36,6 +37,7 @@ public API with compatibility expectations for downstream users.
 - `Client::send_text` and `send_to_*` now send long text as multipart messages using `TextMessage.bMore` instead of truncating to a single packet.
 - Message payload accessors now verify `TTMessage.ttType` before decoding unions.
 - `Message::user()` now decodes `Event::MySelfKicked` when kicker payload is present.
+- `connect`, `connect_ex`, and `connect_sys_id` now fail fast with `CommandFailed` when the client is already connecting or connected.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.

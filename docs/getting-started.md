@@ -83,6 +83,11 @@ If you plan to use auto-reconnect, prefer `connect_remember` and
 channels, call `join_channel` once with the password or use `set_last_channel`
 to store the channel and password explicitly.
 
+For manual reconnect flows, use `reconnect`, `reconnect_ex`, or
+`reconnect_sys_id`. These helpers apply a disconnect barrier first. Direct
+`connect*` calls now return `CommandFailed` if the client is already connecting
+or connected.
+
 For outgoing text, prefer a single high-level call (`send_to_user`,
 `send_to_channel`, `send_to_all`) for one logical message. The client handles
 multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
