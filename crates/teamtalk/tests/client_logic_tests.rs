@@ -439,3 +439,21 @@ fn remove_auto_reconnect_event_removes_matching_kind() {
     let events = client.auto_reconnect_events();
     assert_eq!(events, vec![teamtalk::Event::UserLeft]);
 }
+
+#[test]
+fn join_channel_returns_zero_while_join_is_in_progress() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_join_result(11);
+    backend.set_channel(test_channel(1, "main"));
+
+    let client = Client::with_backend(backend).expect("client");
+    let first = client.join_channel(ChannelId(1), "");
+    let second = client.join_channel(ChannelId(1), "");
+
+    assert_eq!(first, 11);
+    assert_eq!(second, 0);
+    assert_eq!(
+        client.connection_state(),
+        ConnectionState::Joining(ChannelId(1))
+    );
+}

@@ -5,6 +5,10 @@ use crate::types::{Channel, ChannelId, UserId};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
+fn can_start_join(state: ConnectionState) -> bool {
+    !matches!(state, ConnectionState::Joining(_))
+}
+
 impl Client {
     /// Returns available channels from the server.
     pub fn get_server_channels(&self) -> Vec<Channel> {
@@ -46,6 +50,9 @@ impl Client {
 
     /// Joins a channel.
     pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
+        if !can_start_join(self.connection_state()) {
+            return 0;
+        }
         let cmd_id = self
             .backend()
             .do_join_channel_by_id(self.ptr.0, id.0, password);
@@ -161,5 +168,21 @@ impl Client {
                 vec![]
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::can_start_join;
+    use crate::events::ConnectionState;
+    use crate::types::ChannelId;
+
+    #[test]
+    fn join_guard_rejects_only_while_join_in_progress() {
+        assert!(!can_start_join(ConnectionState::Joining(ChannelId(1))));
+        assert!(can_start_join(ConnectionState::Idle));
+        assert!(can_start_join(ConnectionState::Connected));
+        assert!(can_start_join(ConnectionState::LoggedIn));
+        assert!(can_start_join(ConnectionState::Joined(ChannelId(1))));
     }
 }
