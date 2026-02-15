@@ -45,6 +45,7 @@ public API with compatibility expectations for downstream users.
 - `join_channel` now returns `0` when a previous join is still in progress (`ConnectionState::Joining(_)`), avoiding duplicate join commands.
 - `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 - `leave_channel` now returns `0` when the client is not currently joining/joined in a channel, avoiding invalid leave commands.
+- Auto-reconnect extra event lists now deduplicate by event kind in `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.
