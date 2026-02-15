@@ -10,6 +10,16 @@ use teamtalk_sys as ffi;
 
 const TT_TEXT_MAX_PAYLOAD: usize = TT_STRLEN - 1;
 
+fn can_login_in_state(state: crate::events::ConnectionState) -> bool {
+    !matches!(
+        state,
+        crate::events::ConnectionState::LoggingIn
+            | crate::events::ConnectionState::LoggedIn
+            | crate::events::ConnectionState::Joining(_)
+            | crate::events::ConnectionState::Joined(_)
+    )
+}
+
 /// Options for multipart text sending.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SendTextOptions {
@@ -153,6 +163,9 @@ impl LoginParams {
 impl Client {
     /// Logs in to the server.
     pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
+        if !can_login_in_state(self.connection_state()) {
+            return 0;
+        }
         let cmd_id =
             self.backend()
                 .do_login_ex(self.ptr.0, nickname, username, password, client_name);
@@ -543,5 +556,24 @@ impl Client {
         } else {
             Subscriptions::new()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::can_login_in_state;
+    use crate::events::ConnectionState;
+    use crate::types::ChannelId;
+
+    #[test]
+    fn login_guard_rejects_duplicate_login_states() {
+        assert!(can_login_in_state(ConnectionState::Idle));
+        assert!(can_login_in_state(ConnectionState::Connecting));
+        assert!(can_login_in_state(ConnectionState::Connected));
+        assert!(!can_login_in_state(ConnectionState::LoggingIn));
+        assert!(!can_login_in_state(ConnectionState::LoggedIn));
+        assert!(!can_login_in_state(ConnectionState::Joining(ChannelId(1))));
+        assert!(!can_login_in_state(ConnectionState::Joined(ChannelId(1))));
+        assert!(can_login_in_state(ConnectionState::Disconnected));
     }
 }
