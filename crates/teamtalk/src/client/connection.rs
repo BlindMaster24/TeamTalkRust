@@ -202,7 +202,32 @@ fn validate_client_keep_alive(keep_alive: &crate::types::ClientKeepAlive) -> Res
     Ok(())
 }
 
+fn ensure_connect_not_busy(has_connection_flags: bool) -> Result<(), Error> {
+    if has_connection_flags {
+        return Err(Error::CommandFailed {
+            code: -1,
+            message: "Connect refused: client is already connecting or connected".to_string(),
+        });
+    }
+    Ok(())
+}
+
 impl Client {
+    fn ensure_connect_allowed(&self) -> Result<(), Error> {
+        ensure_connect_not_busy(self.has_connection_flags())
+    }
+
+    fn disconnect_reconnect_barrier(&self) -> Result<(), Error> {
+        let _ = self.disconnect();
+        if self.has_connection_flags() {
+            return Err(Error::CommandFailed {
+                code: -1,
+                message: "Reconnect barrier failed: client still has connection flags".to_string(),
+            });
+        }
+        Ok(())
+    }
+
     /// Enables automatic reconnection using the provided config.
     pub fn enable_auto_reconnect(&self, config: ReconnectConfig) {
         let mut auto = self.auto_reconnect.lock().unwrap();
@@ -353,6 +378,7 @@ impl Client {
         udp: i32,
         encrypted: bool,
     ) -> Result<(), crate::events::Error> {
+        self.ensure_connect_allowed()?;
         let ok = unsafe {
             ffi::api().TT_Connect(
                 self.ptr.0,
@@ -399,16 +425,33 @@ impl Client {
             return true;
         }
 
-        // TeamTalk requires TT_Disconnect before each reconnect attempt after
-        // failed/lost connection events.
-        let _ = self.disconnect();
-        if self.has_connection_flags() {
+        if self.disconnect_reconnect_barrier().is_err() {
             return true;
         }
 
         handler.record_attempt();
         let _ = self.connect(params.host, params.tcp, params.udp, params.encrypted);
         true
+    }
+
+    /// Reconnects to a TeamTalk server using a disconnect barrier first.
+    pub fn reconnect(
+        &self,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> Result<(), crate::events::Error> {
+        self.disconnect_reconnect_barrier()?;
+        self.connect(host, tcp, udp, encrypted)
+    }
+
+    /// Reconnects using the provided parameters.
+    pub fn reconnect_with_params(
+        &self,
+        params: &ConnectParamsOwned,
+    ) -> Result<(), crate::events::Error> {
+        self.reconnect(&params.host, params.tcp, params.udp, params.encrypted)
     }
 
     /// Connects with a custom system id string.
@@ -420,6 +463,7 @@ impl Client {
         encrypted: bool,
         sys_id: &str,
     ) -> Result<(), crate::events::Error> {
+        self.ensure_connect_allowed()?;
         let ok = unsafe {
             ffi::api().TT_ConnectSysID(
                 self.ptr.0,
@@ -440,6 +484,19 @@ impl Client {
         }
     }
 
+    /// Reconnects with a custom system id string.
+    pub fn reconnect_sys_id(
+        &self,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+        sys_id: &str,
+    ) -> Result<(), crate::events::Error> {
+        self.disconnect_reconnect_barrier()?;
+        self.connect_sys_id(host, tcp, udp, encrypted, sys_id)
+    }
+
     /// Connects with a custom bind IP.
     pub fn connect_ex(
         &self,
@@ -449,6 +506,7 @@ impl Client {
         bind_ip: &str,
         encrypted: bool,
     ) -> Result<(), crate::events::Error> {
+        self.ensure_connect_allowed()?;
         let ok = unsafe {
             ffi::api().TT_ConnectEx(
                 self.ptr.0,
@@ -467,6 +525,19 @@ impl Client {
         } else {
             Err(crate::events::Error::ConnectFailed)
         }
+    }
+
+    /// Reconnects with a custom bind IP.
+    pub fn reconnect_ex(
+        &self,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        bind_ip: &str,
+        encrypted: bool,
+    ) -> Result<(), crate::events::Error> {
+        self.disconnect_reconnect_barrier()?;
+        self.connect_ex(host, tcp, udp, bind_ip, encrypted)
     }
 
     /// Disconnects from the server.
@@ -528,7 +599,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_client_keep_alive;
+    use super::{ensure_connect_not_busy, validate_client_keep_alive};
     use crate::events::Error;
     use crate::types::ClientKeepAlive;
 
@@ -584,5 +655,16 @@ mod tests {
             validate_client_keep_alive(&keep_alive),
             Err(Error::InvalidParam)
         ));
+    }
+
+    #[test]
+    fn connect_guard_accepts_idle_client() {
+        assert!(ensure_connect_not_busy(false).is_ok());
+    }
+
+    #[test]
+    fn connect_guard_rejects_connecting_or_connected_client() {
+        let err = ensure_connect_not_busy(true).expect_err("connect should be rejected");
+        assert!(matches!(err, Error::CommandFailed { code: -1, .. }));
     }
 }
