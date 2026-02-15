@@ -9,6 +9,13 @@ fn can_start_join(state: ConnectionState) -> bool {
     !matches!(state, ConnectionState::Joining(_))
 }
 
+fn can_leave_channel_in_state(state: ConnectionState) -> bool {
+    matches!(
+        state,
+        ConnectionState::Joining(_) | ConnectionState::Joined(_)
+    )
+}
+
 impl Client {
     /// Returns available channels from the server.
     pub fn get_server_channels(&self) -> Vec<Channel> {
@@ -92,6 +99,9 @@ impl Client {
 
     /// Leaves the current channel.
     pub fn leave_channel(&self) -> i32 {
+        if !can_leave_channel_in_state(self.connection_state()) {
+            return 0;
+        }
         let cmd_id = self.backend().do_leave_channel(self.ptr.0);
         if cmd_id > 0 {
             let mut auto = self.auto_reconnect.lock().unwrap();
@@ -173,7 +183,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::can_start_join;
+    use super::{can_leave_channel_in_state, can_start_join};
     use crate::events::ConnectionState;
     use crate::types::ChannelId;
 
@@ -184,5 +194,18 @@ mod tests {
         assert!(can_start_join(ConnectionState::Connected));
         assert!(can_start_join(ConnectionState::LoggedIn));
         assert!(can_start_join(ConnectionState::Joined(ChannelId(1))));
+    }
+
+    #[test]
+    fn leave_guard_allows_only_join_states() {
+        assert!(!can_leave_channel_in_state(ConnectionState::Idle));
+        assert!(!can_leave_channel_in_state(ConnectionState::Connected));
+        assert!(!can_leave_channel_in_state(ConnectionState::LoggedIn));
+        assert!(can_leave_channel_in_state(ConnectionState::Joining(
+            ChannelId(1)
+        )));
+        assert!(can_leave_channel_in_state(ConnectionState::Joined(
+            ChannelId(1)
+        )));
     }
 }

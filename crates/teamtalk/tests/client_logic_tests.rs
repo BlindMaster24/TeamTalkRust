@@ -469,3 +469,15 @@ fn logout_returns_zero_when_not_logged_in() {
     assert_eq!(cmd_id, 0);
     assert_eq!(client.connection_state(), ConnectionState::Idle);
 }
+
+#[test]
+fn leave_channel_returns_zero_when_not_in_channel_state() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_leave_result(77);
+    let client = Client::with_backend(backend).expect("client");
+
+    let cmd_id = client.leave_channel();
+
+    assert_eq!(cmd_id, 0);
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
+}
