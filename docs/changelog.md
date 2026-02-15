@@ -38,6 +38,7 @@ public API with compatibility expectations for downstream users.
 - Message payload accessors now verify `TTMessage.ttType` before decoding unions.
 - `Message::user()` now decodes `Event::MySelfKicked` when kicker payload is present.
 - `connect`, `connect_ex`, and `connect_sys_id` now fail fast with `CommandFailed` when the client is already connecting or connected.
+- `login` now fails fast (returns `0`) when called while a login/join flow is already in progress.
 
 ### Changed
 - `ClientEvent` now carries `command_id` for multi-client command tracking.

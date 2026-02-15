@@ -88,6 +88,9 @@ For manual reconnect flows, use `reconnect`, `reconnect_ex`, or
 `connect*` calls now return `CommandFailed` if the client is already connecting
 or connected.
 
+`login` now has a duplicate-call guard: if login/join state is already in
+progress, it returns `0` and skips issuing a duplicate SDK login command.
+
 For outgoing text, prefer a single high-level call (`send_to_user`,
 `send_to_channel`, `send_to_all`) for one logical message. The client handles
 multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
