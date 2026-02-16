@@ -56,13 +56,13 @@ def build_auto_block(
         lines.append("  Status: no uncovered wrapper/sys symbols in current scan.")
 
     lines.append(
-        f"- [AUTO][P1] Symbols without direct tests reference: {tests_count}."
+        f"- [AUTO][INFO] Symbols without direct tests reference: {tests_count}."
     )
     if tests_count > 0:
         preview = ", ".join(tests_list[:20])
         lines.append(f"  Top symbols: `{preview}`.")
         lines.append(
-            "  Disposition: prioritize high-risk API groups and add focused integration tests."
+            "  Disposition: informational backlog metric (function-level heuristic); prioritize only high-risk paths."
         )
     else:
         lines.append("  Status: all symbols referenced in tests.")
