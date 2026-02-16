@@ -1,0 +1,3 @@
+name: TeamTalk H Doc Audit
+description: Full-coverage TeamTalk.h plus Documentation audit with automated plan.md sync and actionable findings.
+default_prompt: Run the automated audit pass, triage uncovered symbols into plan.md, then implement the highest-risk missing tests and behavior fixes.
