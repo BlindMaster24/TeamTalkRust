@@ -68,6 +68,42 @@
   - "Gap/Risk" (if any).
   - "Fix plan" (code/test/docs updates).
 - If header and documentation disagree, follow `TeamTalk.h` and note the mismatch explicitly in docs/changelog when it affects users.
+## Local Skill: `teamtalk-h-doc-audit`
+- Skill location: `.codex/skills/teamtalk-h-doc-audit/SKILL.md`.
+- Purpose: run full-coverage audits against all `TT_*` APIs from `TEAMTALK_DLL/TeamTalk.h` and the full `TEAMTALK_DLL/Documentation/C-API/` tree, then keep `plan.md` and `plan_requirements_scan.md` synchronized.
+- Use this skill by default when the user asks to "read all comments/docs", "continue audit", or "find what is missing" in wrapper/test/docs coverage.
+- Primary command (preferred):
+  - `python .codex/skills/teamtalk-h-doc-audit/scripts/run_audit_pass.py --root .`
+- What `run_audit_pass.py` does automatically:
+  1. Updates `plan.md` timestamp.
+  2. Runs full symbol scan and writes `plan_requirements_scan.md`.
+  3. Syncs auto-findings from scan into `plan.md`.
+  4. Updates `plan.md` timestamp again after sync.
+- Supporting scripts:
+  - `plan_sync.py`: create/update `plan.md` and always refresh `Last updated`.
+  - `scan_requirements.py`: extract `TT_*` symbols from header code (comments stripped), then map hits across docs/sys/src/tests/docs.
+  - `sync_plan_findings.py`: inject/replace auto findings block in `plan.md` between:
+    - `<!-- AUTO-FINDINGS:START -->`
+    - `<!-- AUTO-FINDINGS:END -->`
+- Coverage interpretation rules:
+  - `Symbols without wrapper/sys mapping` should be treated as P0; triage as alias/intentional omission/missing binding/missing safe wrapper.
+  - `Symbols without direct tests reference` should be treated as risk indicator (not absolute truth), then prioritized by high-risk API groups.
+- High-risk-first execution order for fixes/tests:
+  1. Connection lifecycle and reconnect barriers.
+  2. Login/join/channel state transitions.
+  3. Kick/ban/moderation and event ordering.
+  4. File transfer and media.
+  5. Lower-risk utility/config APIs.
+- Required outputs after each audit pass:
+  - Updated `plan.md` with current timestamp and auto findings.
+  - Updated `plan_requirements_scan.md`.
+  - New manual findings in `plan.md` with:
+    - Source requirement
+    - Current behavior
+    - Gap/Risk
+    - Fix plan
+    - Test coverage status
+    - Disposition (fix now/defer with reason)
 ## Context7 MCP Usage (Default)
 - Always use Context7 MCP by default when the task involves library/API documentation, code generation, setup steps, configuration steps, or framework-specific usage.
 - Do not wait for the user to explicitly request Context7 for these cases.
