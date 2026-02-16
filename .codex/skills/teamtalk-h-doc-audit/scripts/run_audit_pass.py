@@ -4,8 +4,17 @@ import subprocess
 from pathlib import Path
 
 
-def run(cmd: list[str], cwd: Path) -> None:
-    proc = subprocess.run(cmd, cwd=str(cwd))
+def run(step: str, cmd: list[str], cwd: Path) -> None:
+    print(f"[{step}] {' '.join(cmd)}")
+    proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+    if proc.stdout:
+        for line in proc.stdout.splitlines():
+            if line.strip():
+                print(f"[{step}] {line}")
+    if proc.stderr:
+        for line in proc.stderr.splitlines():
+            if line.strip():
+                print(f"[{step}][stderr] {line}")
     if proc.returncode != 0:
         raise SystemExit(proc.returncode)
 
@@ -26,16 +35,25 @@ def main() -> int:
         if not required.exists():
             raise SystemExit(f"missing script: {required}")
 
+    print("[audit] start")
     # Always refresh timestamp first.
-    run(["python", str(plan_sync), "--root", str(root), "--mode", "update"], root)
+    run(
+        "1/4 plan timestamp (pre-scan)",
+        ["python", str(plan_sync), "--root", str(root), "--mode", "update"],
+        root,
+    )
     # Full symbol scan from TeamTalk.h and docs.
-    run(["python", str(scan), "--root", str(root)], root)
+    run("2/4 requirement scan", ["python", str(scan), "--root", str(root)], root)
     # Sync auto findings into plan.md.
-    run(["python", str(sync_findings), "--root", str(root)], root)
+    run("3/4 findings sync", ["python", str(sync_findings), "--root", str(root)], root)
     # Refresh timestamp after plan mutation to guarantee latest value.
-    run(["python", str(plan_sync), "--root", str(root), "--mode", "update"], root)
+    run(
+        "4/4 plan timestamp (post-sync)",
+        ["python", str(plan_sync), "--root", str(root), "--mode", "update"],
+        root,
+    )
 
-    print("audit pass complete")
+    print("[audit] complete")
     return 0
 
 
