@@ -8,6 +8,7 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
 const DOCS_DIR_NAME: &str = "Documentation";
+const DOCS_CAPI_DIR_NAME: &str = "C-API";
 const DOCS_MANIFEST_NAME: &str = "TEAMTALK_DOCUMENTATION_MANIFEST.txt";
 
 /// Finds the TeamTalk SDK binaries or downloads them if missing.
@@ -277,10 +278,22 @@ fn download_and_extract(
 
     let docs_src = find_directory_recursive(&temp_dir, DOCS_DIR_NAME)
         .ok_or("Documentation directory not found in SDK archive")?;
-    let docs_dst = target_dir.join(DOCS_DIR_NAME);
-    let docs_files = copy_directory_recursive(&docs_src, &docs_dst)?;
+    let docs_root_dst = target_dir.join(DOCS_DIR_NAME);
+    if docs_root_dst.exists() {
+        fs::remove_dir_all(&docs_root_dst)?;
+    }
+    let docs_capi_src = docs_src.join(DOCS_CAPI_DIR_NAME);
+    if !docs_capi_src.is_dir() {
+        return Err("Documentation/C-API directory not found in SDK archive".into());
+    }
+    let docs_capi_dst = docs_root_dst.join(DOCS_CAPI_DIR_NAME);
+    let mut docs_files = copy_directory_recursive(&docs_capi_src, &docs_capi_dst)?;
+    docs_files = docs_files
+        .into_iter()
+        .map(|rel| format!("{DOCS_CAPI_DIR_NAME}/{rel}"))
+        .collect();
     if docs_files.is_empty() {
-        return Err("Documentation directory is empty in SDK archive".into());
+        return Err("Documentation/C-API directory is empty in SDK archive".into());
     }
     write_documentation_manifest(target_dir, &docs_files)?;
 
