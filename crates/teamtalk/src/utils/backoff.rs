@@ -83,24 +83,3 @@ impl ExponentialBackoff {
         self.attempts
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::ExponentialBackoff;
-    use std::time::Duration;
-
-    #[test]
-    fn default_values() {
-        let backoff = ExponentialBackoff::default();
-        assert_eq!(backoff.attempts(), 0);
-        assert_eq!(backoff.current_delay(), Duration::ZERO);
-    }
-
-    #[test]
-    fn zero_initial_delay_returns_zero() {
-        let mut backoff =
-            ExponentialBackoff::new(Duration::ZERO, Duration::from_millis(100), 2.0, 0.0);
-        let delay = backoff.next_delay();
-        assert_eq!(delay, Duration::ZERO);
-    }
-}

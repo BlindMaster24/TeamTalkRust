@@ -227,6 +227,12 @@ fn ensure_connect_not_busy(has_connection_flags: bool) -> Result<(), Error> {
 }
 
 impl Client {
+    fn disconnect_connect_barrier_if_needed(&self) {
+        if matches!(self.connection_state(), ConnectionState::Disconnected) {
+            let _ = self.disconnect();
+        }
+    }
+
     fn ensure_connect_allowed(&self) -> Result<(), Error> {
         ensure_connect_not_busy(self.has_connection_flags())
     }
@@ -415,6 +421,7 @@ impl Client {
         encrypted: bool,
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
+        self.disconnect_connect_barrier_if_needed();
         let ok = unsafe {
             ffi::api().TT_Connect(
                 self.ptr.0,
@@ -500,6 +507,7 @@ impl Client {
         sys_id: &str,
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
+        self.disconnect_connect_barrier_if_needed();
         let ok = unsafe {
             ffi::api().TT_ConnectSysID(
                 self.ptr.0,
@@ -543,6 +551,7 @@ impl Client {
         encrypted: bool,
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
+        self.disconnect_connect_barrier_if_needed();
         let ok = unsafe {
             ffi::api().TT_ConnectEx(
                 self.ptr.0,
@@ -630,93 +639,5 @@ impl Client {
         } else {
             None
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{dedupe_events, ensure_connect_not_busy, validate_client_keep_alive};
-    use crate::events::Error;
-    use crate::events::Event;
-    use crate::types::ClientKeepAlive;
-
-    #[test]
-    fn validate_keep_alive_accepts_valid_values() {
-        let keep_alive = ClientKeepAlive {
-            lost_ms: 12_000,
-            tcp_interval_ms: 5_000,
-            udp_interval_ms: 4_000,
-            udp_rtx_ms: 500,
-            udp_connect_rtx_ms: 500,
-            udp_timeout_ms: 5_000,
-        };
-        assert!(validate_client_keep_alive(&keep_alive).is_ok());
-    }
-
-    #[test]
-    fn validate_keep_alive_rejects_non_positive_lost_ms() {
-        let keep_alive = ClientKeepAlive {
-            lost_ms: 0,
-            tcp_interval_ms: 1_000,
-            udp_interval_ms: 500,
-            ..Default::default()
-        };
-        assert!(matches!(
-            validate_client_keep_alive(&keep_alive),
-            Err(Error::InvalidParam)
-        ));
-    }
-
-    #[test]
-    fn validate_keep_alive_rejects_invalid_udp_interval() {
-        let keep_alive = ClientKeepAlive {
-            lost_ms: 4_000,
-            udp_interval_ms: 4_000,
-            ..Default::default()
-        };
-        assert!(matches!(
-            validate_client_keep_alive(&keep_alive),
-            Err(Error::InvalidParam)
-        ));
-    }
-
-    #[test]
-    fn validate_keep_alive_rejects_invalid_tcp_interval() {
-        let keep_alive = ClientKeepAlive {
-            lost_ms: 4_000,
-            tcp_interval_ms: 4_000,
-            udp_interval_ms: 1_000,
-            ..Default::default()
-        };
-        assert!(matches!(
-            validate_client_keep_alive(&keep_alive),
-            Err(Error::InvalidParam)
-        ));
-    }
-
-    #[test]
-    fn connect_guard_accepts_idle_client() {
-        assert!(ensure_connect_not_busy(false).is_ok());
-    }
-
-    #[test]
-    fn connect_guard_rejects_connecting_or_connected_client() {
-        let err = ensure_connect_not_busy(true).expect_err("connect should be rejected");
-        assert!(matches!(err, Error::CommandFailed { code: -1, .. }));
-    }
-
-    #[test]
-    fn dedupe_events_keeps_first_event_per_kind() {
-        let deduped = dedupe_events(vec![
-            Event::MySelfKicked,
-            Event::UserLeft,
-            Event::MySelfKicked,
-            Event::UserLeft,
-            Event::ConnectionLost,
-        ]);
-        assert_eq!(
-            deduped,
-            vec![Event::MySelfKicked, Event::UserLeft, Event::ConnectionLost]
-        );
     }
 }

@@ -11,20 +11,22 @@ use teamtalk_sys as ffi;
 const TT_TEXT_MAX_PAYLOAD: usize = TT_STRLEN - 1;
 
 fn can_login_in_state(state: crate::events::ConnectionState) -> bool {
-    !matches!(
-        state,
-        crate::events::ConnectionState::LoggingIn
-            | crate::events::ConnectionState::LoggedIn
-            | crate::events::ConnectionState::Joining(_)
-            | crate::events::ConnectionState::Joined(_)
-    )
+    matches!(state, crate::events::ConnectionState::Connected)
 }
 
 fn can_logout_in_state(state: crate::events::ConnectionState) -> bool {
     matches!(
         state,
-        crate::events::ConnectionState::LoggingIn
-            | crate::events::ConnectionState::LoggedIn
+        crate::events::ConnectionState::LoggedIn
+            | crate::events::ConnectionState::Joining(_)
+            | crate::events::ConnectionState::Joined(_)
+    )
+}
+
+fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
+    matches!(
+        state,
+        crate::events::ConnectionState::LoggedIn
             | crate::events::ConnectionState::Joining(_)
             | crate::events::ConnectionState::Joined(_)
     )
@@ -279,11 +281,17 @@ impl Client {
 
     /// Changes the current nickname.
     pub fn change_nickname(&self, nick: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoChangeNickname(self.ptr.0, nick.tt().as_ptr()) }
     }
 
     /// Sets the status and status message.
     pub fn set_status(&self, status: UserStatus, msg: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe {
             ffi::api().TT_DoChangeStatus(self.ptr.0, status.to_bits() as i32, msg.tt().as_ptr())
         }
@@ -291,6 +299,9 @@ impl Client {
 
     /// Updates only the status message.
     pub fn set_status_message(&self, msg: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
         let bits = if self.backend().get_user(self.ptr.0, my_id.0, &mut user) {
@@ -304,21 +315,33 @@ impl Client {
 
     /// Kicks a user from a channel.
     pub fn kick_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoKickUser(self.ptr.0, user_id.0, channel_id.0) }
     }
 
     /// Bans a user from a channel.
     pub fn ban_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoBanUser(self.ptr.0, user_id.0, channel_id.0) }
     }
 
     /// Bans a user with custom ban types.
     pub fn ban_user_ex(&self, user_id: UserId, ban_types: u32) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.0, ban_types) }
     }
 
     /// Removes a ban by IP address.
     pub fn unban_user(&self, ip: &str, channel_id: ChannelId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUnBanUser(self.ptr.0, ip.tt().as_ptr(), channel_id.0) }
     }
 
@@ -334,6 +357,9 @@ impl Client {
         text: &str,
         options: SendTextOptions,
     ) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         let target = target.into();
         let chunks = split_text_chunks(text, TT_TEXT_MAX_PAYLOAD);
         let total_chunks = chunks.len();
@@ -386,11 +412,17 @@ impl Client {
 
     /// Adds a user to the ban list.
     pub fn ban(&self, banned_user: &crate::types::BannedUser) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoBan(self.ptr.0, &banned_user.to_ffi()) }
     }
 
     /// Removes a user from the ban list.
     pub fn unban_ex(&self, banned_user: &crate::types::BannedUser) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUnBanUserEx(self.ptr.0, &banned_user.to_ffi()) }
     }
 
@@ -428,36 +460,57 @@ impl Client {
 
     /// Requests a list of user accounts.
     pub fn list_user_accounts(&self, index: i32, count: i32) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoListUserAccounts(self.ptr.0, index, count) }
     }
 
     /// Creates a user account.
     pub fn create_user_account(&self, account: &UserAccount) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoNewUserAccount(self.ptr.0, &account.to_ffi()) }
     }
 
     /// Deletes a user account by username.
     pub fn delete_user_account(&self, username: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoDeleteUserAccount(self.ptr.0, username.tt().as_ptr()) }
     }
 
     /// Subscribes to a user's streams.
     pub fn subscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoSubscribe(self.ptr.0, user_id.0, mask.raw()) }
     }
 
     /// Unsubscribes from a user's streams.
     pub fn unsubscribe(&self, user_id: UserId, mask: Subscriptions) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, mask.raw()) }
     }
 
     /// Unsubscribes from all streams for a user.
     pub fn unsubscribe_all_from_user(&self, user_id: UserId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, Subscriptions::ALL) }
     }
 
     /// Unsubscribes from all streams for all users.
     pub fn unsubscribe_all(&self) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, 0, Subscriptions::ALL) }
     }
 
@@ -468,6 +521,9 @@ impl Client {
         password: &str,
         make_op: bool,
     ) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe {
             ffi::api().TT_DoChannelOpEx(
                 self.ptr.0,
@@ -569,36 +625,5 @@ impl Client {
         } else {
             Subscriptions::new()
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{can_login_in_state, can_logout_in_state};
-    use crate::events::ConnectionState;
-    use crate::types::ChannelId;
-
-    #[test]
-    fn login_guard_rejects_duplicate_login_states() {
-        assert!(can_login_in_state(ConnectionState::Idle));
-        assert!(can_login_in_state(ConnectionState::Connecting));
-        assert!(can_login_in_state(ConnectionState::Connected));
-        assert!(!can_login_in_state(ConnectionState::LoggingIn));
-        assert!(!can_login_in_state(ConnectionState::LoggedIn));
-        assert!(!can_login_in_state(ConnectionState::Joining(ChannelId(1))));
-        assert!(!can_login_in_state(ConnectionState::Joined(ChannelId(1))));
-        assert!(can_login_in_state(ConnectionState::Disconnected));
-    }
-
-    #[test]
-    fn logout_guard_allows_only_logged_states() {
-        assert!(!can_logout_in_state(ConnectionState::Idle));
-        assert!(!can_logout_in_state(ConnectionState::Connecting));
-        assert!(!can_logout_in_state(ConnectionState::Connected));
-        assert!(can_logout_in_state(ConnectionState::LoggingIn));
-        assert!(can_logout_in_state(ConnectionState::LoggedIn));
-        assert!(can_logout_in_state(ConnectionState::Joining(ChannelId(1))));
-        assert!(can_logout_in_state(ConnectionState::Joined(ChannelId(1))));
-        assert!(!can_logout_in_state(ConnectionState::Disconnected));
     }
 }

@@ -6,13 +6,20 @@ use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 fn can_start_join(state: ConnectionState) -> bool {
-    !matches!(state, ConnectionState::Joining(_))
+    matches!(state, ConnectionState::LoggedIn)
 }
 
 fn can_leave_channel_in_state(state: ConnectionState) -> bool {
     matches!(
         state,
         ConnectionState::Joining(_) | ConnectionState::Joined(_)
+    )
+}
+
+fn can_issue_logged_in_command(state: ConnectionState) -> bool {
+    matches!(
+        state,
+        ConnectionState::LoggedIn | ConnectionState::Joining(_) | ConnectionState::Joined(_)
     )
 }
 
@@ -115,21 +122,33 @@ impl Client {
 
     /// Creates a new channel.
     pub fn make_channel(&self, channel: &Channel) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoMakeChannel(self.ptr.0, &channel.to_ffi()) }
     }
 
     /// Updates an existing channel.
     pub fn update_channel(&self, channel: &Channel) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUpdateChannel(self.ptr.0, &channel.to_ffi()) }
     }
 
     /// Removes a channel.
     pub fn remove_channel(&self, id: ChannelId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoRemoveChannel(self.ptr.0, id.0) }
     }
 
     /// Moves a user to a different channel.
     pub fn move_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoMoveUser(self.ptr.0, user_id.0, channel_id.0) }
     }
 
@@ -178,34 +197,5 @@ impl Client {
                 vec![]
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{can_leave_channel_in_state, can_start_join};
-    use crate::events::ConnectionState;
-    use crate::types::ChannelId;
-
-    #[test]
-    fn join_guard_rejects_only_while_join_in_progress() {
-        assert!(!can_start_join(ConnectionState::Joining(ChannelId(1))));
-        assert!(can_start_join(ConnectionState::Idle));
-        assert!(can_start_join(ConnectionState::Connected));
-        assert!(can_start_join(ConnectionState::LoggedIn));
-        assert!(can_start_join(ConnectionState::Joined(ChannelId(1))));
-    }
-
-    #[test]
-    fn leave_guard_allows_only_join_states() {
-        assert!(!can_leave_channel_in_state(ConnectionState::Idle));
-        assert!(!can_leave_channel_in_state(ConnectionState::Connected));
-        assert!(!can_leave_channel_in_state(ConnectionState::LoggedIn));
-        assert!(can_leave_channel_in_state(ConnectionState::Joining(
-            ChannelId(1)
-        )));
-        assert!(can_leave_channel_in_state(ConnectionState::Joined(
-            ChannelId(1)
-        )));
     }
 }

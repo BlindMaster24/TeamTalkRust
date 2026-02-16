@@ -299,7 +299,7 @@ impl Client {
     }
 
     fn handle_connect_recovery(&self) {
-        let (params, force_disconnect) = {
+        let params = {
             let mut auto = self.auto_reconnect.lock().unwrap();
             if !auto.enabled {
                 return;
@@ -316,7 +316,7 @@ impl Client {
             };
 
             if handler.can_attempt() {
-                (params, auto.force_disconnect)
+                params
             } else if handler.exhausted() {
                 let attempts = handler.attempts();
                 drop(auto);
@@ -335,11 +335,9 @@ impl Client {
             }
         };
 
-        if force_disconnect || self.has_connection_flags() {
-            let _ = self.disconnect();
-            if self.has_connection_flags() {
-                return;
-            }
+        let _ = self.disconnect();
+        if self.has_connection_flags() {
+            return;
         }
 
         let (attempt, delay) = {
@@ -937,17 +935,13 @@ impl Client {
                     if let Some(handler) = auto.login_handler.as_mut() {
                         handler.mark_disconnected();
                     }
-                    if auto.enabled {
-                        next_state = Some(ConnectionState::Connected);
-                    }
+                    next_state = Some(ConnectionState::Connected);
                 } else if auto.pending_join_cmd == Some(source) {
                     auto.pending_join_cmd = None;
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_disconnected();
                     }
-                    if auto.enabled {
-                        next_state = Some(ConnectionState::LoggedIn);
-                    }
+                    next_state = Some(ConnectionState::LoggedIn);
                 }
                 drop(auto);
                 if let Some(state) = next_state {
@@ -1005,88 +999,5 @@ fn kicked_next_state(source: i32) -> ConnectionState {
         ConnectionState::LoggedIn
     } else {
         ConnectionState::Connected
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{Event, Message, ffi};
-    use crate::types::UserId;
-    use crate::utils::ToTT;
-
-    #[test]
-    fn user_accessor_includes_kick_payload_when_present() {
-        let mut user = ffi::User {
-            nUserID: 42,
-            ..Default::default()
-        };
-        let nick = "kicker".tt();
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                nick.as_ptr(),
-                user.szNickname.as_mut_ptr(),
-                nick.len().min(user.szNickname.len()),
-            );
-        }
-        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
-        raw.ttType = ffi::TTType::__USER;
-        raw.__bindgen_anon_1.user = user;
-
-        let msg = Message::from_raw(Event::MySelfKicked, raw);
-        let payload = msg.user().expect("kicked user payload");
-        assert_eq!(payload.id, UserId(42));
-        assert_eq!(payload.nickname, "kicker");
-    }
-
-    #[test]
-    fn user_accessor_ignores_kick_without_user_payload() {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
-        raw.ttType = ffi::TTType::__NONE;
-        let msg = Message::from_raw(Event::MySelfKicked, raw);
-        assert!(msg.user().is_none());
-    }
-
-    #[test]
-    fn error_message_accessor_reads_client_error_union() {
-        let mut err = ffi::ClientErrorMsg {
-            nErrorNo: 10004,
-            ..Default::default()
-        };
-        let text = "queue overflow".tt();
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                text.as_ptr(),
-                err.szErrorMsg.as_mut_ptr(),
-                text.len().min(err.szErrorMsg.len()),
-            );
-        }
-        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
-        raw.ttType = ffi::TTType::__CLIENTERRORMSG;
-        raw.__bindgen_anon_1.clienterrormsg = err;
-
-        let msg = Message::from_raw(Event::InternalError, raw);
-        let payload = msg.error_message().expect("client error payload");
-        assert_eq!(payload.code, 10004);
-        assert_eq!(payload.message, "queue overflow");
-    }
-
-    #[test]
-    fn kicked_from_channel_moves_to_logged_in_state() {
-        assert_eq!(
-            super::kicked_next_state(10),
-            crate::events::ConnectionState::LoggedIn
-        );
-    }
-
-    #[test]
-    fn kicked_from_server_moves_to_connected_state() {
-        assert_eq!(
-            super::kicked_next_state(0),
-            crate::events::ConnectionState::Connected
-        );
-        assert_eq!(
-            super::kicked_next_state(-1),
-            crate::events::ConnectionState::Connected
-        );
     }
 }

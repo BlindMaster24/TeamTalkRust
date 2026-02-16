@@ -45,14 +45,19 @@ public API with compatibility expectations for downstream users.
 - `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
   channel kick (`nSource > 0`) -> `LoggedIn`, server kick (`nSource <= 0`) -> `Connected`.
 - `join_channel` now returns `0` when a previous join is still in progress (`ConnectionState::Joining(_)`), avoiding duplicate join commands.
+- `login` now starts only from `Connected` state, and `join_channel` starts only from authenticated states (`LoggedIn`/`Joined(_)`), aligning preconditions with TeamTalk C-API command requirements.
+- `join_channel` now starts only from `LoggedIn` state, avoiding `CMDERR_ALREADY_IN_CHANNEL` retries when already joined.
 - `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 - `leave_channel` now returns `0` when the client is not currently joining/joined in a channel, avoiding invalid leave commands.
+- `CmdError` now resets login/join recovery states even when auto-reconnect is disabled, preventing stale `LoggingIn`/`Joining` states after failed commands.
 - Auto-reconnect extra event lists now deduplicate by event kind in `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
 - `set_encryption_context` now returns `false` unless called before connect/login state (`Idle` or `Disconnected`), matching TeamTalk C-API sequencing.
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
 - `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
-- Reconnect paths now enforce a disconnect barrier before retrying `TT_Connect`, matching TeamTalk C-API reconnect requirements.
+- Manual and auto reconnect paths now enforce a disconnect barrier before retrying `TT_Connect`, matching TeamTalk C-API reconnect requirements.
+- Manual `connect`, `connect_ex`, and `connect_sys_id` now apply a disconnect barrier when called from `Disconnected` state, matching TeamTalk C-API reconnect guidance.
+- Logged-in command wrappers now fail fast with `0` when the client is not authorized yet (`Connected`/`Idle`), instead of forwarding and waiting for `CMDERR_NOT_LOGGEDIN` (`change_nickname`, `set_status*`, text, file, subscribe, channel-admin/user-admin commands).
 
 ### Fixed
 - Safer `TTCHAR` handling on non-Windows and expanded safety contracts on unsafe APIs.

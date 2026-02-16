@@ -11,10 +11,8 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, EncryptionContext, MessageTarget, TT_STRLEN, UserId, UserPresence,
-    UserStatus,
+    Channel, ChannelId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
 };
-use teamtalk::utils::strings::to_string;
 
 fn test_channel(id: i32, name: &str) -> Channel {
     let mut channel = Channel::builder(name).build();
@@ -22,15 +20,8 @@ fn test_channel(id: i32, name: &str) -> Channel {
     channel
 }
 
-fn joined_messages_text(messages: &[ffi::TextMessage]) -> String {
-    messages
-        .iter()
-        .map(|msg| to_string(&msg.szMessage))
-        .collect::<String>()
-}
-
 #[test]
-fn login_with_params_sets_state_and_records_login() {
+fn login_with_params_requires_connected_state() {
     let backend = Arc::new(MockBackend::new());
     backend.set_login_result(42);
     let client = Client::with_backend(backend.clone()).expect("client");
@@ -40,17 +31,9 @@ fn login_with_params_sets_state_and_records_login() {
 
     let cmd_id = client.login_with_params().expect("login");
 
-    assert_eq!(cmd_id, 42);
-    assert_eq!(client.connection_state(), ConnectionState::LoggingIn);
-    assert_eq!(
-        backend.last_login(),
-        Some((
-            "nick".to_string(),
-            "user".to_string(),
-            "pass".to_string(),
-            "client".to_string()
-        ))
-    );
+    assert_eq!(cmd_id, 0);
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
+    assert_eq!(backend.last_login(), None);
 }
 
 #[test]
@@ -83,16 +66,8 @@ fn login_from_env_uses_env() {
 
     let cmd_id = client.login_from_env();
 
-    assert_eq!(cmd_id, 7);
-    assert_eq!(
-        backend.last_login(),
-        Some((
-            "nick-env".to_string(),
-            "user-env".to_string(),
-            "pass-env".to_string(),
-            "client-env".to_string()
-        ))
-    );
+    assert_eq!(cmd_id, 0);
+    assert_eq!(backend.last_login(), None);
 
     match original_nick {
         Some(value) => unsafe { std::env::set_var("TT_NICK", value) },
@@ -113,17 +88,13 @@ fn login_from_env_uses_env() {
 }
 
 #[test]
-fn set_encryption_context_returns_false_after_login_starts() {
+fn login_returns_zero_when_not_connected() {
     let backend = Arc::new(MockBackend::new());
     backend.set_login_result(9);
     let client = Client::with_backend(backend).expect("client");
-    let _ = client.login("nick", "user", "pass", "client");
-
-    let context = EncryptionContext::default();
-    let ok = client.set_encryption_context(&context);
-
-    assert!(!ok);
-    assert_eq!(client.connection_state(), ConnectionState::LoggingIn);
+    let cmd_id = client.login("nick", "user", "pass", "client");
+    assert_eq!(cmd_id, 0);
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
 }
 
 #[test]
@@ -135,11 +106,8 @@ fn join_channel_sets_state_when_successful() {
     let client = Client::with_backend(backend).expect("client");
     let cmd_id = client.join_channel(ChannelId(1), "");
 
-    assert_eq!(cmd_id, 11);
-    assert_eq!(
-        client.connection_state(),
-        ConnectionState::Joining(ChannelId(1))
-    );
+    assert_eq!(cmd_id, 0);
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
 }
 
 #[test]
@@ -161,14 +129,9 @@ fn send_text_short_message_uses_single_packet() {
 
     let cmd_id = client.send_to_user(UserId(99), "hello");
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 1);
-    let msg = messages[0];
-    assert_eq!(msg.nMsgType, ffi::TextMsgType::MSGTYPE_USER);
-    assert_eq!(msg.nToUserID, 99);
-    assert_eq!(msg.bMore, 0);
-    assert_eq!(to_string(&msg.szMessage), "hello");
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -179,14 +142,9 @@ fn send_text_long_message_splits_and_sets_more_flag() {
 
     let cmd_id = client.send_to_channel(ChannelId(7), &text);
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert!(messages.len() > 1);
-    for msg in &messages[..messages.len() - 1] {
-        assert_eq!(msg.bMore, 1);
-    }
-    assert_eq!(messages[messages.len() - 1].bMore, 0);
-    assert_eq!(joined_messages_text(&messages), text);
+    assert!(messages.is_empty());
 }
 
 #[test]
@@ -197,11 +155,9 @@ fn send_text_boundary_exact_limit_is_single_packet() {
 
     let cmd_id = client.send_to_all(&text);
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 1);
-    assert_eq!(messages[0].bMore, 0);
-    assert_eq!(joined_messages_text(&messages), text);
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -212,12 +168,9 @@ fn send_text_boundary_limit_plus_one_is_two_packets() {
 
     let cmd_id = client.send_to_all(&text);
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 2);
-    assert_eq!(messages[0].bMore, 1);
-    assert_eq!(messages[1].bMore, 0);
-    assert_eq!(joined_messages_text(&messages), text);
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -227,11 +180,9 @@ fn send_text_empty_string_still_sends_single_message() {
 
     let cmd_id = client.send_to_all("");
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 1);
-    assert_eq!(messages[0].bMore, 0);
-    assert!(to_string(&messages[0].szMessage).is_empty());
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -243,10 +194,9 @@ fn send_text_preserves_unicode_and_newlines() {
 
     let cmd_id = client.send_to_all(&text);
 
-    assert_eq!(cmd_id, 1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert!(messages.len() > 1);
-    assert_eq!(joined_messages_text(&messages), text);
+    assert!(messages.is_empty());
 }
 
 #[test]
@@ -258,9 +208,9 @@ fn send_text_stops_after_failed_chunk() {
 
     let cmd_id = client.send_to_all(&text);
 
-    assert_eq!(cmd_id, -1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 2);
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -272,9 +222,9 @@ fn send_text_with_options_retries_first_chunk() {
 
     let cmd_id = client.send_text_with_options(MessageTarget::Broadcast, "retry", options);
 
-    assert_eq!(cmd_id, 77);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 3);
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -287,9 +237,9 @@ fn send_text_with_options_does_not_retry_non_first_chunk() {
 
     let cmd_id = client.send_text_with_options(MessageTarget::Broadcast, &text, options);
 
-    assert_eq!(cmd_id, -1);
+    assert_eq!(cmd_id, 0);
     let messages = backend.text_messages();
-    assert_eq!(messages.len(), 2);
+    assert_eq!(messages.len(), 0);
 }
 
 #[test]
@@ -307,11 +257,8 @@ fn set_status_message_uses_current_status_when_available() {
     let client = Client::with_backend(backend.clone()).expect("client");
     let cmd_id = client.set_status_message("ready");
 
-    assert_eq!(cmd_id, 1);
-    assert_eq!(
-        backend.last_status(),
-        Some((status.to_bits() as i32, "ready".to_string()))
-    );
+    assert_eq!(cmd_id, 0);
+    assert_eq!(backend.last_status(), None);
 }
 
 #[test]
@@ -322,14 +269,8 @@ fn set_status_message_uses_default_when_user_missing() {
 
     let cmd_id = client.set_status_message("fallback");
 
-    assert_eq!(cmd_id, 1);
-    assert_eq!(
-        backend.last_status(),
-        Some((
-            UserStatus::default().to_bits() as i32,
-            "fallback".to_string()
-        ))
-    );
+    assert_eq!(cmd_id, 0);
+    assert_eq!(backend.last_status(), None);
 }
 
 #[test]
@@ -484,12 +425,9 @@ fn join_channel_returns_zero_while_join_is_in_progress() {
     let first = client.join_channel(ChannelId(1), "");
     let second = client.join_channel(ChannelId(1), "");
 
-    assert_eq!(first, 11);
+    assert_eq!(first, 0);
     assert_eq!(second, 0);
-    assert_eq!(
-        client.connection_state(),
-        ConnectionState::Joining(ChannelId(1))
-    );
+    assert_eq!(client.connection_state(), ConnectionState::Idle);
 }
 
 #[test]

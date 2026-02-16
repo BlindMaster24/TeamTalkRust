@@ -4,6 +4,15 @@ use crate::types::{ChannelId, FileId, RemoteFile, TransferId};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
+fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
+    matches!(
+        state,
+        crate::events::ConnectionState::LoggedIn
+            | crate::events::ConnectionState::Joining(_)
+            | crate::events::ConnectionState::Joined(_)
+    )
+}
+
 impl Client {
     /// Returns files available in a channel.
     pub fn get_channel_files(&self, channel_id: ChannelId) -> Vec<RemoteFile> {
@@ -32,11 +41,17 @@ impl Client {
 
     /// Sends a local file to a channel.
     pub fn send_file(&self, channel_id: ChannelId, local_path: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoSendFile(self.ptr.0, channel_id.0, local_path.tt().as_ptr()) }
     }
 
     /// Receives a remote file into a local directory.
     pub fn recv_file(&self, channel_id: ChannelId, remote_file_id: FileId, local_dir: &str) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe {
             ffi::api().TT_DoRecvFile(
                 self.ptr.0,
@@ -49,6 +64,9 @@ impl Client {
 
     /// Deletes a remote file from a channel.
     pub fn delete_file(&self, channel_id: ChannelId, remote_file_id: FileId) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoDeleteFile(self.ptr.0, channel_id.0, remote_file_id.0) }
     }
 
