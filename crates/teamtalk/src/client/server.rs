@@ -4,6 +4,15 @@ use crate::types::{ChannelId, ServerProperties, User, UserId};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
+fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
+    matches!(
+        state,
+        crate::events::ConnectionState::LoggedIn
+            | crate::events::ConnectionState::Joining(_)
+            | crate::events::ConnectionState::Joined(_)
+    )
+}
+
 impl Client {
     /// Returns current server properties.
     pub fn get_server_properties(&self) -> Option<ServerProperties> {
@@ -31,6 +40,9 @@ impl Client {
 
     /// Bans an IP address.
     pub fn ban_ip(&self, ip: &str, ban_type: i32) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoBanIPAddress(self.ptr.0, ip.tt().as_ptr(), ban_type) }
     }
 
@@ -46,16 +58,25 @@ impl Client {
 
     /// Requests a list of bans.
     pub fn list_bans(&self, channel_id: ChannelId, index: i32, count: i32) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoListBans(self.ptr.0, channel_id.0, index, count) }
     }
 
     /// Updates server properties.
     pub fn update_server(&self, props: &ServerProperties) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoUpdateServer(self.ptr.0, &props.to_ffi()) }
     }
 
     /// Saves the server configuration.
     pub fn save_server_config(&self) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoSaveConfig(self.ptr.0) }
     }
 
@@ -66,6 +87,9 @@ impl Client {
 
     /// Requests server statistics.
     pub fn query_server_stats(&self) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
         unsafe { ffi::api().TT_DoQueryServerStats(self.ptr.0) }
     }
 
