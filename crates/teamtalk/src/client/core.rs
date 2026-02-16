@@ -162,6 +162,32 @@ impl Client {
         }
     }
 
+    #[cfg(feature = "mock")]
+    pub fn mock_set_connection_state_for_tests(&self, state: ConnectionState) {
+        self.set_connection_state(state);
+    }
+
+    #[cfg(feature = "mock")]
+    pub fn mock_set_pending_commands_for_tests(&self, login: Option<i32>, join: Option<i32>) {
+        let mut auto = self.auto_reconnect.lock().unwrap();
+        auto.pending_login_cmd = login;
+        auto.pending_join_cmd = join;
+    }
+
+    #[cfg(feature = "mock")]
+    pub fn mock_pending_commands_for_tests(&self) -> (Option<i32>, Option<i32>) {
+        let auto = self.auto_reconnect.lock().unwrap();
+        (auto.pending_login_cmd, auto.pending_join_cmd)
+    }
+
+    #[cfg(feature = "mock")]
+    pub fn mock_apply_event_for_tests(&self, event: Event, source: i32) {
+        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        raw.nSource = source;
+        let message = Message::from_raw(event, raw);
+        self.update_state_for_event(event, &message);
+    }
+
     /// Sets the client name used for login.
     pub fn with_name(mut self, name: &str) -> Self {
         self.name = Some(name.to_string());
@@ -971,7 +997,7 @@ impl Client {
 
     /// Returns the current client flags.
     pub fn get_flags(&self) -> crate::types::ClientFlags {
-        crate::types::ClientFlags::from_raw(unsafe { ffi::api().TT_GetFlags(self.ptr.0) })
+        crate::types::ClientFlags::from_raw(self.backend().get_flags(self.ptr.0))
     }
 
     /// Returns a human-readable error message for a TeamTalk error code.

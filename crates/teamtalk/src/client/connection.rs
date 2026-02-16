@@ -1,7 +1,7 @@
 //! Connection and reconnect helpers.
 use super::Client;
 use crate::events::{ConnectionState, Error};
-use crate::utils::{ToTT, backoff::ExponentialBackoff};
+use crate::utils::backoff::ExponentialBackoff;
 use std::env;
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
@@ -422,17 +422,9 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
         self.disconnect_connect_barrier_if_needed();
-        let ok = unsafe {
-            ffi::api().TT_Connect(
-                self.ptr.0,
-                host.tt().as_ptr(),
-                tcp,
-                udp,
-                0,
-                0,
-                if encrypted { 1 } else { 0 },
-            ) == 1
-        };
+        let ok = self
+            .backend()
+            .connect(self.ptr.0, host, tcp, udp, encrypted);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
             Ok(())
@@ -448,13 +440,13 @@ impl Client {
 
     /// Returns true when the client is connected.
     pub fn is_connected(&self) -> bool {
-        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr.0) };
+        let flags = self.backend().get_flags(self.ptr.0);
         (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
     }
 
     /// Returns true when the client is attempting to connect.
     pub fn is_connecting(&self) -> bool {
-        let flags = unsafe { ffi::api().TT_GetFlags(self.ptr.0) };
+        let flags = self.backend().get_flags(self.ptr.0);
         (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
     }
 
@@ -508,18 +500,9 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
         self.disconnect_connect_barrier_if_needed();
-        let ok = unsafe {
-            ffi::api().TT_ConnectSysID(
-                self.ptr.0,
-                host.tt().as_ptr(),
-                tcp,
-                udp,
-                0,
-                0,
-                if encrypted { 1 } else { 0 },
-                sys_id.tt().as_ptr(),
-            ) == 1
-        };
+        let ok = self
+            .backend()
+            .connect_sys_id(self.ptr.0, host, tcp, udp, encrypted, sys_id);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
             Ok(())
@@ -552,18 +535,9 @@ impl Client {
     ) -> Result<(), crate::events::Error> {
         self.ensure_connect_allowed()?;
         self.disconnect_connect_barrier_if_needed();
-        let ok = unsafe {
-            ffi::api().TT_ConnectEx(
-                self.ptr.0,
-                host.tt().as_ptr(),
-                tcp,
-                udp,
-                bind_ip.tt().as_ptr(),
-                0,
-                0,
-                if encrypted { 1 } else { 0 },
-            ) == 1
-        };
+        let ok = self
+            .backend()
+            .connect_ex(self.ptr.0, host, tcp, udp, bind_ip, encrypted);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
             Ok(())
@@ -587,7 +561,7 @@ impl Client {
 
     /// Disconnects from the server.
     pub fn disconnect(&self) -> Result<(), crate::events::Error> {
-        if unsafe { ffi::api().TT_Disconnect(self.ptr.0) == 1 } {
+        if self.backend().disconnect(self.ptr.0) {
             self.set_connection_state(ConnectionState::Disconnected);
             Ok(())
         } else {

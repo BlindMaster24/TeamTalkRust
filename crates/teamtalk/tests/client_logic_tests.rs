@@ -453,3 +453,100 @@ fn leave_channel_returns_zero_when_not_in_channel_state() {
     assert_eq!(cmd_id, 0);
     assert_eq!(client.connection_state(), ConnectionState::Idle);
 }
+
+#[test]
+fn reconnect_calls_disconnect_before_connect() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_flags(ffi::ClientFlag::CLIENT_CONNECTED as u32);
+    let client = Client::with_backend(backend.clone()).expect("client");
+
+    client
+        .reconnect("example.org", 10333, 10334, false)
+        .expect("reconnect");
+
+    let calls = backend.call_log();
+    assert!(calls.contains(&"disconnect"));
+    let first_connect = calls
+        .iter()
+        .position(|call| *call == "connect")
+        .expect("connect call");
+    let first_disconnect = calls
+        .iter()
+        .position(|call| *call == "disconnect")
+        .expect("disconnect call");
+    assert!(first_disconnect < first_connect);
+}
+
+#[test]
+fn reconnect_fails_when_disconnect_barrier_keeps_connection_flags() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_flags(ffi::ClientFlag::CLIENT_CONNECTED as u32);
+    backend.set_disconnect_ok(false);
+    let client = Client::with_backend(backend).expect("client");
+
+    let err = client
+        .reconnect("example.org", 10333, 10334, false)
+        .expect_err("disconnect barrier should fail");
+
+    assert!(matches!(err, teamtalk::events::Error::CommandFailed { .. }));
+}
+
+#[test]
+fn myself_kicked_from_channel_keeps_connected_state() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::Joined(ChannelId(10)));
+    client.mock_set_pending_commands_for_tests(Some(41), Some(42));
+
+    client.mock_apply_event_for_tests(teamtalk::Event::MySelfKicked, 123);
+
+    assert_eq!(client.connection_state(), ConnectionState::LoggedIn);
+    let (pending_login, pending_join) = client.mock_pending_commands_for_tests();
+    assert_eq!(pending_login, Some(41));
+    assert_eq!(pending_join, None);
+}
+
+#[test]
+fn myself_kicked_from_server_resets_to_connected_and_clears_pending_cmds() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::Joined(ChannelId(10)));
+    client.mock_set_pending_commands_for_tests(Some(41), Some(42));
+
+    client.mock_apply_event_for_tests(teamtalk::Event::MySelfKicked, 0);
+
+    assert_eq!(client.connection_state(), ConnectionState::Connected);
+    let (pending_login, pending_join) = client.mock_pending_commands_for_tests();
+    assert_eq!(pending_login, None);
+    assert_eq!(pending_join, None);
+}
+
+#[test]
+fn cmd_error_for_pending_login_returns_to_connected_and_clears_login_pending() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggingIn);
+    client.mock_set_pending_commands_for_tests(Some(77), Some(88));
+
+    client.mock_apply_event_for_tests(teamtalk::Event::CmdError, 77);
+
+    assert_eq!(client.connection_state(), ConnectionState::Connected);
+    let (pending_login, pending_join) = client.mock_pending_commands_for_tests();
+    assert_eq!(pending_login, None);
+    assert_eq!(pending_join, Some(88));
+}
+
+#[test]
+fn cmd_error_for_pending_join_returns_to_logged_in_and_clears_join_pending() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::Joining(ChannelId(10)));
+    client.mock_set_pending_commands_for_tests(Some(77), Some(88));
+
+    client.mock_apply_event_for_tests(teamtalk::Event::CmdError, 88);
+
+    assert_eq!(client.connection_state(), ConnectionState::LoggedIn);
+    let (pending_login, pending_join) = client.mock_pending_commands_for_tests();
+    assert_eq!(pending_login, Some(77));
+    assert_eq!(pending_join, None);
+}

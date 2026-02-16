@@ -54,6 +54,34 @@ pub trait TeamTalkBackend: Send + Sync {
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
     fn get_user(&self, ptr: *mut ffi::TTInstance, user_id: i32, user: &mut ffi::User) -> bool;
     fn get_my_channel_id(&self, ptr: *mut ffi::TTInstance) -> ChannelId;
+    fn connect(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> bool;
+    fn connect_sys_id(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+        sys_id: &str,
+    ) -> bool;
+    fn connect_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        bind_ip: &str,
+        encrypted: bool,
+    ) -> bool;
+    fn disconnect(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn get_flags(&self, ptr: *mut ffi::TTInstance) -> u32;
 }
 
 #[cfg(not(feature = "mock"))]
@@ -108,6 +136,34 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
     fn get_user(&self, ptr: *mut ffi::TTInstance, user_id: i32, user: &mut ffi::User) -> bool;
     fn get_my_channel_id(&self, ptr: *mut ffi::TTInstance) -> ChannelId;
+    fn connect(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> bool;
+    fn connect_sys_id(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+        sys_id: &str,
+    ) -> bool;
+    fn connect_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        bind_ip: &str,
+        encrypted: bool,
+    ) -> bool;
+    fn disconnect(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn get_flags(&self, ptr: *mut ffi::TTInstance) -> u32;
 }
 
 pub(crate) struct FfiBackend;
@@ -248,6 +304,81 @@ impl TeamTalkBackend for FfiBackend {
     fn get_my_channel_id(&self, ptr: *mut ffi::TTInstance) -> ChannelId {
         ChannelId(unsafe { ffi::api().TT_GetMyChannelID(ptr) })
     }
+
+    fn connect(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_Connect(
+                ptr,
+                host.tt().as_ptr(),
+                tcp,
+                udp,
+                0,
+                0,
+                if encrypted { 1 } else { 0 },
+            ) == 1
+        }
+    }
+
+    fn connect_sys_id(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+        sys_id: &str,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_ConnectSysID(
+                ptr,
+                host.tt().as_ptr(),
+                tcp,
+                udp,
+                0,
+                0,
+                if encrypted { 1 } else { 0 },
+                sys_id.tt().as_ptr(),
+            ) == 1
+        }
+    }
+
+    fn connect_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        bind_ip: &str,
+        encrypted: bool,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_ConnectEx(
+                ptr,
+                host.tt().as_ptr(),
+                tcp,
+                udp,
+                bind_ip.tt().as_ptr(),
+                0,
+                0,
+                if encrypted { 1 } else { 0 },
+            ) == 1
+        }
+    }
+
+    fn disconnect(&self, ptr: *mut ffi::TTInstance) -> bool {
+        unsafe { ffi::api().TT_Disconnect(ptr) == 1 }
+    }
+
+    fn get_flags(&self, ptr: *mut ffi::TTInstance) -> u32 {
+        unsafe { ffi::api().TT_GetFlags(ptr) }
+    }
 }
 
 #[cfg(feature = "mock")]
@@ -274,6 +405,10 @@ struct MockBackendState {
     text_messages: Vec<ffi::TextMessage>,
     text_message_results: std::collections::VecDeque<i32>,
     last_status: Option<(i32, String)>,
+    flags: u32,
+    connect_ok: bool,
+    disconnect_ok: bool,
+    call_log: Vec<&'static str>,
 }
 
 #[cfg(feature = "mock")]
@@ -287,6 +422,8 @@ impl MockBackend {
                 logout_result: 1,
                 join_result: 1,
                 leave_result: 1,
+                connect_ok: true,
+                disconnect_ok: true,
                 ..MockBackendState::default()
             }),
         }
@@ -361,6 +498,22 @@ impl MockBackend {
 
     pub fn last_status(&self) -> Option<(i32, String)> {
         self.state.lock().unwrap().last_status.clone()
+    }
+
+    pub fn set_flags(&self, flags: u32) {
+        self.state.lock().unwrap().flags = flags;
+    }
+
+    pub fn set_connect_ok(&self, ok: bool) {
+        self.state.lock().unwrap().connect_ok = ok;
+    }
+
+    pub fn set_disconnect_ok(&self, ok: bool) {
+        self.state.lock().unwrap().disconnect_ok = ok;
+    }
+
+    pub fn call_log(&self) -> Vec<&'static str> {
+        self.state.lock().unwrap().call_log.clone()
     }
 }
 
@@ -487,5 +640,62 @@ impl TeamTalkBackend for MockBackend {
 
     fn get_my_channel_id(&self, _ptr: *mut ffi::TTInstance) -> ChannelId {
         self.state.lock().unwrap().my_channel_id
+    }
+
+    fn connect(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _host: &str,
+        _tcp: i32,
+        _udp: i32,
+        _encrypted: bool,
+    ) -> bool {
+        let mut state = self.state.lock().unwrap();
+        state.call_log.push("connect");
+        if state.connect_ok {
+            state.flags |= ffi::ClientFlag::CLIENT_CONNECTING as u32;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn connect_sys_id(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+        _sys_id: &str,
+    ) -> bool {
+        self.connect(ptr, host, tcp, udp, encrypted)
+    }
+
+    fn connect_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        _bind_ip: &str,
+        encrypted: bool,
+    ) -> bool {
+        self.connect(ptr, host, tcp, udp, encrypted)
+    }
+
+    fn disconnect(&self, _ptr: *mut ffi::TTInstance) -> bool {
+        let mut state = self.state.lock().unwrap();
+        state.call_log.push("disconnect");
+        if state.disconnect_ok {
+            state.flags = 0;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn get_flags(&self, _ptr: *mut ffi::TTInstance) -> u32 {
+        self.state.lock().unwrap().flags
     }
 }
