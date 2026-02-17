@@ -4,10 +4,11 @@
 
 By default, the SDK downloads TeamTalk runtime files into `TEAMTALK_DLL/` on first
 use. This includes the shared library, import library, `TeamTalk.h`, and the
-SDK `Documentation/` folder. The loader stores a documentation manifest and
-verifies that every expected doc file is present on startup; if files are
-missing, it re-downloads the SDK archive to repair the folder. In offline
-environments, enable the `offline` feature and pre-populate that folder.
+SDK `Documentation/C-API/` folder. The loader stores a documentation manifest
+and verifies that every expected C-API doc file is present on startup; if files
+are missing, it re-downloads the SDK archive to repair that docs subtree. In
+offline environments, enable the `offline` feature and pre-populate that
+folder.
 
 ### SDK Version Override
 

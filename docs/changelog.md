@@ -16,7 +16,9 @@ public API with compatibility expectations for downstream users.
 - Text/voice/media mute helpers: `set_user_text_mute`, `mute_user_text`, `unmute_user_text`, `mute_user_voice`, `unmute_user_voice`, `mute_user_media`, `unmute_user_media`.
 - Manager helpers: `ClientManager::{wait_cmd, wait_cmd_ok, wait_cmd_any}` and command id tracking in events.
 - SDK version pin/override via [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt) and `TEAMTALK_SDK_VERSION`.
-- Loader now copies full SDK `Documentation/` under `TEAMTALK_DLL/Documentation` and validates it against a saved manifest; missing files trigger SDK re-download.
+- Loader now validates `TEAMTALK_DLL/Documentation/C-API` against a saved
+  manifest; missing files trigger SDK re-download and restore that C-API docs
+  subtree.
 - `async-tokio` feature for Tokio wake integration in the async wrapper.
 - `Client::split()` method returning `ClientEvents` (polling) and `ClientCommands` (execution) for concurrent usage.
 - Auto-reconnect extra events via `enable_auto_reconnect_with_events` and `set_auto_reconnect_events`.
@@ -45,7 +47,6 @@ public API with compatibility expectations for downstream users.
 - `Event::MySelfKicked` now updates state using `TTMessage.nSource` semantics:
   channel kick (`nSource > 0`) -> `LoggedIn`, server kick (`nSource <= 0`) -> `Connected`.
 - `join_channel` now returns `0` when a previous join is still in progress (`ConnectionState::Joining(_)`), avoiding duplicate join commands.
-- `login` now starts only from `Connected` state, and `join_channel` starts only from authenticated states (`LoggedIn`/`Joined(_)`), aligning preconditions with TeamTalk C-API command requirements.
 - `join_channel` now starts only from `LoggedIn` state, avoiding `CMDERR_ALREADY_IN_CHANNEL` retries when already joined.
 - `logout` now returns `0` when no login session is active, avoiding duplicate/logout-outside-session commands.
 - `leave_channel` now returns `0` when the client is not currently joining/joined in a channel, avoiding invalid leave commands.
