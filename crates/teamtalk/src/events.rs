@@ -1,7 +1,25 @@
 //! Event and error types emitted by the TeamTalk client.
 use crate::types::ChannelId;
+use crate::types::{
+    Channel, ErrorMessage, FileTransfer, ServerProperties, ServerStatistics, TextMessage, User,
+    UserAccount,
+};
 use std::time::Duration;
 use teamtalk_sys as ffi;
+
+/// Parsed data associated with a client event.
+#[derive(Debug, Clone)]
+pub enum EventData {
+    None,
+    TextMessage(TextMessage),
+    Channel(Channel),
+    User(User),
+    UserAccount(UserAccount),
+    ServerProperties(ServerProperties),
+    ServerStatistics(ServerStatistics),
+    FileTransfer(FileTransfer),
+    ErrorMessage(ErrorMessage),
+}
 
 /// Client event emitted by `Client::poll`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +112,36 @@ pub enum Event {
         join_attempts: u32,
     },
     Unknown(ffi::ClientEvent),
+}
+
+/// Simplified connection state for high-performance tracking.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[repr(u32)]
+pub enum BasicConnectionState {
+    #[default]
+    Idle = 0,
+    Connecting = 1,
+    Connected = 2,
+    LoggingIn = 3,
+    LoggedIn = 4,
+    Joining = 5,
+    Joined = 6,
+    Disconnected = 7,
+}
+
+impl From<ConnectionState> for BasicConnectionState {
+    fn from(state: ConnectionState) -> Self {
+        match state {
+            ConnectionState::Idle => Self::Idle,
+            ConnectionState::Connecting => Self::Connecting,
+            ConnectionState::Connected => Self::Connected,
+            ConnectionState::LoggingIn => Self::LoggingIn,
+            ConnectionState::LoggedIn => Self::LoggedIn,
+            ConnectionState::Joining(_) => Self::Joining,
+            ConnectionState::Joined(_) => Self::Joined,
+            ConnectionState::Disconnected => Self::Disconnected,
+        }
+    }
 }
 
 /// Client connection state derived from commands and events.

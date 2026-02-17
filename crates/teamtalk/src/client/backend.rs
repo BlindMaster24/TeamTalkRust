@@ -248,13 +248,17 @@ impl TeamTalkBackend for FfiBackend {
         password: &str,
         client_name: &str,
     ) -> i32 {
+        let nickname = nickname.tt();
+        let username = username.tt();
+        let password = password.tt();
+        let client_name = client_name.tt();
         unsafe {
             ffi::api().TT_DoLoginEx(
                 ptr,
-                nickname.tt().as_ptr(),
-                username.tt().as_ptr(),
-                password.tt().as_ptr(),
-                client_name.tt().as_ptr(),
+                nickname.as_ptr(),
+                username.as_ptr(),
+                password.as_ptr(),
+                client_name.as_ptr(),
             )
         }
     }
@@ -269,7 +273,8 @@ impl TeamTalkBackend for FfiBackend {
         channel_id: i32,
         password: &str,
     ) -> i32 {
-        unsafe { ffi::api().TT_DoJoinChannelByID(ptr, channel_id, password.tt().as_ptr()) }
+        let password = password.tt();
+        unsafe { ffi::api().TT_DoJoinChannelByID(ptr, channel_id, password.as_ptr()) }
     }
 
     fn do_leave_channel(&self, ptr: *mut ffi::TTInstance) -> i32 {
@@ -281,7 +286,8 @@ impl TeamTalkBackend for FfiBackend {
     }
 
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32 {
-        unsafe { ffi::api().TT_DoChangeStatus(ptr, status_mode, message.tt().as_ptr()) }
+        let message = message.tt();
+        unsafe { ffi::api().TT_DoChangeStatus(ptr, status_mode, message.as_ptr()) }
     }
 
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel> {
@@ -313,10 +319,11 @@ impl TeamTalkBackend for FfiBackend {
         udp: i32,
         encrypted: bool,
     ) -> bool {
+        let host = host.tt();
         unsafe {
             ffi::api().TT_Connect(
                 ptr,
-                host.tt().as_ptr(),
+                host.as_ptr(),
                 tcp,
                 udp,
                 0,
@@ -335,16 +342,18 @@ impl TeamTalkBackend for FfiBackend {
         encrypted: bool,
         sys_id: &str,
     ) -> bool {
+        let host = host.tt();
+        let sys_id = sys_id.tt();
         unsafe {
             ffi::api().TT_ConnectSysID(
                 ptr,
-                host.tt().as_ptr(),
+                host.as_ptr(),
                 tcp,
                 udp,
                 0,
                 0,
                 if encrypted { 1 } else { 0 },
-                sys_id.tt().as_ptr(),
+                sys_id.as_ptr(),
             ) == 1
         }
     }
@@ -358,13 +367,15 @@ impl TeamTalkBackend for FfiBackend {
         bind_ip: &str,
         encrypted: bool,
     ) -> bool {
+        let host = host.tt();
+        let bind_ip = bind_ip.tt();
         unsafe {
             ffi::api().TT_ConnectEx(
                 ptr,
-                host.tt().as_ptr(),
+                host.as_ptr(),
                 tcp,
                 udp,
-                bind_ip.tt().as_ptr(),
+                bind_ip.as_ptr(),
                 0,
                 0,
                 if encrypted { 1 } else { 0 },

@@ -19,8 +19,9 @@ fn main() -> teamtalk::Result<()> {
 
     let registry = ClientRegistry::new();
 
-    let client_a = Client::new()?.with_label("bot-a");
-    let client_b = Client::new()?.with_label("bot-b");
+    // Create two clients with unique labels
+    let client_a = Client::builder().label("bot-a").build()?;
+    let client_b = Client::builder().label("bot-b").build()?;
 
     registry.register(&client_a);
     registry.register(&client_b);

@@ -23,7 +23,9 @@ fn main() -> teamtalk::Result<()> {
 
     let mut manager = ClientManager::new();
 
-    let client_a = Client::new()?.with_label("bot-a");
+    // Create two clients with unique labels
+    let client_a = Client::builder().label("bot-a").build()?;
+    let client_b = Client::builder().label("bot-b").build()?;
     client_a.enable_auto_reconnect(ReconnectConfig::default());
     client_a.set_login_params(LoginParams::new(
         &nickname,
@@ -33,7 +35,6 @@ fn main() -> teamtalk::Result<()> {
     ));
     let _ = client_a.connect_remember(&host, tcp, udp, false);
 
-    let client_b = Client::new()?.with_label("bot-b");
     client_b.enable_auto_reconnect(ReconnectConfig::default());
     client_b.set_login_params(LoginParams::new(
         &nickname,

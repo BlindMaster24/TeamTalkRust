@@ -13,30 +13,111 @@ pub fn tt_buf<const N: usize>() -> [ffi::TTCHAR; N] {
     [0 as ffi::TTCHAR; N]
 }
 
+#[allow(clippy::large_enum_variant)]
+/// A stack-allocated or heap-allocated TeamTalk string.
+///
+/// TeamTalk typically uses fixed buffers of 512 bytes. This structure
+/// avoids heap allocations for strings within that limit.
+pub enum TTString {
+    Stack([ffi::TTCHAR; 512], usize),
+    Heap(Vec<ffi::TTCHAR>),
+}
+
+impl TTString {
+    pub fn as_ptr(&self) -> *const ffi::TTCHAR {
+        match self {
+            Self::Stack(arr, _) => arr.as_ptr(),
+            Self::Heap(v) => v.as_ptr(),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Stack(_, len) => *len,
+            Self::Heap(v) => v.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn as_slice(&self) -> &[ffi::TTCHAR] {
+        match self {
+            Self::Stack(arr, len) => &arr[..*len],
+            Self::Heap(v) => v.as_slice(),
+        }
+    }
+
+    pub fn as_mut_slice(&mut self) -> &mut [ffi::TTCHAR] {
+        match self {
+            Self::Stack(arr, len) => &mut arr[..*len],
+            Self::Heap(v) => v.as_mut_slice(),
+        }
+    }
+}
+
+impl std::ops::Deref for TTString {
+    type Target = [ffi::TTCHAR];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
+}
+
+impl std::ops::DerefMut for TTString {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_slice()
+    }
+}
+
+impl AsRef<[ffi::TTCHAR]> for TTString {
+    fn as_ref(&self) -> &[ffi::TTCHAR] {
+        self.as_slice()
+    }
+}
+
 /// Converts Rust strings into TeamTalk UTF-16 or UTF-8 buffers.
 pub trait ToTT {
-    fn tt(&self) -> Vec<ffi::TTCHAR>;
+    fn tt(&self) -> TTString;
 }
 
 impl ToTT for str {
-    fn tt(&self) -> Vec<ffi::TTCHAR> {
+    fn tt(&self) -> TTString {
         #[cfg(windows)]
         {
-            let mut v: Vec<u16> = self.encode_utf16().collect();
-            v.push(0);
-            v
+            let mut len = 0;
+            let mut buf = [0u16; 512];
+            for (i, c) in self.encode_utf16().enumerate() {
+                if i >= 511 {
+                    return TTString::Heap(self.encode_utf16().chain(std::iter::once(0)).collect());
+                }
+                buf[i] = c;
+                len = i + 1;
+            }
+            buf[len] = 0;
+            TTString::Stack(buf, len + 1)
         }
         #[cfg(not(windows))]
         {
-            let mut v: Vec<i8> = self.as_bytes().iter().map(|&b| b as i8).collect();
-            v.push(0);
-            v
+            let bytes = self.as_bytes();
+            if bytes.len() >= 511 {
+                let mut v: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
+                v.push(0);
+                return TTString::Heap(v);
+            }
+            let mut buf = [0i8; 512];
+            for (i, &b) in bytes.iter().enumerate() {
+                buf[i] = b as i8;
+            }
+            buf[bytes.len()] = 0;
+            TTString::Stack(buf, bytes.len() + 1)
         }
     }
 }
 
 impl ToTT for String {
-    fn tt(&self) -> Vec<ffi::TTCHAR> {
+    fn tt(&self) -> TTString {
         self.as_str().tt()
     }
 }
