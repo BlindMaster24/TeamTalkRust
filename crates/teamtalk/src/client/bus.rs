@@ -88,6 +88,7 @@ pub(crate) struct SubscriptionConfig {
     text_type: Option<ffi::TextMsgType>,
     group: Option<EventSubscriptionGroup>,
     predicate: Option<Predicate>,
+    once: bool,
 }
 
 impl EventBus {
@@ -109,6 +110,7 @@ impl EventBus {
             group: config.group,
             predicate: config.predicate,
             handler,
+            once: config.once,
         });
         id
     }
@@ -135,6 +137,7 @@ impl EventBus {
     }
 
     pub(crate) fn dispatch(&mut self, client: &Client, event: Event, message: &Message) {
+        let mut to_remove = Vec::new();
         for sub in self.subscriptions.iter_mut() {
             if !sub.matches(client, event, message) {
                 continue;
@@ -145,6 +148,14 @@ impl EventBus {
                 client,
             };
             (sub.handler)(ctx);
+            if sub.once {
+                to_remove.push(sub.id);
+            }
+        }
+
+        if !to_remove.is_empty() {
+            self.subscriptions
+                .retain(|sub| !to_remove.contains(&sub.id));
         }
     }
 }
@@ -160,6 +171,7 @@ struct Subscription {
     group: Option<EventSubscriptionGroup>,
     predicate: Option<Predicate>,
     handler: Handler,
+    once: bool,
 }
 
 impl Subscription {
@@ -244,6 +256,7 @@ pub struct SubscriptionBuilder<'a> {
     text_type: Option<ffi::TextMsgType>,
     group: Option<EventSubscriptionGroup>,
     predicate: Option<Predicate>,
+    once: bool,
 }
 
 impl<'a> SubscriptionBuilder<'a> {
@@ -258,6 +271,7 @@ impl<'a> SubscriptionBuilder<'a> {
             text_type: None,
             group: None,
             predicate: None,
+            once: false,
         }
     }
 
@@ -297,6 +311,12 @@ impl<'a> SubscriptionBuilder<'a> {
         self
     }
 
+    /// Forces the subscription to be removed after the first match.
+    pub fn once(mut self) -> Self {
+        self.once = true;
+        self
+    }
+
     /// Filters by a custom predicate.
     pub fn filter(mut self, predicate: impl FnMut(&EventContext) -> bool + Send + 'static) -> Self {
         self.predicate = Some(Box::new(predicate));
@@ -317,6 +337,7 @@ impl<'a> SubscriptionBuilder<'a> {
             text_type: self.text_type,
             group: self.group,
             predicate: self.predicate,
+            once: self.once,
         };
         self.client
             .bus

@@ -21,6 +21,60 @@ pub enum EventData {
     ErrorMessage(ErrorMessage),
 }
 
+/// Trait for types that can be extracted from a `Message`.
+pub trait FromMessage: Sized {
+    /// Attempts to extract the type from a message.
+    fn from_message(msg: &crate::client::Message) -> Option<Self>;
+}
+
+impl FromMessage for TextMessage {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.text()
+    }
+}
+
+impl FromMessage for Channel {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.channel()
+    }
+}
+
+impl FromMessage for User {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.user()
+    }
+}
+
+impl FromMessage for UserAccount {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.account()
+    }
+}
+
+impl FromMessage for ServerProperties {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.server_properties()
+    }
+}
+
+impl FromMessage for ServerStatistics {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.server_statistics()
+    }
+}
+
+impl FromMessage for FileTransfer {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.file_transfer()
+    }
+}
+
+impl FromMessage for ErrorMessage {
+    fn from_message(msg: &crate::client::Message) -> Option<Self> {
+        msg.error_message()
+    }
+}
+
 /// Client event emitted by `Client::poll`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {

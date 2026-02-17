@@ -720,6 +720,7 @@ pub(crate) struct AutoReconnectState {
 }
 
 /// Wrapper around a raw TeamTalk message with its originating event.
+#[derive(Clone)]
 pub struct Message {
     event: crate::events::Event,
     raw: ffi::TTMessage,
@@ -914,6 +915,25 @@ impl Message {
             _ => None,
         }
         .unwrap_or(EventData::None)
+    }
+
+    /// Attempts to extract a typed payload from the message.
+    pub fn extract<T: crate::events::FromMessage>(&self) -> Option<T> {
+        T::from_message(self)
+    }
+
+    /// Attempts to extract a typed payload or returns a command error if missing.
+    pub fn extract_or_error<T: crate::events::FromMessage>(&self) -> Result<T> {
+        self.extract::<T>().ok_or_else(|| {
+            if let Some(err) = self.error_message() {
+                Error::CommandFailed {
+                    code: err.code,
+                    message: err.message,
+                }
+            } else {
+                Error::InvalidParam
+            }
+        })
     }
 }
 

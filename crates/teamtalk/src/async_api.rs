@@ -9,10 +9,10 @@ use std::task::{Context, Poll};
 use std::thread;
 
 #[cfg(feature = "async-tokio")]
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 #[cfg(not(feature = "async-tokio"))]
-use futures::{SinkExt, channel::mpsc};
+use futures::{SinkExt, channel::mpsc, channel::oneshot};
 
 /// Configuration for the async polling loop.
 #[derive(Clone, Copy)]
@@ -137,6 +137,30 @@ impl AsyncClient {
         self.receiver.close();
         #[cfg(not(feature = "async-tokio"))]
         self.receiver.close();
+    }
+
+    /// Waits for a specific event to occur.
+    pub async fn wait_for(&self, event: Event) -> crate::events::Result<Message> {
+        let (tx, rx) = oneshot::channel();
+        let mut tx = Some(tx);
+        self.client.on_event(event).once().subscribe(move |ctx| {
+            if let Some(tx) = tx.take() {
+                let _ = tx.send(ctx.message().clone());
+            }
+        });
+
+        rx.await.map_err(|_| crate::events::Error::IoError {
+            message: "Async worker dropped or subscription cancelled".into(),
+        })
+    }
+
+    /// Waits for a specific event and extracts its typed data.
+    pub async fn wait_for_data<T: crate::events::FromMessage>(
+        &self,
+        event: Event,
+    ) -> crate::events::Result<T> {
+        let msg = self.wait_for(event).await?;
+        msg.extract_or_error()
     }
 }
 
