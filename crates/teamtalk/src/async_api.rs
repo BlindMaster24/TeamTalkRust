@@ -12,7 +12,7 @@ use std::thread;
 use tokio::sync::mpsc;
 
 #[cfg(not(feature = "async-tokio"))]
-use futures::channel::mpsc;
+use futures::{SinkExt, channel::mpsc};
 
 /// Configuration for the async polling loop.
 #[derive(Clone, Copy)]
