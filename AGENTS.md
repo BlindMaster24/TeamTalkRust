@@ -116,8 +116,9 @@
 - Use primary sources (official docs, RFCs, upstream repos) for API or behavior claims.
 - Record the exact version or date when advice is time‑sensitive.
 ## Release Hygiene
-- Order of operations: code → tests → docs → changelog → version bump (separate commit).
+- Order of operations: code -> tests -> docs -> changelog -> version bump (separate commit).
 - Release commit must only contain version + changelog + synced references.
+- Release automation uses `release-plz` via `.github/workflows/release-plz.yml` and `release-plz.toml`.
 - No unrelated refactors in release commits.
 ## API Review Checklist (before shipping)
 - Backward compatibility assessed (breaking vs additive).
@@ -331,23 +332,18 @@
   - Draft changelog groups (Added/Changed/Fixed/Docs/Tests/Chore) using those results.
 - Update version references in `README.md`, `docs/getting-started.md`, and `docs/features.md` when the crate version changes.
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
-- Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/developer.md`.
+- Use `scripts/check-version-refs.ps1` or `scripts/check-version-refs.sh` to verify refs are already synced.
+- Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/dev.md`.
 - Every user-facing change must be added to `docs/changelog.md` under `Unreleased` in the same PR/commit set.
 - Version bumps must be in a dedicated commit, even if requested alongside other changes.
-- Release workflow: update `docs/changelog.md` by moving `Unreleased` items under the new version header, then update versions in `crates/teamtalk/Cargo.toml` and docs, run the Definition of Done checks, commit the bump separately, tag `vX.Y.Z`, and push commits + tag.
- - Release commands (Windows PowerShell):
-   - Baseline diff: `git log --oneline <baseline>..HEAD` and `git diff --stat <baseline>..HEAD`
-   - Update changelog: edit `docs/changelog.md` (move Unreleased -> X.Y.Z).
-   - Version sync: `scripts\\update-version.ps1 X.Y.Z`
-   - Required checks:
-     - `cargo fmt --all`
-     - `cargo check --workspace --all-targets`
-     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-     - `cargo test --workspace --all-targets --all-features`
-     - `cargo doc --no-deps --all-features`
-     - `scripts\\check-doc-links.ps1`
-   - Commit release bump: `git add README.md docs/changelog.md docs/features.md docs/getting-started.md crates/teamtalk/Cargo.toml` then `git commit -m "chore: release X.Y.Z"`
-   - Tag and push: `git tag vX.Y.Z` then `git push` and `git push --tags`
+- Release workflow:
+  - Push normal feature/fix PRs with `docs/changelog.md` updates under `## Unreleased`.
+  - On push to `main`, release-plz opens/updates a release PR (version + changelog).
+  - release-plz workflow then syncs version refs in `README.md`, `docs/getting-started.md`, and `docs/features.md`.
+  - After release PR merge, release-plz tags and publishes the release.
+- Manual verification commands:
+  - `bash ./scripts/check-version-refs.sh` (Linux/macOS)
+  - `./scripts/check-version-refs.ps1` (Windows PowerShell)
 
 ## Testing Guidelines
 - Place tests under `crates/<crate>/tests` only.
@@ -413,7 +409,7 @@
 - Keep commits production-grade: one logical change per commit. If a task spans multiple concerns, split into 2-5 focused commits (or more if justified).
 - If asked to push, still confirm that commits are scoped correctly before pushing.
 - Version bumps are always a dedicated commit. Never combine a version bump with other changes, even if requested.
-- Version bump flow (separate commit only): update `docs/changelog.md` (move Unreleased), update `crates/teamtalk/Cargo.toml` version, sync references via `scripts/update-version.*`, run DoD checks, commit with a `chore:` message, tag `vX.Y.Z`, then push commits + tag.
+- Version bumps are handled by release-plz; keep release PR commits scoped to version/changelog/docs sync only.
 - Commit hygiene:
   - Keep diffs minimal; avoid drive‑by refactors unless explicitly requested.
   - Separate behavior changes from refactors and from docs-only edits.

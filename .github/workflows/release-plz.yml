@@ -1,0 +1,107 @@
+name: Release-plz
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  release-plz-pr:
+    name: Release-plz PR
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: release-plz-pr-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz release-pr
+        id: release-plz
+        uses: release-plz/action@v0.5
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Sync docs version references in release PR
+        if: ${{ steps.release-plz.outputs.prs_created == 'true' }}
+        shell: bash
+        env:
+          PR_JSON: ${{ steps.release-plz.outputs.pr }}
+        run: |
+          set -euo pipefail
+
+          pr_branch=$(echo "$PR_JSON" | python -c 'import json,sys; print(json.load(sys.stdin).get("head_branch",""))')
+          if [ -z "$pr_branch" ] || [ "$pr_branch" = "null" ]; then
+            echo "No release PR head branch returned. Skipping docs sync."
+            exit 0
+          fi
+
+          git fetch origin "$pr_branch:$pr_branch"
+          git checkout "$pr_branch"
+
+          bash ./scripts/update-version.sh
+
+          if git diff --quiet -- README.md docs/getting-started.md docs/features.md; then
+            echo "Docs version references already in sync."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/getting-started.md docs/features.md
+          git commit -m "docs: sync version references for release PR"
+          git push origin "HEAD:$pr_branch"
+
+  release-plz-release:
+    name: Release-plz release
+    if: github.event_name == 'push'
+    needs: release-plz-pr
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz release
+        uses: release-plz/action@v0.5
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+  release-plz-release-manual:
+    name: Release-plz release (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz release
+        uses: release-plz/action@v0.5
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}

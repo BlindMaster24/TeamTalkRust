@@ -44,15 +44,22 @@ pre-commit:
 
 ## Publishing
 
-- Update the version in [crates/teamtalk/Cargo.toml](../crates/teamtalk/Cargo.toml).
-- Run the full Definition of Done checks from `AGENTS.md` (the pre-commit hook runs the same set; run manually if hooks are disabled).
-- Publish with `cargo publish` inside [crates/teamtalk](../crates/teamtalk/).
+- Release flow is automated by [`.github/workflows/release-plz.yml`](../.github/workflows/release-plz.yml).
+- On push to `main`, release-plz creates or updates a release PR with version bump and changelog updates.
+- The release PR also syncs [README](../README.md),
+  [getting-started.md](getting-started.md), and [features.md](features.md) to
+  the new crate version.
+- After the release PR is merged, release-plz creates the tag/release and publishes to crates.io.
+- Keep [changelog.md](changelog.md) up to date under `## Unreleased` in normal
+  feature/fix PRs.
 - docs.rs builds automatically after publish and uses `all-features = true`.
 
 ## CI/CD
 
 - CI runs formatting, linting, checks, tests, docs build, and link validation.
-- The publish job runs on version tags.
+- CI also verifies docs version references are in sync with
+  [crates/teamtalk/Cargo.toml](../crates/teamtalk/Cargo.toml).
+- Release and publish are handled by the release-plz workflow.
 
 ## Testing
 

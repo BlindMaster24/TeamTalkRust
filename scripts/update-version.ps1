@@ -20,5 +20,10 @@ foreach ($file in $files) {
     $content = Get-Content $file -Raw
     $content = $content -replace 'teamtalk\s*=\s*"\d+\.\d+\.\d+"', ('teamtalk = "' + $version + '"')
     $content = $content -replace 'teamtalk\s*=\s*\{\s*version\s*=\s*"\d+\.\d+\.\d+"', ('teamtalk = { version = "' + $version + '"')
-    Set-Content $file -Value $content
+    $resolved = (Resolve-Path $file).Path
+    [System.IO.File]::WriteAllText(
+        $resolved,
+        $content,
+        [System.Text.UTF8Encoding]::new($false)
+    )
 }
