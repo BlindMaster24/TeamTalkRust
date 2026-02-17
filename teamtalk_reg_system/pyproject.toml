@@ -1,0 +1,156 @@
+[project]
+name = "teamtalk-reg-system"
+version = "0.2.0"
+description = "Telegram bot and FastAPI web app for TeamTalk server self-registration."
+authors = [
+    {name = "Kirill", email = "kirillkolovi@gmail.com"},
+]
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+readme = "README.md"
+
+# Основные зависимости проекта
+dependencies = [
+    "aiogram ~=3.20",
+    "py-talk-ex ~=2.0",
+    "pydantic-settings ~= 2.11",
+    "pydantic ~=2.11",
+    "sqlmodel~=0.0",
+    "SQLAlchemy ~=2.0",
+    "aiosqlite ~=0.21",
+    "fastapi ~=0.115",
+    "uvicorn[standard] ~=0.34",
+    "uvloop~=0.21; sys_platform != 'win32'",
+    "Babel ~=2.17",
+    "Jinja2 ~=3.1",
+    "python-multipart ~=0.0",
+    "aiofiles~=24.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/kirill-jjj/teamtalk_reg_system"
+Repository = "https://github.com/kirill-jjj/teamtalk_reg_system"
+"Bug Tracker" = "https://github.com/kirill-jjj/teamtalk_reg_system/issues"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+backend-path = [""]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bot*"]
+exclude = ["locales*"]
+
+[tool.ruff]
+src = ["bot", "run.py", "manage-locales.py"]
+target-version = "py311"
+exclude = [
+    ".git",
+    ".idea",
+    ".venv",
+    "pycache",
+    "locales",
+    "babel.cfg",
+    "test.db",
+    "uv.lock",
+    "*.md",
+]
+respect-gitignore = true
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "ASYNC",
+    "B",
+    "C4",
+    "D",
+    "DTZ",
+    "E", "W",
+    "ERA",
+    "F",
+    "FBT",
+    "G",
+    "I",
+    "ISC",
+    "N",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "T20",
+    "TRY",
+    "UP",
+]
+ignore = [
+    "D203",
+    "D213",
+    "PLR0913",
+    "RUF001",
+]
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"init.py" = ["D104"]
+"run.py" = ["T201"]
+"manage-locales.py" = ["T201"]
+"bot/core/config.py" = ["E501"]
+"bot/telegram_bot/handlers/*" = ["ARG001"]
+"bot/telegram_bot/handlers/reg_logic_helpers.py" = ["ARG001"]
+"bot/telegram_bot/middlewares/*" = ["ARG001"]
+"bot/telegram_bot/main.py" = ["ANN401"]
+"bot/telegram_bot/callbacks/*" = ["D101"]
+"bot/telegram_bot/states.py" = ["D101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["bot"]
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+strict = true
+plugins = [
+  "pydantic.mypy"
+]
+files = [
+    "bot",
+    "run.py",
+    "manage-locales.py"
+]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pytalk",
+    "pytalk.*",
+    "aiofiles",
+    "pydantic_settings",
+    "fastapi",
+    "fastapi.*",
+    "sqlmodel",
+    "uvicorn"
+]
+ignore_missing_imports = true

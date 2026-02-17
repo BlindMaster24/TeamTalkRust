@@ -60,8 +60,10 @@ pub fn init() -> Result<()> {
 /// `Client::new()` and `Client::with_hwnd()`.
 pub fn set_license(name: &str, key: &str) -> Result<bool> {
     init()?;
+    let name_tt = name.tt();
+    let key_tt = key.tt();
     Ok(unsafe {
-        teamtalk_sys::api().TT_SetLicenseInformation(name.tt().as_ptr(), key.tt().as_ptr()) == 1
+        teamtalk_sys::api().TT_SetLicenseInformation(name_tt.as_ptr(), key_tt.as_ptr()) == 1
     })
 }
 

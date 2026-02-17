@@ -1,0 +1,390 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: teamtalk_reg_system VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-05 23:12+0000\n"
+"PO-Revision-Date: 2025-06-12 04:00+0500\n"
+"Last-Translator: Kirill <kirillkolovi@gmail.com>\n"
+"Language: ru\n"
+"Language-Team: Russian <ru@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+msgid "native_language_name"
+msgstr "Русский"
+
+msgid "TeamTalk Registration"
+msgstr "Регистрация в TeamTalk"
+
+msgid "Select Language:"
+msgstr "Выберите язык:"
+
+msgid "Language:"
+msgstr "Язык:"
+
+msgid "Set Language"
+msgstr "Установить язык"
+
+msgid "If you want to register on the server"
+msgstr "Если вы хотите зарегистрироваться на сервере"
+
+msgid "please fill out the form below."
+msgstr "пожалуйста, заполните форму ниже."
+
+msgid "Username:"
+msgstr "Имя пользователя:"
+
+msgid "Nickname (optional):"
+msgstr "Никнейм (необязательно):"
+
+msgid "Defaults to username if blank"
+msgstr ""
+"По умолчанию будет использовано имя пользователя, если оставить поле "
+"пустым"
+
+msgid "Password:"
+msgstr "Пароль:"
+
+msgid "Show Password"
+msgstr "Показать пароль"
+
+msgid "Register"
+msgstr "Зарегистрироваться"
+
+msgid ""
+"You have <span id='countdown-timer'>10:00</span> to download your .tt "
+"file, client or use the quick connect link."
+msgstr ""
+"У вас есть <span id=\"countdown-timer\">10:00</span>, чтобы скачать ваш "
+".tt файл, клиент или использовать ссылку для быстрого подключения."
+
+msgid "Quick Connect Link:"
+msgstr "Ссылка для быстрого подключения:"
+
+msgid "Download .tt file"
+msgstr "Скачать .tt файл"
+
+msgid "Download pre-configured TeamTalk Client (ZIP)"
+msgstr "Скачать преднастроенный клиент TeamTalk (ZIP)"
+
+msgid "expired"
+msgstr "истекло"
+
+msgid "second"
+msgstr "секунда"
+
+msgid "seconds_few"
+msgstr "секунды"
+
+msgid "seconds"
+msgstr "секунд"
+
+msgid "TeamTalk: User account '{username}' has been REMOVED."
+msgstr "TeamTalk: Учетная запись пользователя '{username}' была УДАЛЕНА."
+
+msgid "TeamTalk: User account '{account_username_str}' has been CREATED."
+msgstr ""
+"TeamTalk: Учетная запись пользователя '{account_username_str}' была "
+"СОЗДАНА."
+
+msgid "TeamTalk: User account '{account_username_str}' has been CHANGED."
+msgstr ""
+"TeamTalk: Учетная запись пользователя '{account_username_str}' была "
+"ИЗМЕНЕНА."
+
+msgid "Admin Panel"
+msgstr "Панель администратора"
+
+msgid "Permission denied."
+msgstr "В доступе отказано."
+
+msgid "No registered users found to delete."
+msgstr "Зарегистрированные пользователи для удаления не найдены."
+
+msgid "Select a user to delete:"
+msgstr "Выберите пользователя для удаления:"
+
+msgid "User with Telegram ID {telegram_id} has been deleted and banned."
+msgstr "Пользователь с Telegram ID {telegram_id} был удален и забанен."
+
+msgid "Failed to delete user with Telegram ID {telegram_id}."
+msgstr "Не удалось удалить пользователя с Telegram ID {telegram_id}."
+
+msgid "Error: No target user ID specified for unban."
+msgstr "Ошибка: не указан ID пользователя для разбана."
+
+msgid "User {target_telegram_id} has been unbanned."
+msgstr "Пользователь {target_telegram_id} был разбанен."
+
+msgid "Failed to unban user {target_telegram_id}."
+msgstr "Не удалось разбанить пользователя {target_telegram_id}."
+
+msgid "Action processed. Could not refresh list immediately."
+msgstr "Действие обработано. Не удалось немедленно обновить список."
+
+msgid "Please enter the Telegram ID and reason for the ban on separate lines."
+msgstr "Пожалуйста, введите Telegram ID и причину бана на отдельных строках."
+
+msgid "Invalid Telegram ID provided."
+msgstr "Предоставлен неверный Telegram ID."
+
+msgid "User {telegram_id} has been manually banned."
+msgstr "Пользователь {telegram_id} был забанен вручную."
+
+msgid "Failed to manually ban user {telegram_id}."
+msgstr "Не удалось забанить пользователя {telegram_id} вручную."
+
+msgid "Could not connect to the TeamTalk server to get the list of accounts."
+msgstr ""
+"Не удалось подключиться к серверу TeamTalk для получения списка учетных "
+"записей."
+
+msgid "No TeamTalk accounts found on the server."
+msgstr "На сервере не найдено учетных записей TeamTalk."
+
+msgid "TeamTalk Accounts:"
+msgstr "Пользователь TeamTalk"
+
+msgid "Delete from TeamTalk"
+msgstr "Удалить из TeamTalk"
+
+msgid "Error: Username not provided for deletion. Please try again."
+msgstr ""
+"Ошибка: имя пользователя для удаления не предоставлено. Пожалуйста, "
+"попробуйте снова."
+
+msgid "Are you sure you want to delete the TeamTalk user '{tt_username}'?"
+msgstr "Вы уверены, что хотите удалить пользователя TeamTalk '{tt_username}'?"
+
+msgid "Confirm Delete"
+msgstr "Подтвердить удаление"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Error: Username missing. Cannot delete."
+msgstr "Ошибка: имя пользователя отсутствует. Невозможно удалить."
+
+msgid "Internal error: Username was not provided for deletion."
+msgstr "Внутренняя ошибка: имя пользователя для удаления не предоставлено."
+
+msgid "Could not connect to the TeamTalk server to delete the account."
+msgstr "Не удалось подключиться к серверу TeamTalk для удаления учетной записи."
+
+msgid "TeamTalk user '{tt_username}' was successfully deleted."
+msgstr "Пользователь {} успешно зарегистрирован."
+
+msgid "Failed to delete TeamTalk user '{tt_username}'. Reason: {error}"
+msgstr "Не удалось удалить пользователя TeamTalk '{tt_username}'. Причина: {error}"
+
+msgid "Deeplink registration is currently disabled in the configuration."
+msgstr "Регистрация по deeplink в данный момент отключена в конфигурации."
+
+msgid "Internal error: bot username is not available. Please contact support."
+msgstr ""
+"Внутренняя ошибка: имя пользователя бота недоступно. Пожалуйста, "
+"свяжитесь с поддержкой."
+
+msgid "An error occurred while generating the deeplink."
+msgstr "Произошла ошибка при генерации deeplink."
+
+msgid "Language set successfully."
+msgstr "Язык успешно установлен."
+
+msgid ""
+"You have already registered one TeamTalk account from this Telegram "
+"account. Only one registration is allowed."
+msgstr ""
+"Вы уже зарегистрировали одну учетную запись TeamTalk с этого Telegram "
+"аккаунта. Разрешена только одна регистрация."
+
+msgid "Hello! Please enter a username for registration."
+msgstr "Здравствуйте! Пожалуйста, введите имя пользователя для регистрации."
+
+msgid "this account"
+msgstr "этот аккаунт"
+
+msgid "Registration request not found, outdated, or already processed."
+msgstr "Запрос на регистрацию не найден или устарел."
+
+msgid "This Telegram account has already a TeamTalk account linked."
+msgstr "К этому Telegram-аккаунту уже привязана учетная запись TeamTalk."
+
+msgid ""
+"Your registration request was processed, but this Telegram account "
+"already has a TeamTalk account linked. Only one registration is allowed."
+msgstr ""
+"С этого Telegram-аккаунта уже зарегистрирована учетная запись TeamTalk. "
+"Разрешена только одна регистрация."
+
+msgid "User {username} registration approved."
+msgstr "Регистрация пользователя {username} одобрена."
+
+msgid ""
+"Your registration has been approved by the administrator. You can now use"
+" TeamTalk."
+msgstr ""
+"Ваша регистрация была одобрена администратором. Теперь вы можете "
+"использовать TeamTalk."
+
+msgid ""
+"CRITICAL: Registration for {username} was approved, but the final "
+"registration step failed. Please check logs."
+msgstr ""
+"КРИТИЧЕСКАЯ ОШИБКА: Регистрация для {username} была одобрена, но "
+"последний шаг регистрации не удался. Пожалуйста, проверьте логи."
+
+msgid "User {username} registration declined."
+msgstr "Регистрация пользователя {username} отклонена."
+
+msgid "Your registration has been declined by the administrator."
+msgstr "Ваша регистрация была отклонена администратором."
+
+msgid "Please enter your desired nickname."
+msgstr "Пожалуйста, введите желаемый никнейм."
+
+msgid "Error: Username not found. Please start over."
+msgstr "Ошибка: имя пользователя не найдено. Пожалуйста, начните сначала."
+
+msgid "Invalid choice. Please try again."
+msgstr "Неверный выбор. Пожалуйста, попробуйте снова."
+
+msgid "You have already registered. This link cannot be used to register again."
+msgstr ""
+"Вы уже зарегистрированы. Эту ссылку нельзя использовать для повторной "
+"регистрации."
+
+msgid "Welcome! Please choose your language to continue registration."
+msgstr "Пожалуйста, выберите ваш язык:"
+
+msgid "This registration link is invalid, expired, or has already been used."
+msgstr ""
+"Эта ссылка для регистрации недействительна, истекла или уже была "
+"использована."
+
+msgid "Please choose your language:"
+msgstr "Пожалуйста, выберите ваш язык:"
+
+msgid "Sorry, this username is already taken. Please choose another username."
+msgstr "Извините, это имя пользователя уже занято. Пожалуйста, выберите другое."
+
+msgid "Now enter a password."
+msgstr "Теперь введите пароль."
+
+msgid "Registration error. Please try again later or contact an administrator."
+msgstr ""
+"Ошибка регистрации. Пожалуйста, попробуйте позже или свяжитесь с "
+"администратором."
+
+msgid ""
+"This Telegram account has already registered a TeamTalk account. Only one"
+" registration is allowed."
+msgstr ""
+"С этого Telegram-аккаунта уже зарегистрирована учетная запись TeamTalk. "
+"Разрешена только одна регистрация."
+
+msgid "TeamTalk Admin"
+msgstr "Администратор TeamTalk"
+
+msgid "TeamTalk User"
+msgstr "Пользователь TeamTalk"
+
+msgid ""
+"This TeamTalk account will be for username '{username}'.\n"
+"Do you want to register it as a TeamTalk 'Admin' or a regular 'User' on "
+"the server?"
+msgstr ""
+"Эта учетная запись TeamTalk будет для имени пользователя '{username}'.\n"
+"Вы хотите зарегистрировать её как 'Администратора' TeamTalk или как "
+"обычного 'Пользователя' на сервере?"
+
+msgid "Nickname cannot be empty. Please enter a valid nickname."
+msgstr "Никнейм не может быть пустым. Пожалуйста, введите корректный никнейм."
+
+msgid "Yes"
+msgstr "Да"
+
+msgid "No (use username)"
+msgstr "Нет (использовать имя пользователя)"
+
+msgid ""
+"Your username will be '{username}'. Would you like to set a different "
+"nickname? If not, your nickname will be the same as your username."
+msgstr ""
+"Ваше имя пользователя будет '{username}'. Хотите установить другой "
+"никнейм? Если нет, ваш никнейм будет таким же, как имя пользователя."
+
+msgid "Your .tt file for quick connection"
+msgstr "Ваш .tt файл для быстрого подключения"
+
+msgid "Or use this TT link:\n"
+msgstr "Или используйте эту TT ссылку:\n"
+
+msgid "Could not send the .tt file or link. Please contact an admin."
+msgstr ""
+"Не удалось отправить .tt файл или ссылку. Пожалуйста, свяжитесь с "
+"администратором."
+
+msgid "User {username} successfully registered."
+msgstr "Пользователь {username} успешно зарегистрирован."
+
+msgid ""
+"Your TeamTalk account is ready, but there was an issue syncing your "
+"registration locally. Please contact an administrator if you experience "
+"issues."
+msgstr ""
+"Ваша учетная запись TeamTalk готова, но возникла проблема с локальной "
+"синхронизацией вашей регистрации. Пожалуйста, свяжитесь с "
+"администратором, если у вас возникнут проблемы."
+
+msgid "User {username} was registered."
+msgstr "Пользователь {username} успешно зарегистрирован."
+
+msgid "👤 Client language: {lang_emoji}"
+msgstr "👤 Язык клиента: {lang_emoji}"
+
+msgid "📱 Via Telegram: {telegram_full_name} (ID: {registrant_telegram_id})"
+msgstr "📱 Через Telegram: {telegram_full_name} (ID: {registrant_telegram_id})"
+
+msgid "🔑 Registered by Admin ID: {initiator_telegram_id}"
+msgstr "🔑 Зарегистрировано администратором с ID: {initiator_telegram_id}"
+
+msgid ""
+"An error occurred while submitting your registration for approval. Please"
+" try again later or contact an administrator."
+msgstr ""
+"Ошибка регистрации. Пожалуйста, попробуйте позже или свяжитесь с "
+"администратором."
+
+msgid "Registration request:"
+msgstr "Запрос на регистрацию:"
+
+msgid "Nickname:"
+msgstr "Никнейм (необязательно):"
+
+msgid "Telegram User:"
+msgstr "Пользователь TeamTalk"
+
+msgid "Approve registration?"
+msgstr "Регистрация в TeamTalk"
+
+msgid "No"
+msgstr "Нет"
+
+msgid "Registration request sent to administrators. Please wait for approval."
+msgstr ""
+"Запрос на регистрацию отправлен администраторам. Пожалуйста, ожидайте "
+"одобрения."
+
+msgid "Delete User"
+msgstr "Удалить пользователя"
+
+msgid "Manage Ban List"
+msgstr "Управление бан-листом"
+
+msgid "List TeamTalk Accounts"
+msgstr "Пользователь TeamTalk"

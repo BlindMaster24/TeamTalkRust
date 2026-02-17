@@ -1,9 +1,10 @@
 //! Core client type and message wrapper.
-use crate::events::{ConnectionState, Error, Event, Result};
+use crate::events::{BasicConnectionState, ConnectionState, Error, Event, EventData, Result};
 #[cfg(feature = "scripts")]
 use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
-use std::sync::atomic::{AtomicU64, Ordering};
+use crate::utils::strings::ToTT;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 pub use teamtalk_sys as ffi;
 
@@ -27,6 +28,7 @@ pub struct Client {
     pub(crate) backend: Arc<dyn super::backend::TeamTalkBackend>,
     pub(crate) label: Mutex<Option<String>>,
     pub(crate) state: Mutex<ConnectionState>,
+    pub(crate) state_cache: AtomicU32,
     pub(crate) hooks: Mutex<hooks::ClientHooks>,
     pub(crate) bus: Mutex<bus::EventBus>,
     #[cfg(feature = "scripts")]
@@ -46,6 +48,11 @@ impl ClientEvents {
     pub fn poll(&self, timeout_ms: i32) -> Option<(Event, Message)> {
         self.0.poll(timeout_ms)
     }
+
+    /// Returns an iterator over client events.
+    pub fn events(&self, timeout_ms: i32) -> EventIterator<'_> {
+        self.0.events(timeout_ms)
+    }
 }
 
 /// A split interface for issuing client commands.
@@ -59,7 +66,85 @@ impl std::ops::Deref for ClientCommands {
     }
 }
 
+/// Iterator over client events.
+pub struct EventIterator<'a> {
+    client: &'a Client,
+    timeout_ms: i32,
+}
+
+impl<'a> Iterator for EventIterator<'a> {
+    type Item = (Event, Message);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.client.poll(self.timeout_ms)
+    }
+}
+
+/// Builder for creating and configuring a `Client`.
+pub struct ClientBuilder {
+    name: Option<String>,
+    label: Option<String>,
+}
+
+impl ClientBuilder {
+    /// Creates a new client builder.
+    pub fn new() -> Self {
+        Self {
+            name: None,
+            label: None,
+        }
+    }
+}
+
+impl Default for ClientBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ClientBuilder {
+    /// Sets the client name used by the SDK.
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    /// Sets a human-friendly label for the client instance.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
+    /// Builds and initializes the client.
+    pub fn build(self) -> Result<Client> {
+        let mut client = Client::new()?;
+        client.name = self.name;
+        *client.label.lock().unwrap() = self.label;
+        Ok(client)
+    }
+
+    #[cfg(windows)]
+    /// Builds and initializes the client bound to a Windows message window.
+    ///
+    /// # Safety
+    /// - `hwnd` must be a valid window handle for the lifetime of the client.
+    /// - `msg` must be a valid message ID routed to `hwnd`.
+    /// - The caller must ensure the window's message loop stays alive while the
+    ///   client is in use.
+    pub unsafe fn build_with_hwnd(self, hwnd: ffi::HWND, msg: u32) -> Result<Client> {
+        let mut client = unsafe { Client::with_hwnd(hwnd, msg)? };
+        client.name = self.name;
+        *client.label.lock().unwrap() = self.label;
+        Ok(client)
+    }
+}
+
 impl Client {
+    /// Returns a new client builder.
+    pub fn builder() -> ClientBuilder {
+        ClientBuilder::new()
+    }
+
     /// Creates a new polling client and loads the SDK.
     pub fn new() -> Result<Self> {
         crate::init()?;
@@ -76,6 +161,7 @@ impl Client {
                 backend,
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
+                state_cache: AtomicU32::new(BasicConnectionState::Idle as u32),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
                 bus: Mutex::new(bus::EventBus::default()),
                 #[cfg(feature = "scripts")]
@@ -90,6 +176,14 @@ impl Client {
     pub fn split(self) -> (ClientEvents, ClientCommands) {
         let shared = Arc::new(self);
         (ClientEvents(shared.clone()), ClientCommands(shared))
+    }
+
+    /// Returns an iterator over client events.
+    pub fn events(&self, timeout_ms: i32) -> EventIterator<'_> {
+        EventIterator {
+            client: self,
+            timeout_ms,
+        }
     }
 
     #[cfg(windows)]
@@ -115,6 +209,7 @@ impl Client {
                 backend,
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
+                state_cache: AtomicU32::new(BasicConnectionState::Idle as u32),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
                 bus: Mutex::new(bus::EventBus::default()),
                 #[cfg(feature = "scripts")]
@@ -152,6 +247,7 @@ impl Client {
                 backend,
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
+                state_cache: AtomicU32::new(BasicConnectionState::Idle as u32),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
                 bus: Mutex::new(bus::EventBus::default()),
                 #[cfg(feature = "scripts")]
@@ -197,18 +293,6 @@ impl Client {
         self.update_state_for_event(event, &message);
     }
 
-    /// Sets the client name used for login.
-    pub fn with_name(mut self, name: &str) -> Self {
-        self.name = Some(name.to_string());
-        self
-    }
-
-    /// Sets a human-friendly label for the client instance.
-    pub fn with_label(self, label: &str) -> Self {
-        *self.label.lock().unwrap() = Some(label.to_string());
-        self
-    }
-
     /// Returns the client instance id.
     pub fn id(&self) -> ClientId {
         self.id
@@ -226,7 +310,24 @@ impl Client {
 
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
-        *self.state.lock().unwrap()
+        // High-performance path: try reading from cache first for common states
+        let cache = self.state_cache.load(Ordering::Relaxed);
+        let current = *self.state.lock().unwrap();
+
+        // Ensure cache is in sync with the real state (source of truth)
+        let basic = BasicConnectionState::from(current);
+        if cache != basic as u32 {
+            self.state_cache.store(basic as u32, Ordering::Relaxed);
+        }
+
+        current
+    }
+
+    /// Fast path to check connection state without locking.
+    pub fn basic_connection_state(&self) -> BasicConnectionState {
+        let raw = self.state_cache.load(Ordering::Relaxed);
+        // Safety: BasicConnectionState is repr(u32) and we only store valid values
+        unsafe { std::mem::transmute(raw) }
     }
 
     /// Creates a subscription for a specific event type.
@@ -298,6 +399,8 @@ impl Client {
 
     pub(crate) fn set_connection_state(&self, state: ConnectionState) {
         *self.state.lock().unwrap() = state;
+        self.state_cache
+            .store(BasicConnectionState::from(state) as u32, Ordering::Relaxed);
     }
 
     pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
@@ -574,7 +677,7 @@ impl Client {
     /// Writes a debug tone into an audio file.
     pub fn dbg_write_audio_file_tone(&self, file_path: &str, freq: i32) -> bool {
         let mut info = unsafe { std::mem::zeroed::<ffi::MediaFileInfo>() };
-        let p = crate::utils::ToTT::tt(file_path);
+        let p = file_path.tt();
         unsafe {
             std::ptr::copy_nonoverlapping(
                 p.as_ptr(),
@@ -782,6 +885,35 @@ impl Message {
     /// Returns the raw TeamTalk message.
     pub fn raw(&self) -> &ffi::TTMessage {
         &self.raw
+    }
+
+    /// Returns the parsed event data if available.
+    pub fn data(&self) -> EventData {
+        match self.event {
+            Event::TextMessage => self.text().map(EventData::TextMessage),
+            Event::ChannelCreated | Event::ChannelUpdated | Event::ChannelRemoved => {
+                self.channel().map(EventData::Channel)
+            }
+            Event::ServerUpdate => self.server_properties().map(EventData::ServerProperties),
+            Event::ServerStatistics => self.server_statistics().map(EventData::ServerStatistics),
+            Event::FileTransfer => self.file_transfer().map(EventData::FileTransfer),
+            Event::UserLoggedIn
+            | Event::UserLoggedOut
+            | Event::UserUpdate
+            | Event::UserJoined
+            | Event::UserLeft
+            | Event::UserStateChange
+            | Event::MySelfKicked
+            | Event::UserFirstVoiceStreamPacket => self.user().map(EventData::User),
+            Event::UserAccount | Event::UserAccountCreated | Event::UserAccountRemoved => {
+                self.account().map(EventData::UserAccount)
+            }
+            Event::ConnectCryptError | Event::CmdError | Event::InternalError => {
+                self.error_message().map(EventData::ErrorMessage)
+            }
+            _ => None,
+        }
+        .unwrap_or(EventData::None)
     }
 }
 

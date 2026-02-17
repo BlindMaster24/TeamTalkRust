@@ -5,7 +5,7 @@ use teamtalk::async_api::AsyncConfig;
 #[test]
 fn async_config_defaults() {
     let cfg = AsyncConfig::default();
-    assert_eq!(cfg.poll_timeout_ms, 100);
+    assert_eq!(cfg.poll_timeout_ms, 10);
     assert!(cfg.buffer > 0);
 }
 

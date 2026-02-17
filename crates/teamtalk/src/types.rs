@@ -1367,6 +1367,7 @@ impl From<ffi::FileTransferStatus> for FileTransferStatus {
     }
 }
 
+#[derive(Debug, Clone)]
 /// File transfer information.
 pub struct FileTransfer {
     pub status: FileTransferStatus,
@@ -1535,6 +1536,7 @@ impl ServerProperties {
     }
 }
 
+#[derive(Debug, Clone)]
 /// Client statistics snapshot.
 pub struct ClientStatistics {
     pub udp_ping: i32,
@@ -1812,6 +1814,7 @@ impl BannedUser {
     }
 }
 
+#[derive(Debug, Clone)]
 /// User statistics snapshot.
 pub struct UserStatistics {
     pub voice_recv: i64,
