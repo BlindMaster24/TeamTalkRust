@@ -181,6 +181,15 @@ impl Client {
     }
 
     #[cfg(feature = "mock")]
+    pub fn mock_last_channel_password_for_tests(&self) -> Option<String> {
+        self.auto_reconnect
+            .lock()
+            .unwrap()
+            .last_channel_password
+            .clone()
+    }
+
+    #[cfg(feature = "mock")]
     pub fn mock_apply_event_for_tests(&self, event: Event, source: i32) {
         let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
         raw.nSource = source;

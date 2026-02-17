@@ -550,3 +550,55 @@ fn cmd_error_for_pending_join_returns_to_logged_in_and_clears_join_pending() {
     assert_eq!(pending_login, Some(77));
     assert_eq!(pending_join, None);
 }
+
+#[test]
+fn set_last_channel_does_not_persist_empty_password() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+
+    client.set_last_channel(ChannelId(7), Some(""));
+
+    assert_eq!(client.last_channel(), Some(ChannelId(7)));
+    assert_eq!(client.mock_last_channel_password_for_tests(), None);
+}
+
+#[test]
+fn join_channel_persists_non_empty_password_in_memory_only() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_join_result(55);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let cmd = client.join_channel(ChannelId(9), "secret");
+
+    assert_eq!(cmd, 55);
+    assert_eq!(client.last_channel(), Some(ChannelId(9)));
+    assert_eq!(
+        client.mock_last_channel_password_for_tests(),
+        Some("secret".to_string())
+    );
+    client.clear_last_channel();
+    assert_eq!(client.last_channel(), None);
+    assert_eq!(client.mock_last_channel_password_for_tests(), None);
+}
+
+#[test]
+fn make_channel_returns_zero_when_not_logged_in() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    let channel = Channel::builder("new").build();
+
+    let cmd = client.make_channel(&channel);
+
+    assert_eq!(cmd, 0);
+}
+
+#[test]
+fn kick_user_returns_zero_when_not_logged_in() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+
+    let cmd = client.kick_user(UserId(100), ChannelId(200));
+
+    assert_eq!(cmd, 0);
+}
