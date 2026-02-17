@@ -7,6 +7,8 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+## 1.3.0
+
 ### Added
 - `CommandId` newtype plus `MessageBuilder::send_cmd` and `TextMessage::{send_to_user, send_to_channel, send_broadcast, send_private}` helpers.
 - Cache lookups by username, channel name, and channel path.
