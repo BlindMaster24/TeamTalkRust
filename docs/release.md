@@ -50,3 +50,48 @@ Linux/macOS version-ref check:
 ```bash
 bash ./scripts/check-version-refs.sh
 ```
+
+## CLI Operations
+
+Use this section when you need to inspect or run release steps manually.
+
+### Install Tools
+
+```bash
+cargo install release-plz
+gh --version
+```
+
+### Local Dry Run (No Push)
+
+Run in the repository root:
+
+```bash
+release-plz release-pr --dry-run
+```
+
+This validates the computed version bump and changelog changes without opening
+or updating a PR.
+
+### Trigger Release Workflow Manually
+
+Use GitHub CLI to start the workflow dispatch job:
+
+```bash
+gh workflow run "Release-plz" --ref main
+```
+
+### Inspect Release Workflow Runs
+
+```bash
+gh run list --workflow "Release-plz" --limit 5
+gh run view <run-id>
+gh run watch <run-id>
+```
+
+### Common Troubleshooting
+
+- If release PR cannot be updated, verify Actions permissions are `Read and write`.
+- If publish fails, verify `CRATES_IO_TOKEN` exists and is valid.
+- If docs version sync fails, run `scripts/check-version-refs.ps1` or
+  `bash ./scripts/check-version-refs.sh` locally and fix the diff.
