@@ -10,6 +10,7 @@ This section is for contributors and maintainers.
 - [docs/getting-started.md](getting-started.md): onboarding example and minimal workflow.
 - [docs/configuration.md](configuration.md): SDK binaries, networking, and TLS setup.
 - [docs/tls.md](tls.md): TLS backend selection and troubleshooting.
+- [docs/release.md](release.md): release automation and publishing flow.
 - [docs/dev.md](dev.md): contributor-only guidance.
 
 ## When Adding a Feature
