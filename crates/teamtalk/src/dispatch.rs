@@ -354,6 +354,76 @@ impl<S: EventSource> Dispatcher<S> {
         self.on_event(Event::CmdError, handler)
     }
 
+    /// Adds a typed data handler for a specific event.
+    ///
+    /// The handler receives extracted data if available. If extraction fails,
+    /// the handler is not called.
+    pub fn on_event_data<T, F>(self, event: Event, mut handler: F) -> Self
+    where
+        T: crate::events::FromMessage + 'static,
+        F: for<'a> FnMut(T, EventContext<'a>) -> DispatchFlow + Send + 'static,
+    {
+        self.on_event(event, move |ctx| {
+            if let Some(data) = ctx.message().extract::<T>() {
+                handler(data, ctx)
+            } else {
+                DispatchFlow::Continue
+            }
+        })
+    }
+
+    /// Adds a typed handler for user join events.
+    pub fn on_user_joined_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::User, EventContext<'a>) -> DispatchFlow + Send + 'static,
+    {
+        self.on_event_data(Event::UserJoined, handler)
+    }
+
+    /// Adds a typed handler for user left events.
+    pub fn on_user_left_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::User, EventContext<'a>) -> DispatchFlow + Send + 'static,
+    {
+        self.on_event_data(Event::UserLeft, handler)
+    }
+
+    /// Adds a typed handler for text messages.
+    pub fn on_text_message_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::TextMessage, EventContext<'a>) -> DispatchFlow
+            + Send
+            + 'static,
+    {
+        self.on_event_data(Event::TextMessage, handler)
+    }
+
+    /// Adds a typed handler for channel creation events.
+    pub fn on_channel_created_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::Channel, EventContext<'a>) -> DispatchFlow + Send + 'static,
+    {
+        self.on_event_data(Event::ChannelCreated, handler)
+    }
+
+    /// Adds a typed handler for channel update events.
+    pub fn on_channel_updated_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::Channel, EventContext<'a>) -> DispatchFlow + Send + 'static,
+    {
+        self.on_event_data(Event::ChannelUpdated, handler)
+    }
+
+    /// Adds a typed handler for server update events.
+    pub fn on_server_updated_data<F>(self, handler: F) -> Self
+    where
+        F: for<'a> FnMut(crate::types::ServerProperties, EventContext<'a>) -> DispatchFlow
+            + Send
+            + 'static,
+    {
+        self.on_event_data(Event::ServerUpdate, handler)
+    }
+
     /// Requests the dispatcher loop to stop.
     pub fn stop(&mut self) {
         self.stop = true;
