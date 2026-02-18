@@ -34,29 +34,35 @@ cargo add teamtalk --git https://github.com/BlindMaster24/TeamTalkRust.git --bra
 ## Basic Flow
 
 1. Initialize the SDK.
-2. Connect and login.
+2. Connect and login using organized namespaces.
 3. Poll events and react.
 
-Example:
+Example (Synchronous):
 
 ```rust
 use teamtalk::{Client, Event};
 use teamtalk::types::ChannelId;
-use teamtalk::types::UserId;
-use teamtalk_sys as ffi;
 
 fn main() -> teamtalk::Result<()> {
     teamtalk::init()?;
     let client = Client::new()?;
+    
+    // Commands are organized into logical namespaces
     client.connect("127.0.0.1", 10333, 10333, false)?;
+    
     loop {
-        if let Some((event, _msg)) = client.poll(100) {
+        if let Some((event, msg)) = client.poll(100) {
             match event {
                 Event::ConnectSuccess => {
-                    client.login("RustBot", "guest", "guest", "TeamTalkRust");
+                    client.users().login("RustBot", "guest", "guest", "TeamTalkRust");
                 }
                 Event::MySelfLoggedIn => {
-                    client.join_channel(ChannelId(1), "");
+                    client.channels().join(ChannelId(1), "");
+                }
+                Event::TextMessage => {
+                    if let Some(text) = msg.extract::<teamtalk::types::TextMessage>() {
+                        println!("{}: {}", text.from_username, text.text);
+                    }
                 }
                 Event::ConnectionLost | Event::ConnectFailed => break,
                 _ => {}
@@ -64,6 +70,44 @@ fn main() -> teamtalk::Result<()> {
         }
     }
     Ok(())
+}
+```
+
+### Async Flow (Professional)
+
+For asynchronous projects, `AsyncClient` provides methods that wait for server confirmation:
+
+```rust
+use teamtalk::{Client, Event};
+use teamtalk::types::ChannelId;
+
+#[tokio::main]
+async fn main() -> teamtalk::Result<()> {
+    teamtalk::init()?;
+    let client = Client::new()?;
+    let async_client = client.clone().into_async();
+
+    async_client.connect("127.0.0.1", 10333, 10333, false).await?;
+    
+    // Robust login: waits for MySelfLoggedIn OR CmdError
+    let me = async_client.users().login("RustBot", "guest", "guest", "TeamTalkRust").await?;
+    println!("Logged in as UserId({})", me.id.0);
+
+    async_client.channels().join(ChannelId(1), "").await?;
+    println!("Joined channel!");
+
+    Ok(())
+}
+```
+
+## Working with Payloads
+
+Namespaces return results, but when polling events manually, you can use the ergonomic `extract` method to get typed data:
+
+```rust
+// Use the universal extractor
+if let Some(user) = msg.extract::<User>() { 
+    println!("User {} is here", user.nickname);
 }
 ```
 
@@ -86,19 +130,21 @@ If you plan to use auto-reconnect, prefer `connect_remember` and
 channels, call `join_channel` once with the password or use `set_last_channel`
 to store the channel and password explicitly.
 
-For manual reconnect flows, use `reconnect`, `reconnect_ex`, or
-`reconnect_sys_id`. These helpers apply a disconnect barrier first. Direct
+For manual reconnect flows, use `reconnect`, `reconnect_with_params`, or
+`reconnect_ex`. These helpers apply a disconnect barrier first. Direct
 `connect*` calls now return `CommandFailed` if the client is already connecting
 or connected.
 
-`login` now has a duplicate-call guard: if login/join state is already in
-progress, it returns `0` and skips issuing a duplicate SDK login command.
+Login commands now have duplicate-call guards: if login/join state is already in
+progress, it skip issuing a duplicate SDK login command.
 
-For outgoing text, prefer a single high-level call (`send_to_user`,
-`send_to_channel`, `send_to_all`) for one logical message. The client handles
-multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
-splitting unless you need custom behavior, since repeated sends may trigger
-server flood protection.
+For outgoing text, use the `users()` namespace helpers:
+
+```rust
+client.users().send_to_user(UserId(42), "Hello!");
+```
+
+The client handles multipart chunking (`TextMessage.bMore`) for long messages. 
 
 When querying UDP payload limits, prefer `query_server_max_payload()`. The
 current TeamTalk SDK only supports server query mode (`user_id = 0`).

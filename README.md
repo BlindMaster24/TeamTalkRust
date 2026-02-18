@@ -51,25 +51,47 @@ use teamtalk::types::ChannelId;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     teamtalk::init()?;
-    // If you use a TeamTalk license key, set it before creating Client.
-    // teamtalk::set_license("Company Name", "license-key")?;
     let client = Client::new()?;
+    
+    // Connect to a server
     client.connect("127.0.0.1", 10333, 10333, false)?;
 
     loop {
         if let Some((event, _msg)) = client.poll(100) {
             match event {
                 Event::ConnectSuccess => {
-                    client.login("RustBot", "guest", "guest", "TeamTalkRust");
+                    // API is organized into logical namespaces
+                    client.users().login("RustBot", "guest", "guest", "TeamTalkRust");
                 }
                 Event::MySelfLoggedIn => {
-                    client.join_channel(ChannelId(1), "");
+                    client.channels().join(ChannelId(1), "");
                 }
                 Event::ConnectionLost | Event::ConnectFailed => break,
                 _ => {}
             }
         }
     }
+    Ok(())
+}
+```
+
+### Async/Await Support
+
+For professional projects, `AsyncClient` provides methods that wait for server confirmation and handle errors automatically:
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    teamtalk::init()?;
+    let client = Client::new()?;
+    let async_client = client.into_async();
+
+    async_client.connect("127.0.0.1", 10333, 10333, false).await?;
+    
+    // Robust login: waits for confirmation from server
+    async_client.users().login("RustBot", "guest", "guest", "TeamTalkRust").await?;
+    async_client.channels().join(ChannelId(1), "").await?;
+
     Ok(())
 }
 ```

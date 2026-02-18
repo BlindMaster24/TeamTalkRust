@@ -30,6 +30,12 @@ cargo build --no-default-features --features tls-rustls
 
 ## Built-In Helpers (No Feature Flags)
 
+- Namespaced API: Organized methods into logical groups: `users()`, `channels()`, `audio()`, `server()`, `files()`, `desktop()`, `video()`, and `system()`. Available via both `Client` and `AsyncClient`.
+- Robust Async Engine: `execute_command` and `execute_void_command` (under `async` feature) provide atomic command execution with automatic server confirmation tracking and error correlation.
+- Async Namespaces: Every namespace has an asynchronous version (e.g., `async_client.users()`) with methods returning `Future` that resolve only after server confirmation.
+- Typed Dispatcher: `Dispatcher` now supports `on_*_data` handlers (e.g., `on_text_message_data`) that pass extracted, typed payloads directly to the closure.
+- Ergonomic Extraction: Universal `FromMessage` trait and `Message::extract<T>()` for type-safe data retrieval from any event message.
+- One-time Subscriptions: `SubscriptionBuilder::once()` for handlers that automatically unsubscribe after their first execution.
 - Connection state tracking via `ConnectionState` and `Client::connection_state`.
 - Hooks API via `ClientHooks` for event callbacks.
 - Poll helpers: `Client::poll_until` and `Client::wait_for`.

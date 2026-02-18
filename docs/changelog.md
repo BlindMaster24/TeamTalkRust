@@ -7,6 +7,20 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+### Added
+- **Namespaced API**: Organized all client methods into logical namespaces like `client.users()`, `client.channels()`, `client.audio()`, `client.server()`, `client.files()`, `client.desktop()`, `client.video()`, and `client.system()`.
+- **Professional Async Engine**: Implemented `execute_command` and `execute_void_command` in `Client` (under `async` feature) for robust command tracking with automatic error correlation via `Message::source()`.
+- **Async Namespaces**: All namespaces now have asynchronous counterparts (e.g., `async_client.users().login().await`) that return typed results after server confirmation.
+- **Ergonomic Data Extraction**: Added `FromMessage` trait and `Message::extract<T>()` method for type-safe payload retrieval from events.
+- **Typed Dispatcher Handlers**: New `on_*_data` handlers in `Dispatcher` (e.g., `on_user_joined_data`) that provide extracted payload (like `User`) directly to the closure.
+- **One-time Subscriptions**: Added `.once()` to `SubscriptionBuilder` for auto-removing handlers after the first match.
+- **Async Wait Primitives**: Added `wait_for_async` and `wait_for_data_async` to `Client` and `AsyncClient`.
+- **Message Accessors**: Added `Message::event()` and `Message::source()` for easier event inspection.
+
+### Changed
+- Refactored all namespaces to use `Arc<Client>` handles, making them `Clone`, `Send`, and `Sync`.
+- `AsyncClient` now acts as a professional event stream wrapper while proxying command execution to robust `Arc<Client>` primitives.
+
 ## 1.3.0
 
 ### Added
