@@ -7,6 +7,25 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+## [2.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v1.3.0...v2.0.0) - 2026-02-18
+
+### Added
+
+- add dispatcher middleware and tracing instrumentation
+- implement professional typestate facade and declarative event macro
+- implement async audio streaming via AsyncRead and AsyncWrite (tokio-only)
+- implement professional Namespaced API and robust async command execution
+- add typed data handlers to Dispatcher
+- add async wait_for and FromMessage ergonomic improvements
+
+### Fixed
+
+- *(async)* import SinkExt for futures mpsc sender
+
+### Other
+
+- optimize performance and improve API ergonomics
+
 ### Added
 - **Namespaced API**: Organized all client methods into logical namespaces like `client.users()`, `client.channels()`, `client.audio()`, `client.server()`, `client.files()`, `client.desktop()`, `client.video()`, and `client.system()`.
 - **Professional Async Engine**: Implemented `execute_command` and `execute_void_command` in `Client` (under `async` feature) for robust command tracking with automatic error correlation via `Message::source()`.
