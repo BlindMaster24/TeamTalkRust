@@ -19,6 +19,7 @@ pub mod hooks;
 pub mod hotkeys;
 pub mod manager;
 pub mod media;
+pub mod namespaces;
 pub mod recording;
 pub mod registry;
 pub mod server;

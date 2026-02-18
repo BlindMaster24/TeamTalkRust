@@ -75,6 +75,12 @@ impl FromMessage for ErrorMessage {
     }
 }
 
+impl FromMessage for () {
+    fn from_message(_: &crate::client::Message) -> Option<Self> {
+        Some(())
+    }
+}
+
 /// Client event emitted by `Client::poll`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {

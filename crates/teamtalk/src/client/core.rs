@@ -12,6 +12,12 @@ use super::bus;
 use super::cache;
 use super::hooks;
 
+#[cfg(feature = "async-tokio")]
+use tokio::sync::oneshot;
+
+#[cfg(all(feature = "async", not(feature = "async-tokio")))]
+use futures::channel::oneshot;
+
 static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Copy, Debug)]
@@ -359,6 +365,46 @@ impl Client {
     /// Returns the number of active event subscriptions.
     pub fn event_subscription_count(&self) -> usize {
         self.bus.lock().unwrap().len()
+    }
+
+    /// Accessor for user management operations.
+    pub fn users(self: &Arc<Self>) -> super::namespaces::UsersNamespace {
+        super::namespaces::UsersNamespace::new(self.clone())
+    }
+
+    /// Accessor for channel management operations.
+    pub fn channels(self: &Arc<Self>) -> super::namespaces::ChannelsNamespace {
+        super::namespaces::ChannelsNamespace::new(self.clone())
+    }
+
+    /// Accessor for audio operations.
+    pub fn audio(self: &Arc<Self>) -> super::namespaces::AudioNamespace {
+        super::namespaces::AudioNamespace::new(self.clone())
+    }
+
+    /// Accessor for server operations.
+    pub fn server(self: &Arc<Self>) -> super::namespaces::ServerNamespace {
+        super::namespaces::ServerNamespace::new(self.clone())
+    }
+
+    /// Accessor for file transfer operations.
+    pub fn files(self: &Arc<Self>) -> super::namespaces::FilesNamespace {
+        super::namespaces::FilesNamespace::new(self.clone())
+    }
+
+    /// Accessor for desktop sharing operations.
+    pub fn desktop(self: &Arc<Self>) -> super::namespaces::DesktopNamespace {
+        super::namespaces::DesktopNamespace::new(self.clone())
+    }
+
+    /// Accessor for video operations.
+    pub fn video(self: &Arc<Self>) -> super::namespaces::VideoNamespace {
+        super::namespaces::VideoNamespace::new(self.clone())
+    }
+
+    /// Accessor for system and licensing operations.
+    pub fn system(self: &Arc<Self>) -> super::namespaces::SystemNamespace {
+        super::namespaces::SystemNamespace::new(self.clone())
     }
 
     /// Replaces the current hook set.
@@ -727,6 +773,16 @@ pub struct Message {
 }
 
 impl Message {
+    /// Returns the event associated with this message.
+    pub fn event(&self) -> Event {
+        self.event
+    }
+
+    /// Returns the source ID (command ID or user ID) associated with this message.
+    pub fn source(&self) -> i32 {
+        self.raw.nSource
+    }
+
     fn has_tt_type(&self, expected: ffi::TTType) -> bool {
         self.raw.ttType == expected
     }
@@ -734,16 +790,6 @@ impl Message {
     /// Wraps a raw TeamTalk message.
     pub(crate) fn from_raw(event: crate::events::Event, raw: ffi::TTMessage) -> Self {
         Self { event, raw }
-    }
-
-    /// Returns the originating event for this message.
-    pub fn event(&self) -> crate::events::Event {
-        self.event
-    }
-
-    /// Returns the source user id for the message.
-    pub fn source(&self) -> i32 {
-        self.raw.nSource
     }
 
     /// Returns the text message payload if present.
@@ -1023,6 +1069,110 @@ impl Client {
     /// Polls until a specific event arrives or the timeout expires.
     pub fn poll_until_event(&self, event: Event, timeout_ms: i32) -> Option<Message> {
         self.wait_for(event, timeout_ms)
+    }
+
+    /// Registers a one-time notification for a specific event.
+    ///
+    /// Returns a Future that resolves when the event occurs.
+    #[cfg(feature = "async")]
+    pub fn notify_on(
+        self: &Arc<Self>,
+        event: Event,
+    ) -> impl std::future::Future<Output = Result<Message>> {
+        let (tx, rx) = oneshot::channel();
+        let mut tx = Some(tx);
+        self.on_event(event).once().subscribe(move |ctx| {
+            if let Some(tx) = tx.take() {
+                let _ = tx.send(ctx.message().clone());
+            }
+        });
+
+        async move {
+            rx.await.map_err(|_| Error::IoError {
+                message: "Async worker dropped or subscription cancelled".into(),
+            })
+        }
+    }
+
+    /// Waits for a specific event to occur.
+    #[cfg(feature = "async")]
+    pub async fn wait_for_async(self: &Arc<Self>, event: Event) -> Result<Message> {
+        self.notify_on(event).await
+    }
+
+    /// Waits for a specific event and extracts its typed data.
+    #[cfg(feature = "async")]
+    pub async fn wait_for_data_async<T: crate::events::FromMessage>(
+        self: &Arc<Self>,
+        event: Event,
+    ) -> Result<T> {
+        let msg = self.wait_for_async(event).await?;
+        msg.extract_or_error()
+    }
+
+    /// Executes a command and waits for a success event OR a command error with matching ID.
+    #[cfg(feature = "async")]
+    pub async fn execute_command<F, T>(self: &Arc<Self>, success_event: Event, f: F) -> Result<T>
+    where
+        F: FnOnce() -> i32,
+        T: crate::events::FromMessage + 'static,
+    {
+        let (tx, rx) = oneshot::channel();
+        let mut tx = Some(tx);
+
+        let cmd_id_cell = Arc::new(std::sync::atomic::AtomicI32::new(0));
+        let cmd_id_getter = cmd_id_cell.clone();
+
+        self.on_any()
+            .once()
+            .filter(move |ctx| {
+                let ev = ctx.event();
+                let msg = ctx.message();
+                let target_cmd_id = cmd_id_getter.load(Ordering::Relaxed);
+
+                if ev == success_event {
+                    // For success events, TeamTalk also puts command ID in nSource
+                    return msg.source() == target_cmd_id;
+                }
+                if ev == Event::CmdError {
+                    return msg.source() == target_cmd_id;
+                }
+                false
+            })
+            .subscribe(move |ctx| {
+                if let Some(tx) = tx.take() {
+                    let _ = tx.send(ctx.message().clone());
+                }
+            });
+
+        let cmd_id = f();
+        if cmd_id <= 0 {
+            return Err(Error::InvalidParam);
+        }
+        cmd_id_cell.store(cmd_id, Ordering::Relaxed);
+
+        let msg = rx.await.map_err(|_| Error::IoError {
+            message: "Async worker dropped".into(),
+        })?;
+
+        if msg.event() == Event::CmdError {
+            let err = msg.extract::<crate::types::ErrorMessage>().unwrap();
+            return Err(Error::ClientError {
+                code: err.code,
+                message: err.message,
+            });
+        }
+
+        msg.extract_or_error()
+    }
+
+    /// Executes a command that doesn't return data.
+    #[cfg(feature = "async")]
+    pub async fn execute_void_command<F>(self: &Arc<Self>, success_event: Event, f: F) -> Result<()>
+    where
+        F: FnOnce() -> i32,
+    {
+        self.execute_command::<_, ()>(success_event, f).await
     }
 
     fn update_state_for_event(&self, event: Event, msg: &Message) {
