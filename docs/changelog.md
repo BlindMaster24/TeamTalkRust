@@ -16,6 +16,7 @@ public API with compatibility expectations for downstream users.
 - **One-time Subscriptions**: Added `.once()` to `SubscriptionBuilder` for auto-removing handlers after the first match.
 - **Async Wait Primitives**: Added `wait_for_async` and `wait_for_data_async` to `Client` and `AsyncClient`.
 - **Async Audio Streaming**: Implemented `AudioStreamReader` (`AsyncRead`) and `AudioStreamWriter` (`AsyncWrite`) for idiomatic I/O operations on audio streams.
+- **Typestate Facade**: Introduced `TeamTalk<S>` for compile-time safety during connection and login sequences (`Idle` -> `Connected` -> `LoggedIn`).
 - **Message Accessors**: Added `Message::event()` and `Message::source()` for easier event inspection.
 
 ### Changed

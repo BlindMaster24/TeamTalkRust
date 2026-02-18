@@ -100,6 +100,25 @@ async fn main() -> teamtalk::Result<()> {
 }
 ```
 
+### Type-Safe Facade (Advanced)
+
+For maximum safety, use the `TeamTalk<S>` facade to enforce the correct sequence
+of operations at compile time:
+
+```rust
+use teamtalk::{TeamTalk, state::LoggedIn};
+
+async fn run_safe_bot(client: Client) -> Result<()> {
+    let (bot, me) = TeamTalk::new(client)
+        .connect("127.0.0.1", 10333, 10333, false).await?
+        .login("Bot", "guest", "guest", "SafeBot").await?;
+    
+    // `bot` is now in `LoggedIn` state. Methods like `channels()` are available.
+    bot.channels().join(ChannelId(1), "").await?;
+    Ok(())
+}
+```
+
 ### Audio Streaming
 
 The library provides a way to interact with audio streams using standard Rust I/O traits:
