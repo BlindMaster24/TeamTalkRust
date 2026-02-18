@@ -2,6 +2,8 @@
 pub use teamtalk_sys as ffi;
 
 pub mod audio;
+#[cfg(feature = "async-tokio")]
+pub mod audio_stream;
 #[cfg(feature = "mock")]
 pub mod backend;
 #[cfg(not(feature = "mock"))]

@@ -15,6 +15,7 @@ public API with compatibility expectations for downstream users.
 - **Typed Dispatcher Handlers**: New `on_*_data` handlers in `Dispatcher` (e.g., `on_user_joined_data`) that provide extracted payload (like `User`) directly to the closure.
 - **One-time Subscriptions**: Added `.once()` to `SubscriptionBuilder` for auto-removing handlers after the first match.
 - **Async Wait Primitives**: Added `wait_for_async` and `wait_for_data_async` to `Client` and `AsyncClient`.
+- **Async Audio Streaming**: Implemented `AudioStreamReader` (`AsyncRead`) and `AudioStreamWriter` (`AsyncWrite`) for idiomatic I/O operations on audio streams.
 - **Message Accessors**: Added `Message::event()` and `Message::source()` for easier event inspection.
 
 ### Changed

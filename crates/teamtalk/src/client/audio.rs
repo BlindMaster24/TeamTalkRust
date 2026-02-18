@@ -7,6 +7,9 @@ use std::net::UdpSocket;
 use std::sync::{Arc, Mutex};
 use teamtalk_sys as ffi;
 
+#[cfg(feature = "async-tokio")]
+pub use super::audio_stream::{AudioStreamConfig, AudioStreamReader, AudioStreamWriter};
+
 /// Audio device selection preset.
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDeviceProfile {

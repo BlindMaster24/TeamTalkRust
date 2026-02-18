@@ -1,6 +1,8 @@
 //! Audio management namespace.
 use super::define_namespace;
 use crate::client::audio::{AudioBlockSink, AudioBlockSubscription, AudioDeviceProfile};
+#[cfg(feature = "async-tokio")]
+use crate::client::audio::{AudioStreamConfig, AudioStreamReader, AudioStreamWriter};
 use crate::types::{AudioPreprocessor, SoundDevice, UserId};
 use teamtalk_sys as ffi;
 
@@ -152,6 +154,18 @@ define_async_namespace!(AsyncAudioNamespace);
 #[cfg(feature = "async")]
 impl AsyncAudioNamespace {
     // TODO: Implement proper async commands with success confirmation where applicable
+
+    /// Returns an async reader for a user's audio stream.
+    #[cfg(feature = "async-tokio")]
+    pub fn reader(&self, user_id: UserId, stream_types: u32) -> AudioStreamReader<'_> {
+        AudioStreamReader::new(&self.client, user_id, stream_types)
+    }
+
+    /// Returns an async writer for inserting audio into the mixer.
+    #[cfg(feature = "async-tokio")]
+    pub fn writer(&self, config: AudioStreamConfig) -> AudioStreamWriter {
+        AudioStreamWriter::new(self.client.clone(), config)
+    }
 
     /// Returns available sound devices.
     pub fn devices(&self) -> Vec<SoundDevice> {

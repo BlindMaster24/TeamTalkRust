@@ -100,6 +100,25 @@ async fn main() -> teamtalk::Result<()> {
 }
 ```
 
+### Audio Streaming
+
+The library provides a way to interact with audio streams using standard Rust I/O traits:
+
+```rust
+use tokio::io::AsyncReadExt;
+use teamtalk::audio::AudioStreamConfig;
+
+// Read a user's audio stream into a file
+let mut reader = async_client.audio().reader(user_id, teamtalk_sys::STREAMTYPE_VOICE as u32);
+let mut file = tokio::fs::File::create("user_voice.pcm").await?;
+tokio::io::copy(&mut reader, &mut file).await?;
+
+// Write a PCM file to the microphone stream
+let mut writer = async_client.audio().writer(AudioStreamConfig::default());
+let mut file = tokio::fs::File::open("music.pcm").await?;
+tokio::io::copy(&mut file, &mut writer).await?;
+```
+
 ## Working with Payloads
 
 Namespaces return results, but when polling events manually, you can use the ergonomic `extract` method to get typed data:
