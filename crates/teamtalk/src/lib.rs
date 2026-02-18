@@ -6,8 +6,12 @@ pub mod client;
 pub mod events;
 pub mod extensions;
 pub mod loader;
+pub mod macros;
 pub mod types;
 pub mod utils;
+
+#[cfg(feature = "async")]
+pub use client::state_machine::TeamTalk;
 
 #[cfg(feature = "async")]
 pub mod async_api;

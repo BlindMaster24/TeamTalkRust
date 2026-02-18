@@ -216,6 +216,19 @@ impl AsyncClient {
     {
         self.client.execute_command(success_event, f).await
     }
+
+    /// Connects to a server and waits for success.
+    pub async fn connect(
+        &self,
+        host: &str,
+        tcp_port: i32,
+        udp_port: i32,
+        encrypted: bool,
+    ) -> crate::events::Result<()> {
+        self.client
+            .connect_async(host, tcp_port, udp_port, encrypted)
+            .await
+    }
 }
 
 impl Stream for AsyncClient {

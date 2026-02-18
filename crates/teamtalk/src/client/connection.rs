@@ -433,6 +433,21 @@ impl Client {
         }
     }
 
+    /// Connects to a server asynchronously and waits for success.
+    #[cfg(feature = "async")]
+    pub async fn connect_async(
+        self: &std::sync::Arc<Self>,
+        host: &str,
+        tcp: i32,
+        udp: i32,
+        encrypted: bool,
+    ) -> Result<(), crate::events::Error> {
+        let fut = self.notify_on(crate::events::Event::ConnectSuccess);
+        self.connect(host, tcp, udp, encrypted)?;
+        fut.await?;
+        Ok(())
+    }
+
     /// Connects without encryption.
     pub fn connect_auto(&self, host: &str, tcp: i32, udp: i32) -> Result<(), crate::events::Error> {
         self.connect(host, tcp, udp, false)

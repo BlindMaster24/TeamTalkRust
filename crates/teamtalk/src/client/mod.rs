@@ -25,6 +25,7 @@ pub mod namespaces;
 pub mod recording;
 pub mod registry;
 pub mod server;
+pub mod state_machine;
 pub mod system;
 pub mod users;
 pub mod video;
