@@ -82,6 +82,11 @@ impl AsyncClient {
         let poll_timeout = config.poll_timeout_ms;
 
         let worker = thread::spawn(move || {
+            #[cfg(feature = "logging")]
+            let span = tracing::debug_span!("async_worker");
+            #[cfg(feature = "logging")]
+            let _enter = span.enter();
+
             while !worker_stop.load(Ordering::Relaxed) {
                 if let Some((event, message)) = worker_client.poll(poll_timeout) {
                     #[cfg(feature = "async-tokio")]

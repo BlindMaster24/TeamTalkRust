@@ -124,6 +124,21 @@ pub enum DispatchFlow {
     Stop,
 }
 
+/// Middleware trait for intercepting events before they reach handlers.
+pub trait Middleware: Send {
+    /// Handles an event. Return `DispatchFlow::Stop` to prevent further processing.
+    fn handle(&mut self, ctx: &EventContext<'_>) -> DispatchFlow;
+}
+
+impl<F> Middleware for F
+where
+    F: for<'a> FnMut(&EventContext<'a>) -> DispatchFlow + Send,
+{
+    fn handle(&mut self, ctx: &EventContext<'_>) -> DispatchFlow {
+        (self)(ctx)
+    }
+}
+
 /// Event context passed into dispatcher handlers.
 #[derive(Clone, Copy)]
 pub struct EventContext<'a> {
@@ -225,6 +240,7 @@ impl ReconnectState {
 pub struct Dispatcher<S: EventSource> {
     source: S,
     handlers: Vec<HandlerEntry>,
+    middlewares: Vec<Box<dyn Middleware>>,
     poll_timeout_ms: i32,
     reconnect: Option<ReconnectState>,
     stop: bool,
@@ -242,10 +258,22 @@ impl<S: EventSource> Dispatcher<S> {
         Self {
             source,
             handlers: Vec::new(),
+            middlewares: Vec::new(),
             poll_timeout_ms: config.poll_timeout_ms,
             reconnect,
             stop: false,
         }
+    }
+
+    /// Adds a middleware to the dispatcher.
+    pub fn add_middleware<M: Middleware + 'static>(&mut self, middleware: M) {
+        self.middlewares.push(Box::new(middleware));
+    }
+
+    /// Adds a middleware and returns the dispatcher for chaining.
+    pub fn with_middleware<M: Middleware + 'static>(mut self, middleware: M) -> Self {
+        self.add_middleware(middleware);
+        self
     }
 
     /// Returns the underlying event source.
@@ -465,6 +493,13 @@ impl<S: EventSource> Dispatcher<S> {
             message: &message,
             client,
         };
+
+        for middleware in self.middlewares.iter_mut() {
+            if middleware.handle(&ctx) == DispatchFlow::Stop {
+                return DispatchFlow::Stop;
+            }
+        }
+
         let mut flow = DispatchFlow::Continue;
         for handler in self.handlers.iter_mut() {
             if handler.matches(&event) && (handler.handler)(ctx) == DispatchFlow::Stop {

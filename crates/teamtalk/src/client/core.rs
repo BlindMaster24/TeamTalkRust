@@ -1117,6 +1117,11 @@ impl Client {
         F: FnOnce() -> i32,
         T: crate::events::FromMessage + 'static,
     {
+        #[cfg(feature = "logging")]
+        let span = tracing::debug_span!("execute_command", ?success_event);
+        #[cfg(feature = "logging")]
+        let _enter = span.enter();
+
         let (tx, rx) = oneshot::channel();
         let mut tx = Some(tx);
 
