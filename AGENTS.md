@@ -185,6 +185,13 @@
   - Components list: `rustup component list` and `rustup component list --installed`
   - Targets list: `rustup target list` and `rustup target list --installed`
 - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+## Command Invocation Conventions
+- When a task requires multiple shell commands, run them sequentially and keep each command explicit.
+- In PowerShell, use `;` as the command separator (not `&&`).
+- Prefer one logical check per command for readable logs (for example: `cargo fmt`, then `cargo check`, then `cargo test`).
+- For long workflows, record the exact command order in commit/PR notes so reruns are reproducible.
+- For skill invocations in chat, call one skill per line (for example: `$teamtalk-h-doc-audit`) and wait for completion before triggering the next step.
+- If a step is destructive (force-push, branch delete, reset), require explicit user confirmation before running.
 ## Cargo Help & Command Discovery
 - `cargo --list` lists all installed Cargo subcommands (including third-party ones like `clippy`, `fmt`, `llvm-cov`, `sqlx`).
 - `cargo help` shows general usage and built-in commands.
