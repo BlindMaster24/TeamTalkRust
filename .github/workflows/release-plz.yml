@@ -178,6 +178,7 @@ jobs:
         uses: release-plz/action@11d4f18b632747e19114290c8bdfcba149ae9b85 # v0.5.127
         with:
           command: release
+          dry_run: ${{ inputs.dry_run }}
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token || env.RELEASE_PLZ_GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}

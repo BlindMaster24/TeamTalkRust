@@ -86,7 +86,38 @@ docs, and dependency updates.
 Install tools:
 
 ```bash
-cargo install just cargo-edit
+cargo install just cargo-edit cargo-outdated cargo-llvm-cov
+```
+
+Daily profile:
+
+```bash
+just quick
+just test-feature async
+just release-status
+```
+
+Weekly maintenance:
+
+```bash
+just deps-outdated
+just deps-safe-cycle
+just runs-fail
+```
+
+Pre-release:
+
+```bash
+just qa-full
+just release-dry
+just release-watch
+```
+
+Release day (explicit publish):
+
+```bash
+just release-run
+just release-watch
 ```
 
 Common commands:
@@ -94,9 +125,7 @@ Common commands:
 ```bash
 just dod
 just ci
-just quick
 just test
-just test-feature async
 just doc
 just search tokio
 just info release-plz
@@ -111,6 +140,12 @@ just deps-refresh-compatible
 # include majors
 just deps-refresh-major
 ```
+
+Safety model for release commands:
+
+- `release-status`, `release-watch`, `pr-*`, and `runs-*` are read/inspect only.
+- `release-dry` triggers manual release workflow with `dry_run=true`.
+- `release-run` triggers manual release workflow with `dry_run=false` (publish path).
 
 About `set positional-arguments` in `justfile`:
 
