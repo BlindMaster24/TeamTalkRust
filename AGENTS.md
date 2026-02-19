@@ -159,6 +159,24 @@
   - Required footer for explicit migration signal: `BREAKING CHANGE: <what changed and how to migrate>`.
   - Keep migration note concise and user-actionable (what changed, why, replacement pattern).
   - Do not hide breaking notes only in PR comments; keep them in commit message and release notes.
+- If release PR shows major bump but changelog has no `Breaking` section:
+  - Cause: semver-check detects API break, but changelog groups are still based on commit parser rules.
+  - Fix sequence:
+    1. Create a new commit touching the target package path (for `teamtalk`: `crates/teamtalk/**`).
+    2. Use a breaking commit headline (`type(scope)!: ...`).
+    3. Add `BREAKING CHANGE:` footer with migration guidance.
+    4. Push to `main` and wait for `Release-plz PR` workflow to update the existing `release-plz/*` PR.
+  - Verification:
+    - `gh run list --workflow "Release-plz" --limit 5`
+    - `gh pr view <number> --json body,title,url`
+    - Confirm both:
+      - PR body contains semver-check break details.
+      - Generated changelog block contains `### Breaking`.
+- Practical release-plz troubleshooting order:
+  1. Confirm action run status first (workflow success/failure).
+  2. If workflow is green but output is unexpected, inspect PR body/changelog block.
+  3. Treat semver-check findings as versioning signals, not action failures.
+  4. Avoid manual changelog edits in `main`; prefer parser-driven commits so release-plz regenerates deterministically.
 ## API Review Checklist (before shipping)
 - Backward compatibility assessed (breaking vs additive).
 - Deprecation plan and migration notes where needed.
