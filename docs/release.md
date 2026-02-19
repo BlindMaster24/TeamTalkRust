@@ -153,6 +153,12 @@ Use GitHub CLI to start the workflow dispatch job:
 gh workflow run "Release-plz" --ref main
 ```
 
+Manual dry-run (no publish):
+
+```bash
+gh workflow run "Release-plz" --ref main -f dry_run=true
+```
+
 ### Inspect Release Workflow Runs
 
 ```bash
