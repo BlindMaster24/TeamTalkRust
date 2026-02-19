@@ -26,6 +26,12 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
+      - name: Configure git auth for release-plz clones
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release-pr
         id: release-plz
         uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
@@ -84,6 +90,12 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
+      - name: Configure git auth for release-plz clones
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release
         uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
         with:
@@ -111,6 +123,12 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
+      - name: Configure git auth for release-plz clones
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release
         uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
         with:
