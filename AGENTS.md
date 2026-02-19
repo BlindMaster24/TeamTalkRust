@@ -302,6 +302,7 @@
 
 ## Agent Documentation Workflow
 - Before editing docs, re-read `AGENTS.md` and confirm current expectations.
+- Before any release/versioning/release-plz task, re-read `docs/release.md` fully.
 - If the user adds new requirements, ask whether they should be recorded in `AGENTS.md`.
 - If you learn a new permanent rule or workflow, ask the user to confirm adding it to `AGENTS.md`.
 - If the user requests changes that conflict with existing rules, ask which rule to keep and update `AGENTS.md` accordingly.
