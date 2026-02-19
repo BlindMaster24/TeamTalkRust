@@ -1,0 +1,458 @@
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Collapse sidebar category 'Extra'
+Releasing binaries
+Single changelog
+Single git tag
+Yanked packages
+Media
+Release-plz in the wild
+Home pageExtra
+Extra
+This section contains information about possible use cases of release-plz. You will also learn how to use release-plz with other tools, to achieve awesome things.
+Edit this page
+Previous
+« Troubleshooting
+Next
+Releasing binaries »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Collapse sidebar category 'Extra'
+Releasing binaries
+Single changelog
+Single git tag
+Yanked packages
+Media
+Release-plz in the wild
+Home pageExtraReleasing binaries
+Releasing binaries
+Why release-plz doesn't release binariesDirect link to Why release-plz doesn't release binaries
+Since release-plz already publishes GitHub releases, would it make sense for it to build the binaries of the project and publish them to the release assets? 🤔
+Not really. Releasing binaries requires setting a CI job different from the one used to run release-plz release because:
+• release-plz release should run once (for example on an ubuntu CI image);
+• building binaries requires a different CI image for each platform (e.g. ubuntu, macos, windows).
+Since users have to set up an additional CI job to build binaries, using release-plz would not be more convenient than using a different tool. Plus, releasing binaries is a complex task, which is already well-handled by other tools in the Rust ecosystem. For these reasons, release-plz doesn't build and release binaries.
+The next section explains how to use other tools to build and release binaries after release-plz released the new version of your project.
+Releasing binaries after releaseDirect link to Releasing binaries after release
+If you are using release-plz to release your project, you can run a CI job on the "tag" or "release" events to build and release the binaries.
+Here is an example based on release-plz's own cd.yml workflow:
+INFO
+To use this in your project, change:
+• the repository owner from "MyOwner" to your username/organisation.
+• the release name from "my-bin-v" to the release name of your binary according to git_release_name.
+name: CD # Continuous Deployment
+
+on:
+  release:
+    types: [published]
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: -D warnings
+  RUSTUP_MAX_RETRIES: 10
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  upload-assets:
+    name: ${{ matrix.target }}
+    if: github.repository_owner == 'MyOwner' && startsWith(github.event.release.name, 'my-bin-v')
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-22.04
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-22.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+        if: startsWith(matrix.os, 'ubuntu') && !contains(matrix.target, '-musl')
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+        if: contains(matrix.target, '-musl')
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
+        if: endsWith(matrix.target, 'windows-msvc')
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: my-bin
+          target: ${{ matrix.target }}
+          tar: all
+          zip: windows
+          token: ${{ secrets.GITHUB_TOKEN }}
+Copy code to clipboard
+Some projects to consider for this task:
+• upload-rust-binary-action: GitHub Action for building and uploading Rust binary to GitHub Releases.
+• cargo-dist: shippable application packaging for Rust.
+CAUTION
+To release a binary after release, the release-plz GitHub Action needs to trigger further workflow runs.
+Edit this page
+Previous
+« Extra
+Next
+Single changelog »
+Why release-plz doesn't release binaries
+Releasing binaries after release
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Collapse sidebar category 'Extra'
+Releasing binaries
+Single changelog
+Single git tag
+Yanked packages
+Media
+Release-plz in the wild
+Home pageExtraSingle changelog
+Single changelog
+One packageDirect link to One package
+If you have a workspace with multiple packages, and you want to keep track of the changes of just one package, you can customize your release-plz.toml file like this:
+[workspace]
+# disable the changelog for all packages
+changelog_update = false
+
+[[package]]
+name = "my-important-package"
+# enable the changelog for this package
+changelog_update = true
+# set the path of the changelog to the root of the repository
+changelog_path = "./CHANGELOG.md"
+Copy code to clipboard
+To include commits of other packages in the changelog of your main package, use the changelog_include field.
+All packagesDirect link to All packages
+If you have a workspace with multiple packages, and you want to group all the changes in a single changelog, you can customize your release-plz.toml file like this:
+[workspace]
+# set the path of all the crates to the changelog to the root of the repository
+changelog_path = "./CHANGELOG.md"
+
+[changelog]
+body = """
+
+## `{{ package }}` - [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+{%- if commit.scope -%}
+- *({{commit.scope}})* {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}{%- if commit.links %} ({% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}){% endif %}
+{% else -%}
+- {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}
+{% endif -%}
+{% endfor -%}
+{% endfor -%}
+"""
+Toggle word wrap
+Copy code to clipboard
+The difference with the default changelog body configuration is that the header now also contains the {{package}}.
+The entries will be order depending on the release order: if package_a depends on package_b, the changes of package_a are listed after package_b. For example, if you have a workspace with various libraries and one binary that depends on all the libraries, the changes of the binary will be placed first.
+In this way, package_a and package_b changelogs are in the same file. Note that the changelog will contain duplicate changes. If you want to merge updates of different packages into one, check the changelog_include field.
+Here's an example of the changelog output:
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## `marco-test-two` - [0.4.20](https://github.com/marcoieni/rust-workspace-example/compare/marco-test-two-v0.4.19...marco-test-two-v0.4.20) - 2024-05-17
+
+### Added
+- new feature
+
+## `marco-test-three` - [0.1.16](https://github.com/marcoieni/rust-workspace-example/compare/marco-test-three-v0.1.15...marco-test-three-v0.1.16) - 2024-05-17
+
+### Other
+- Small change
+Toggle word wrap
+Copy code to clipboard
+TIP
+You can enable the changelog for a subset of packages only:
+[workspace]
+# Disable the changelog for all packages.
+changelog_update = false
+changelog_path = "./CHANGELOG.md"
+
+[[package]]
+name = "package_a"
+# Enable the changelog for this package (override default).
+changelog_update = true
+Copy code to clipboard
+TIP
+You can customize the changelog path for each package. In the following example, the changes of package_b will be added to its own changelog, instead of being included in ./CHANGELOG.md like all the other packages.
+[workspace]
+changelog_path = "./CHANGELOG.md"
+
+[[package]]
+name = "package_b"
+changelog_path = "package_b/CHANGELOG.md"
+Copy code to clipboard
+Edit this page
+Previous
+« Releasing binaries
+Next
+Single git tag »
+One package
+All packages
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Collapse sidebar category 'Extra'
+Releasing binaries
+Single changelog
+Single git tag
+Yanked packages
+Media
+Release-plz in the wild
+Home pageExtraSingle git tag
+Single git tag
+By default, Release-plz creates a git tag for every crate that it releases. If you want to create a single tag for all the crates in your workspace, you can use the following release-plz.toml configuration:
+[workspace]
+# Disable git releases for all packages by default
+git_release_enable = false
+
+# Disable git tags for all packages by default
+git_tag_enable = false
+
+# Options for the package I care the most, e.g. `my_main_package`.
+[[package]]
+name = "my_main_package"
+# (Optional) Customize the git tag name to remove the `my_main_package` prefix.
+git_tag_name = "v{{ version }}"
+
+# Enable git tags for this package
+git_tag_enable = true
+
+# Enable git releases for this package
+git_release_enable = true
+Copy code to clipboard
+With this configuration, release-plz only creates the git tag when releasing my_main_package. Creating git tags for the other packages is disabled because they inherit the workspace settings.
+Edit this page
+Previous
+« Single changelog
+Next
+Yanked packages »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Collapse sidebar category 'Extra'
+Releasing binaries
+Single changelog
+Single git tag
+Yanked packages
+Media
+Release-plz in the wild
+Home pageExtraYanked packages
+Yanked packages
+Due to this issue, release-plz can't detect yanked packages.
+If you run release-plz on a package that has been yanked, you will see the message:
+the local package has already a different version with respect to the registry package,
+so release-plz will not update it
+Copy code to clipboard
+This is because release-plz thinks that the latest published version of your packages is the latest non-yanked version.
+If the current version of your package is yanked, please update the version of your package to the next version manually. To do this, you can use the cargo set-version command from cargo-edit.
+Edit this page
+Previous
+« Single git tag
+Next
+Media »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.

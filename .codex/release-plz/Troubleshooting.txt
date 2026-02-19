@@ -1,0 +1,72 @@
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageTroubleshooting
+Troubleshooting
+Release-plz GitHub action started misbehavingDirect link to Release-plz GitHub action started misbehaving
+Did your release-plz GitHub action started misbehaving after a Release-plz or GitHub action release?
+If yes, try to:
+• 
+Pin a specific version of the release-plz GitHub action in your workflow file. E.g. go from release-plz/action@v0.5 to release-plz/action@v0.5.16. Determine the right version to pin by looking at the previous GitHub Action releases
+• 
+Pin a specific version of the release-plz in the GitHub action, by specifying the version field in the GitHub Action input. E.g. version: "0.3.70". The default is the latest version of release-plz. Determine the right version to pin by looking at the previous release-plz releases
+Please open an issue, too.
+release-plz release hangsDirect link to release-plz-release-hangs
+Something similar happened in #1015. Try to set a low publish_timeout in your release-plz.toml file to check if release-plz is having issues to:
+• check if a package was published.
+• publish a package.
+See DEBUG logsDirect link to see-debug-logs
+By default, Release-plz shows logs at the INFO level.
+The --verbose (-v) flag can be used to increase the verbosity of the logs. It can be specified multiple times to increase the verbosity even more.
+release-plz --verbose # (or -v) Make logs verbose
+release-plz -vv # Show verbose DEBUG logs
+release-plz -vvv # Show verbose TRACE logs
+Copy code to clipboard
+Release-plz log level can also be configured using the RELEASE_PLZ_LOG environment variable.
+RELEASE_PLZ_LOG=DEBUG release-plz
+RELEASE_PLZ_LOG=TRACE release-plz
+Copy code to clipboard
+Edit this page
+Previous
+« Why yet another release tool
+Next
+Extra »
+Release-plz GitHub action started misbehaving
+release-plz release hangs
+See DEBUG logs
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.

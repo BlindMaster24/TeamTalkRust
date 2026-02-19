@@ -1,0 +1,81 @@
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Expand sidebar category 'CLI Usage'
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageFAQ
+FAQ
+What packages does release-plz publish?Direct link to What packages does release-plz publish?
+Release-plz publishes all packages, except:
+• packages with publish = false in the Cargo.toml.
+• examples that don't specify the publish field in their Cargo.toml file. To publish them, set this field.
+Even, if a package is not published, release-plz will update its Cargo.toml to bump the version of a local dependency if needed.
+If you want to check which packages release-plz will publish, run release-plz release --dry-run.
+Can I edit the release PR before merging it?Direct link to Can I edit the release PR before merging it?
+Yes, you can edit the release PR as you would do with any other PR.
+Here are some reasons why you might want to edit the release PR:
+• Edit the changelog: the CHANGELOG.md file produced by release-plz is a good starting point, but you might want to add more details to it. Release-plz populates the corresponding git release description with the new changes of the changelog file. Note: you don't need to edit the collabsible changelog in the PR description.
+• Edit the version: if you forgot to mark a commit as a breaking change, or if cargo-semver-checks failed to detect a breaking change, you can edit the version of the package manually or with the set-version command.
+Does the changelog include the commits from the whole repo?Direct link to Does the changelog include the commits from the whole repo?
+The changelog of each crate includes the commits that changed one of the files of the crate or one of its dependencies.
+What if a commit doesn't follow the conventional-commits format?Direct link to What if a commit doesn't follow the conventional-commits format?
+By default, it will be listed under the section ### Other. You can customize the changelog format with the [changelog] configuration section.
+How do I know the branch of the release PR?Direct link to How do I know the branch of the release PR?
+If you want to commit something to the release-plz pr branch after releaze-plz workflow, you need to know the name of the branch of the release PR. To do so, you can:
+• Query the /pulls GitHub endpoint. For example, release-plz does it in its code.
+• Use git tag | grep release-plz.
+If none of these options work for you or you want release-plz to output the branch in the jobs output, please open an issue.
+Release-plz opens a PR too oftenDirect link to Release-plz opens a PR too often
+Release-plz opens a PR when any of the files packaged in the crate changes.
+To list the files that cargo published to the registry, run:
+cargo package --list
+Copy code to clipboard
+To exclude a file from the list (and therefore from the release PR and release-plz update changes), edit the exclude and include fields of the Cargo.toml.
+Release-plz bumped the version in a way I didn't expectDirect link to Release-plz bumped the version in a way I didn't expect
+Release-plz uses the next_version crate to determine the next version. Please read the documentation, and open an issue if it's not clear enough.
+Edit this page
+Previous
+« Semver check
+Next
+Why yet another release tool »
+What packages does release-plz publish?
+Can I edit the release PR before merging it?
+Does the changelog include the commits from the whole repo?
+What if a commit doesn't follow the conventional-commits format?
+How do I know the branch of the release PR?
+Release-plz opens a PR too often
+Release-plz bumped the version in a way I didn't expect
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.

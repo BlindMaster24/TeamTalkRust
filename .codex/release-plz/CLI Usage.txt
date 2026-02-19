@@ -1,0 +1,747 @@
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usage
+CLI Usage
+Release-plz updates the versions and changelogs of your rust packages, by analyzing your git history. There are three main commands:
+• release-plz update updates your project locally, without committing any change.
+• release-plz release-pr opens a GitHub Pull Request.
+• release-plz release publishes the new versions of the packages.
+There are also some utility commands:
+• release-plz init initializes release-plz for the current GitHub repository.
+• release-plz set-version edits the version of a package in Cargo.toml and changelog.
+• release-plz generate-completions generates command completions for shells.
+• release-plz generate-schema generates the JSON schema for the release-plz configuration file.
+To learn more about how to use release-plz, run release-plz --help.
+Edit this page
+Previous
+« Introduction
+Next
+Installation »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI UsageInstallation
+Installation
+Make sure you have git installed when running release-plz.
+release-plz is a rust binary that can be installed in different ways.
+Download prebuilt binaryDirect link to Download prebuilt binary
+The latest release is on GitHub.
+CargoDirect link to Cargo
+• Install the rust toolchain in order to have cargo installed by following this guide.
+• Run cargo install --locked release-plz.
+DockerDirect link to Docker
+Run docker pull marcoieni/release-plz.
+Arch LinuxDirect link to Arch Linux
+release-plz can be installed from the community repository using pacman.
+• pacman -S release-plz
+There is also a VCS package available in the AUR and it can be installed with an AUR helper. For example:
+• paru -S release-plz-git
+Alpine LinuxDirect link to Alpine Linux
+release-plz is available for Alpine Edge.
+It can be installed via apk after enabling the testing repository.
+• apk add release-plz
+Edit this page
+Previous
+« CLI Usage
+Next
+update »
+Download prebuilt binary
+Cargo
+Docker
+Arch Linux
+Alpine Linux
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usageupdate
+update
+The release-plz update command updates the version and the changelog of the packages containing unreleased changes.
+The command:
+• Downloads the packages of the project from the cargo registry.
+• Compares the local packages with the downloaded ones to determine the new commits.
+• Checks for API breaking changes in libraries if cargo-semver-checks is installed. Warning: cargo-semver-checks doesn't catch every semver violation.
+• Updates the packages versions based on the messages of the new commits (based on conventional commits and semantic versioning).
+• Updates the packages changelogs with the messages of the new commits.
+• Updates all dependencies by running cargo update (disabled by default).
+In the following example, I run release-plz on the release-plz project itself. Release-plz increases the version and the changelog of the packages with unpublished changes.
+release-plz update
+To learn more, run release-plz update --help.
+Edit this page
+Previous
+« Installation
+Next
+release-pr »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usagerelease-pr
+release-pr
+The release-plz release-pr command runs release-plz update and opens a GitHub Pull Request that prepares the next release.
+When the project maintainer merges the release pull request, the packages are ready to be published.
+Here's an example of a PR opened by release-plz in the release-plz GitHub project itself.
+In the following example, I run release-plz on the release-plz project itself. Release-plz opens a PR that increases the version and the changelog of the packages with unpublished changes.
+release-plz release-pr
+To learn more, run release-plz release-pr --help.
+PR updateDirect link to PR update
+If there's already an open release PR:
+• If the PR contains commits that are not from bots (except the first one), release-plz closes the PR to preserve the git history. The update mechanism is simple: overwrite everything and force-push. 💥 Reasoning: changes done by bots are not valuable, so we can overwrite them. (Not available on Gitea and GitLab).
+• Otherwise, release-plz closes the old PR and opens a new one. This is done to preserve the git history of maintainers' changes. Release-plz also closes the release PR when it cannot update it (for example, the force-push fails due to merge conflicts).
+INFO
+release-plz release-pr -p <package> doesn't open a PR per package. Instead, release-plz overrides the existing release PR with the changes of the specified package.
+GiteaDirect link to Gitea
+release-plz release-pr also supports creating PRs for repositories hosted on Gitea with the --forge option:
+release-plz release-pr --git-token <gitea application token> --forge gitea
+The token needs to have the following permissions:
+• read:repository, write:repository: to create the release PR.
+• read:issue, write:issue: to add labels to the release PR.
+GithubDirect link to Github
+On Github, the release-plz release-pr will use your --git-token to create a commit through the GraphQL API rather than making a commit locally and pushing the changes. This allows having a Verified commit without specifying a GPG signature.
+GitLabDirect link to GitLab
+release-plz release-pr also supports creating PRs for repositories hosted on GitLab with the --forge gitlab option.
+You need to create a token in your GitLab repo (Settings/Access Tokens) with the following permissions:
+• Role: Maintainer or higher
+• Scopes:
+◦ api (to read/create/update a release-pr)
+◦ write_repository (to push the release-plz branch)
+See the GitLab project access tokens docs.
+Then you can run release-plz release-pr with the following arguments:
+release-plz release-pr --forge gitlab --git-token <gitlab_token>
+Json outputDirect link to Json output
+You can get info about the outcome of this command by appending -o json to the command: Stdout will contain info about the release PR:
+{
+  "prs": [
+    {
+      "head_branch": "<head_branch>",
+      "base_branch": "<base_branch>",
+      "html_url": "<html_url>",
+      "number": <pr_number>,
+      "releases": [
+        {
+          "package_name": "<package_name>",
+          "version": "<package_version>"
+        }
+      ]
+
+    }
+  ]
+}
+Copy code to clipboard
+Example:
+{
+  "prs": [
+    {
+      "head_branch": "release-plz-2024-04-03T21-57-37Z",
+      "base_branch": "main",
+      "html_url": "http://localhost:3000/zodpwlgr/xcpayeoa/pulls/1",
+      "number": 1,
+      "releases": [
+        {
+          "package_name": "my_package",
+          "version": "1.0.3"
+        }
+      ]
+    }
+  ]
+}
+Copy code to clipboard
+• prs: An array of objects representing the opened PRs. If release-plz didn't open or update a release PR, the prs array will be empty.
+• head_branch: The name of the branch where the changes are implemented.
+• base_branch: name of the branch the changes are pulled into. It is the default branch of the repository. E.g. main.
+INFO
+At the moment, the release-plz release-pr command doesn't support opening multiple PRs, but we plan to add this feature in the future.
+Edit this page
+Previous
+« update
+Next
+release »
+PR update
+Gitea
+Github
+GitLab
+Json output
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usagerelease
+release
+The release-plz release command releases all the unpublished packages.
+For example, let's say you have a workspace with two packages: pkg-a (version 0.3.1) and pkg-b (version 0.2.2). The crates.io registry contains pkg-a version 0.3.1, but it doesn't contain pkg-b version 0.2.2 because you didn't publish this version yet. In this case, release-plz would release pkg-b.
+For every release, release-plz:
+• Creates a git tag named <package_name>-v<version> (e.g. tokio-v1.8.1). <package_name>- is omitted if there's only one package to publish.
+• Publishes the package to the cargo registry by running cargo publish.
+• Publishes a GitHub/Gitea/GitLab release based on the git tag.
+INFO
+release-plz release doesn't edit your Cargo.toml files and doesn't push new commits. It releases the packages as they are in your repository. For this reason, you typically use the release-plz release command in the main branch after you run release-plz update or you merge a pull request opened with release-plz release-pr.
+If all packages are already published, the release-plz release command does nothing.
+To learn more, run release-plz release --help.
+Git ForgesDirect link to Git Forges
+GitHub is the default release-plz forge. You can use the --forge flag to specify a different forge.
+GitLabDirect link to GitLab
+release-plz release also supports creating releases for repositories hosted on GitLab with the --forge gitlab option:
+You need to create a token in your GitLab repo (Settings/Access Tokens) with the following permissions:
+• Role: Maintainer or higher
+• Scopes:
+◦ api (to create a release)
+◦ write_repository (to create tag)
+See the GitLab project access tokens docs.
+Then you can run release-plz release with the following arguments:
+release-plz release --forge gitlab --git-token <gitlab_token>
+GiteaDirect link to Gitea
+releases-plz supports creating releases on Gitea with the --forge gitea option.
+Then you can run release-plz release in Gitea CI with the following arguments:
+release-plz release --forge gitea --git-token <gitea_token>
+The token needs to have the following permissions:
+• read:repository, write:repository: to create git tags and releases.
+TODO: document how to create a token on Gitea.
+Json outputDirect link to Json output
+You can get info about the outcome of this command by appending -o json to the command. Stdout will contain info about the release:
+{
+  "releases": [
+    {
+      "package_name": "<package_name>",
+      "prs": "<prs>",
+      "tag": "<tag_name>",
+      "version": "<version>"
+    }
+  ]
+}
+Copy code to clipboard
+Example:
+{
+  "releases": [
+    {
+      "package_name": "my_crate",
+      "prs": [
+        {
+          "html_url": "https://github.com/user/proj/pull/1439",
+          "number": 1439
+        }
+      ],
+      "tag": "v0.1.0",
+      "version": "0.1.0"
+    }
+  ]
+}
+Copy code to clipboard
+If release-plz didn't release any packages, the releases array will be empty.
+The tag fieldDirect link to the-tag-field
+The tag field is present even if the user disabled the tag creation with the git_tag_enable field. This is because the user might want to use the tag name to create the tag by themselves.
+The prs fieldDirect link to the-prs-field
+prs is an array of PRs present in the changelog body of the release. Usually, they are the PRs containing the changes that were released.
+Each entry of the array is an object containing:
+• html_url: The URL of the PR.
+• number: The number of the PR.
+What commit is releasedDirect link to What commit is released
+INFO
+This is an advanced section that describes certain design choices of release-plz, mainly relevant for repositories with a merge queue enabled. You can skip it if you are just getting started with release-plz or if you are the only maintainer of your repository.
+To avoid race conditions when the release PR is merged, release-plz release does a git checkout to the latest commit of the PR before releasing (if the commit of the PR exists in the main branch).
+Depending on the merge strategy you use, this can have different effects:
+• If you merge with the squash and merge strategy, the git checkout won't happen because when you merge the PR to the main branch, GitHub creates a new commit, so release-plz won't find the commit of the PR and will release the latest commit of the main branch.
+• If you merge with the merge strategy (the GitHub default), release-plz will release the last commit of the PR instead of the "Merge pull request" commit created by GitHub.
+Takeaway: if you are concerned about PRs being released by mistake (because you have a merge queue enabled or because your repository has multiple maintainers), you should merge release PRs with the default merge strategy. Release-plz will handle the rest, avoiding race conditions happening when the release PR is merged immediately after other PRs that aren't meant to be released. 👍
+TIP
+If you are using the squash and merge strategy, have a look at the release_always field of the configuration
+Here's an example of race condition that could happen if release-plz didn't do the git checkout to the latest PR commit:
+Merge queue example
+Edit this page
+Previous
+« release-pr
+Next
+init »
+Git Forges
+GitLab
+Gitea
+Json output
+The tag field
+The prs field
+What commit is released
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+ 
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usageinit
+init
+The release-plz init command initializes the necessary configurations and secrets for release-plz to work properly in your GitHub repository.
+Useful to initialize the GitHub action quickly and interactively. For a complete GitHub action setup guide, check out the Quickstart section.
+INFO
+Release-plz uses the gh GitHub CLI to store the cargo registry token and the GitHub token in the GitHub repository secrets. Install it before running the release-plz init command.
+Edit this page
+Previous
+« release
+Next
+set-version »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usageset-version
+set-version
+Edit the version of a package in Cargo.toml and changelog.
+• 
+In a project containing a single package pass the version you want to set. E.g. release-plz set-version 1.2.3
+• 
+In a workspace, specify a version with the syntax <package_name>@<version>. E.g. release-plz set-version my_crate@1.2.3. You can also set multiple versions, separated by space. E.g. release-plz set-version crate1@1.2.3 crate2@2.0.0
+INFO
+This command is meant to edit the versions of the packages of your workspace, not the version of your dependencies.
+TIP
+You can use this command to quickly update the version of a package in case release-plz didn't update to the version you intended, e.g. because you forgot to prefix a commit message with feat:.
+Edit this page
+Previous
+« init
+Next
+shell-completion »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usageshell-completion
+shell-completion
+In the following, you can find instructions on how to generate release-plz command completions for each shell. To learn more, run release-plz generate-completions --help.
+zshDirect link to zsh
+To load completions in your current shell session:
+autoload bashcompinit; bashcompinit
+source <(release-plz generate-completions)
+Copy code to clipboard
+To load completions for every new session, execute once:
+release-plz generate-completions zsh > _release-plz
+sudo mv _release-plz /usr/local/share/zsh/site-functions/
+Copy code to clipboard
+bashDirect link to bash
+To load completions in your current shell session:
+source <(release-plz generate-completions)
+Copy code to clipboard
+To load completions for every new session, execute once:
+release-plz generate-completions bash > ~/.local/share/bash-completion/completions/release-plz
+Copy code to clipboard
+CAUTION
+The package bash-completion is required for this to work.
+fishDirect link to fish
+To load completions in your current shell session:
+release-plz generate-completions fish | source
+Copy code to clipboard
+To load completions for every new session, execute once:
+release-plz generate-completions fish > $HOME/.config/fish/completions/release-plz.fish
+Copy code to clipboard
+Edit this page
+Previous
+« set-version
+Next
+generate-schema »
+zsh
+bash
+fish
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
+
+Skip to main content
+⭐️ If you like Release-plz, give it a star on GitHub and follow it on BlueSky
+Close
+Release-plz Logo
+Release-plz
+Docs
+Pricing
+💖 Sponsor(opens in new tab)
+GitHub
+Switch between dark and light mode (currently light mode)
+ 
+ctrl
+K
+Introduction
+CLI Usage
+Collapse sidebar category 'CLI Usage'
+Installation
+update
+release-pr
+release
+init
+set-version
+shell-completion
+generate-schema
+GitHub Action
+Expand sidebar category 'GitHub Action'
+GitLab CI
+Configuration
+Changelog
+Expand sidebar category 'Changelog'
+Semver check
+FAQ
+Why yet another release tool
+Troubleshooting
+Extra
+Expand sidebar category 'Extra'
+Media
+Release-plz in the wild
+Home pageCLI Usagegenerate-schema
+generate-schema
+The release-plz generate-schema command will generate a JSON schema for the configuration file. The file will be generated as .schema/latest.json.
+This command is mostly meant for development purposes and will be generated when new configurations are added. It will be referenced on SchemaStore to allow supported IDEs to autocomplete and validate the configuration file.
+Edit this page
+Previous
+« shell-completion
+Next
+GitHub Action »
+Docs
+Tutorial
+Social
+BlueSky(opens in new tab)
+LinkedIn(opens in new tab)
+Release-plz
+crates.io(opens in new tab)
+docs.rs(opens in new tab)
+Copyright © 2026 Release-plz. Built with Docusaurus.
