@@ -7,6 +7,7 @@ tag creation, GitHub releases, and crates.io publishing.
 
 - Workflow config: [release-plz.yml](../.github/workflows/release-plz.yml)
 - release-plz config: [release-plz.toml](../release-plz.toml)
+- Dependabot config: [dependabot.yml](../.github/dependabot.yml)
 - Repository secret: `CRATES_IO_TOKEN`
 - GitHub Actions default workflow permissions: `Read and write`
 
@@ -17,6 +18,8 @@ tag creation, GitHub releases, and crates.io publishing.
    user-facing changes.
 3. Keep Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`) so release-plz
    can infer the correct semantic version bump.
+4. Keep `## Unreleased` concise and up to date; release-plz moves it into the
+   next version section automatically.
 
 ## Automated Release Flow
 
@@ -30,6 +33,15 @@ On every push to `main`:
    - [features.md](features.md)
 3. After merge of the release PR, `Release-plz release` publishes the crate and
    creates the tag/release.
+
+## Dependency Update Automation
+
+Dependabot is configured for both Cargo and GitHub Actions:
+
+- Runs daily for Cargo and workflow dependencies.
+- Includes major updates (grouped separately for Cargo).
+- Opens grouped PRs to reduce review noise.
+- Works with pinned workflow SHAs by updating to newer pinned commits.
 
 ## Manual Checks
 

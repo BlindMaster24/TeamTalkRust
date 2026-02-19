@@ -4,21 +4,36 @@ updates:
     directory: "/"
     schedule:
       interval: daily
+      time: "04:00"
+    open-pull-requests-limit: 20
+    versioning-strategy: increase
     labels:
       - dependencies
       - rust
     target-branch: main
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    groups:
+      cargo-patch-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      cargo-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: daily
+      time: "04:30"
+    open-pull-requests-limit: 20
     labels:
       - dependencies
       - github-actions
     target-branch: main
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"
