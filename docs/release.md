@@ -40,11 +40,15 @@ On every push to `main`:
 This repository supports a token fallback, but for reliable release automation
 the preferred setup is:
 
-1. Create `RELEASE_PLZ_TOKEN` with:
-   - `contents: write`
-   - `pull requests: write`
-2. Keep `CRATES_IO_TOKEN` for crates publish.
-3. Let workflows use `RELEASE_PLZ_TOKEN` first and `GITHUB_TOKEN` as fallback.
+1. Prefer GitHub App authentication via:
+   - `RELEASE_PLZ_APP_ID`
+   - `RELEASE_PLZ_APP_PRIVATE_KEY`
+2. Keep `RELEASE_PLZ_TOKEN` as emergency fallback.
+3. Keep `CRATES_IO_TOKEN` for crates publish.
+4. Workflow token resolution order:
+   - GitHub App token
+   - `RELEASE_PLZ_TOKEN`
+   - `GITHUB_TOKEN`
 
 Why this is preferred:
 

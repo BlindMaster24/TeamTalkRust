@@ -119,6 +119,17 @@
 - Order of operations: code -> tests -> docs -> changelog -> version bump (separate commit).
 - Release commit must only contain version + changelog + synced references.
 - Release automation uses `release-plz` via `.github/workflows/release-plz.yml` and `release-plz.toml`.
+- Release workflow token strategy:
+  - Preferred: GitHub App token from `actions/create-github-app-token`.
+  - Fallback: `RELEASE_PLZ_TOKEN`, then `GITHUB_TOKEN`.
+  - Required secrets for GitHub App mode: `RELEASE_PLZ_APP_ID`, `RELEASE_PLZ_APP_PRIVATE_KEY`.
+- `actions/create-github-app-token` update policy:
+  - Keep it pinned to a commit SHA in workflow files.
+  - Check latest version with:
+    - `gh api repos/actions/create-github-app-token/releases/latest --jq '.tag_name, .published_at'`
+    - `gh api repos/actions/create-github-app-token/git/ref/tags/<tag> --jq '.object.sha, .object.type'`
+  - If the tag points to an annotated tag object, resolve commit with:
+    - `gh api repos/actions/create-github-app-token/git/tags/<sha> --jq '.object.sha, .object.type'`
 - No unrelated refactors in release commits.
 - Current release-plz baseline:
   - `docs/changelog.md` is the canonical source for release notes and `## Unreleased` must exist.
