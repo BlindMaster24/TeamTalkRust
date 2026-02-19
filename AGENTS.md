@@ -235,7 +235,56 @@
 - Install recommended tooling:
   - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov`
 - Discover tasks with `just --list`.
-- Use `just` for repeatable local flows (for example `just quick`, `just ci`, `just deps-safe-cycle`, `just release-status`).
+- Prefer `just` commands first for repeatable local flows; if `just` or a required subcommand is unavailable, use the equivalent manual commands.
+- Core `just` command map (preferred):
+  - Environment/tooling:
+    - `just env-check`
+    - `just tools-install`
+    - `just rustup-show`
+    - `just cargo-list`
+  - Quality:
+    - `just quick`
+    - `just qa-full`
+    - `just dod`
+    - `just ci` / `just ci-ps`
+    - `just check-feature <feature>`
+    - `just clippy-feature <feature>`
+    - `just test-feature <feature>`
+    - `just test-one <target>`
+    - `just test-filter <pattern>`
+    - `just examples`
+    - `just bench`
+    - `just miri-test`
+  - Docs/version refs:
+    - `just doc`
+    - `just doc-open`
+    - `just docs-build` / `just docs-build-ps`
+    - `just doc-links` / `just doc-links-ps`
+    - `just version-check` / `just version-check-ps`
+    - `just version-sync` / `just version-sync-ps`
+  - Dependencies:
+    - `just deps-outdated`
+    - `just deps-outdated-all`
+    - `just deps-major-report`
+    - `just deps-refresh-compatible`
+    - `just deps-refresh-major`
+    - `just deps-safe-cycle`
+    - `just deps-major-cycle`
+    - `just deps-update-one <crate>`
+  - Release/GitHub:
+    - `just release-status`
+    - `just release-dry`
+    - `just release-run`
+    - `just release-watch`
+    - `just pr-open`
+    - `just pr-release-open`
+    - `just runs-list`
+    - `just runs-fail`
+  - Workspace:
+    - `just clean`
+    - `just rebuild`
+    - `just audit-pass`
+- For unknown/new commands, run `just --list` and then execute the matching recipe.
 - Use direct commands as fallback when `just` is unavailable.
 ## Command Invocation Conventions
 - When a task requires multiple shell commands, run them sequentially and keep each command explicit.
