@@ -78,6 +78,37 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-targets
 ```
 
+## Task Runner (`just`)
+
+The repository includes a [`justfile`](../justfile) with shortcuts for checks,
+docs, and dependency updates.
+
+Install tools:
+
+```bash
+cargo install just cargo-edit
+```
+
+Common commands:
+
+```bash
+just dod
+just test
+just doc
+just search tokio
+just info release-plz
+```
+
+Dependency update flows:
+
+```bash
+# patch/minor only
+just deps-refresh-compatible
+
+# include majors
+just deps-refresh-major
+```
+
 Doc link checks used in CI:
 
 ```bash
