@@ -93,7 +93,10 @@ Common commands:
 
 ```bash
 just dod
+just ci
+just quick
 just test
+just test-feature async
 just doc
 just search tokio
 just info release-plz
@@ -108,6 +111,13 @@ just deps-refresh-compatible
 # include majors
 just deps-refresh-major
 ```
+
+About `set positional-arguments` in `justfile`:
+
+- It allows plain positional args in recipes (for example `just test-feature async`)
+  instead of requiring named assignments.
+- It is used by commands like `check-feature`, `clippy-feature`, `test-feature`,
+  `test-one`, `test-filter`, `search`, and `info`.
 
 Doc link checks used in CI:
 
