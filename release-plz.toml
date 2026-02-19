@@ -1,13 +1,19 @@
 [workspace]
 release = false
+changelog_path = "docs/changelog.md"
+changelog_update = true
 pr_labels = ["release"]
 pr_branch_prefix = "release-plz/"
 release_always = false
+# Enable this filter later to reduce release-PR noise to user-facing commits only.
+# release_commits = "^(feat|fix|perf|refactor|docs|revert)(\\(.+\\))?!?:"
 
 [[package]]
 name = "teamtalk"
 release = true
 publish = true
+changelog_path = "docs/changelog.md"
+changelog_update = true
 semver_check = true
 
 [[package]]

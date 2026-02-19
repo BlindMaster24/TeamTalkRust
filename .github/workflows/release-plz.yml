@@ -18,14 +18,14 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
       - name: Run release-plz release-pr
         id: release-plz
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@efc7a2b896608c31370cd499ba1518cda3ac5660 # v0.5
         with:
           command: release-pr
         env:
@@ -68,16 +68,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: release-plz-release-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
       - name: Run release-plz release
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@efc7a2b896608c31370cd499ba1518cda3ac5660 # v0.5
         with:
           command: release
         env:
@@ -90,16 +93,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: release-plz-release-manual-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
       - name: Run release-plz release
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@efc7a2b896608c31370cd499ba1518cda3ac5660 # v0.5
         with:
           command: release
         env:
