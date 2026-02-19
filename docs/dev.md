@@ -147,6 +147,94 @@ Safety model for release commands:
 - `release-dry` triggers manual release workflow with `dry_run=true`.
 - `release-run` triggers manual release workflow with `dry_run=false` (publish path).
 
+### Detailed Playbook and Manual Fallbacks
+
+Execution policy:
+
+1. Prefer a `just` recipe first.
+2. If `just` is unavailable, use equivalent manual commands.
+3. If a recipe exists but optional tooling is missing (`gh`, `cargo-outdated`, `miri`), either install tools or skip only that optional step and report it clearly.
+
+Daily flow:
+
+```bash
+just env-check
+just quick
+just test-feature async
+just release-status
+```
+
+Weekly flow:
+
+```bash
+just deps-outdated
+just deps-safe-cycle
+just runs-fail
+```
+
+Pre-release flow:
+
+```bash
+just qa-full
+just release-dry
+just release-watch
+```
+
+Release-day flow:
+
+```bash
+just release-status
+just release-run
+just release-watch
+```
+
+Critical fallback commands:
+
+```bash
+# quick
+cargo fmt --all -- --check
+cargo check --workspace --all-targets
+cargo test --workspace --all-targets
+
+# qa-full / ci
+cargo fmt --all -- --check
+cargo check --workspace --all-targets --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-targets --all-features
+cargo doc --no-deps --all-features
+bash ./scripts/check-doc-links.sh
+bash ./scripts/check-version-refs.sh
+
+# deps-refresh-compatible
+cargo upgrade --manifest-path crates/teamtalk/Cargo.toml
+cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml
+cargo update
+
+# deps-refresh-major
+cargo upgrade --manifest-path crates/teamtalk/Cargo.toml --incompatible allow --pinned allow
+cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml --incompatible allow --pinned allow
+cargo update
+
+# release commands
+gh workflow run release-plz.yml -f dry_run=true
+gh workflow run release-plz.yml -f dry_run=false
+gh run watch $(gh run list --workflow "Release-plz" --limit 1 --json databaseId --jq '.[0].databaseId')
+```
+
+Required tooling by command family:
+
+- Cargo-only checks: Rust toolchain only.
+- `deps-outdated*`: requires `cargo-outdated`.
+- `miri-test`: requires nightly + `miri` component.
+- Release/GitHub recipes: requires authenticated `gh` CLI and repo permissions.
+
+Failure policy:
+
+- Do not silently skip failed steps.
+- Report the exact failing recipe and short error summary.
+- Optional checks can be skipped with explicit note and reason.
+- Required quality/release checks must be fixed before commit/push.
+
 About `set positional-arguments` in `justfile`:
 
 - It allows plain positional args in recipes (for example `just test-feature async`)
