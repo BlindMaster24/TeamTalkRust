@@ -96,6 +96,29 @@ Rules:
 - `Other` is intentionally the last section.
 - `release_commits` remains disabled by policy, so release-plz still evaluates all commits for release updates.
 
+## Breaking Change Method (Required)
+
+When a public API break is intentional (or reported by `cargo-semver-checks`),
+record it in commit metadata so release-plz categorizes it correctly:
+
+1. Use `!` in commit type/scope, for example: `feat(async)!: ...`.
+2. Add a `BREAKING CHANGE:` footer with migration guidance.
+
+Template:
+
+```text
+feat(scope)!: short summary
+
+BREAKING CHANGE: what changed, why, and exact migration step.
+```
+
+For the current async architecture change, use wording like:
+
+```text
+BREAKING CHANGE: AsyncClient no longer implements Sync. Keep AsyncClient in one
+runtime/task and use wait helpers plus shutdown/into_client for lifecycle.
+```
+
 ## Manual Checks
 
 Use these checks locally before merging:
