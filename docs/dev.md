@@ -51,8 +51,8 @@ pre-commit:
   [getting-started.md](getting-started.md), and [features.md](features.md) to
   the new crate version.
 - After the release PR is merged, release-plz creates the tag/release and publishes to crates.io.
-- Keep [changelog.md](changelog.md) up to date under `## Unreleased` in normal
-  feature/fix PRs.
+- Keep commit messages in Conventional Commits format so release-plz can infer
+  semver bumps and changelog sections for the release PR.
 - docs.rs builds automatically after publish and uses `all-features = true`.
 
 ## CI/CD
