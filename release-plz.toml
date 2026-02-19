@@ -1,16 +1,13 @@
 [workspace]
 release = false
-changelog_path = "docs/changelog.md"
-changelog_update = true
 pr_labels = ["release"]
 pr_branch_prefix = "release-plz/"
+release_always = false
 
 [[package]]
 name = "teamtalk"
 release = true
 publish = true
-changelog_path = "docs/changelog.md"
-changelog_update = true
 semver_check = true
 
 [[package]]
