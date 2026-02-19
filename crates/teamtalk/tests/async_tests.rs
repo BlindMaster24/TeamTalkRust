@@ -32,3 +32,14 @@ fn async_client_next_event_returns_none_after_stop() {
     let next = futures::executor::block_on(stream.next_event());
     assert!(next.is_none());
 }
+
+#[cfg(all(feature = "mock", not(feature = "async-tokio")))]
+#[test]
+fn async_client_into_client_after_shutdown_returns_client() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    let mut stream = client.into_async();
+    stream.shutdown();
+    let client = stream.into_client();
+    assert!(client.is_some());
+}

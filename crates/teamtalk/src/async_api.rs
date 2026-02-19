@@ -1,24 +1,17 @@
 //! Async wrapper around the polling client.
-use crate::client::{Client, Message};
+use crate::client::{Client, EventData, Message};
 use crate::events::Event;
-use futures::StreamExt;
 use futures::stream::Stream;
 use futures::task::AtomicWaker;
-use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, Receiver};
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-#[cfg(not(feature = "async-tokio"))]
+use futures::StreamExt;
 use std::thread::{self, JoinHandle};
-
-#[cfg(feature = "async-tokio")]
-use tokio::task::JoinHandle;
-
-#[cfg(feature = "async-tokio")]
-use tokio::time;
 
 /// Configuration for the async polling loop.
 #[derive(Clone, Copy)]
@@ -57,17 +50,11 @@ impl AsyncConfig {
 
 /// Async stream of client events backed by a worker thread.
 pub struct AsyncClient {
-    client: Option<Client>,
+    client: Option<Arc<Client>>,
     stop: Arc<AtomicBool>,
-    poll_timeout_ms: i32,
-    wake_pending: Arc<AtomicBool>,
+    receiver: Option<Receiver<(Event, Message)>>,
     waker: Arc<AtomicWaker>,
-    buffer: VecDeque<(Event, Message)>,
-    buffer_cap: usize,
-    #[cfg(not(feature = "async-tokio"))]
-    ticker: Option<JoinHandle<()>>,
-    #[cfg(feature = "async-tokio")]
-    ticker: Option<JoinHandle<()>>,
+    worker: Option<JoinHandle<()>>,
 }
 
 impl AsyncClient {
@@ -79,40 +66,30 @@ impl AsyncClient {
     /// Creates an async client with custom configuration.
     pub fn with_config(client: Client, config: AsyncConfig) -> Self {
         let buffer_cap = config.buffer.max(1);
+        let poll_timeout_ms = config.poll_timeout_ms;
+        let client = Arc::new(client);
         let stop = Arc::new(AtomicBool::new(false));
-        let wake_pending = Arc::new(AtomicBool::new(false));
         let waker = Arc::new(AtomicWaker::new());
-        let delay = Duration::from_millis(config.poll_timeout_ms.max(1) as u64);
-        let ticker_stop = Arc::clone(&stop);
-        let ticker_pending = Arc::clone(&wake_pending);
-        let ticker_waker = Arc::clone(&waker);
-        #[cfg(feature = "async-tokio")]
-        let ticker = Some(tokio::spawn(async move {
-            while !ticker_stop.load(Ordering::Relaxed) {
-                time::sleep(delay).await;
-                if ticker_pending.swap(false, Ordering::Relaxed) {
-                    ticker_waker.wake();
-                }
-            }
-        }));
-        #[cfg(not(feature = "async-tokio"))]
-        let ticker = Some(thread::spawn(move || {
-            while !ticker_stop.load(Ordering::Relaxed) {
-                thread::sleep(delay);
-                if ticker_pending.swap(false, Ordering::Relaxed) {
-                    ticker_waker.wake();
+        let (sender, receiver) = mpsc::sync_channel(buffer_cap);
+        let worker_stop = Arc::clone(&stop);
+        let worker_client = Arc::clone(&client);
+        let worker_waker = Arc::clone(&waker);
+        let worker = Some(thread::spawn(move || {
+            while !worker_stop.load(Ordering::Relaxed) {
+                if let Some(item) = worker_client.poll(poll_timeout_ms) {
+                    if sender.send(item).is_err() {
+                        break;
+                    }
+                    worker_waker.wake();
                 }
             }
         }));
         Self {
             client: Some(client),
             stop,
-            poll_timeout_ms: config.poll_timeout_ms,
-            wake_pending,
+            receiver: Some(receiver),
             waker,
-            buffer: VecDeque::with_capacity(buffer_cap),
-            buffer_cap,
-            ticker,
+            worker,
         }
     }
 
@@ -121,7 +98,7 @@ impl AsyncClient {
     where
         F: FnOnce(&Client) -> R,
     {
-        let client = self.client.as_ref()?;
+        let client = self.client.as_deref()?;
         Some(f(client))
     }
 
@@ -130,7 +107,8 @@ impl AsyncClient {
     where
         F: FnOnce(&mut Client) -> R,
     {
-        let client = self.client.as_mut()?;
+        self.shutdown();
+        let client = Arc::get_mut(self.client.as_mut()?)?;
         Some(f(client))
     }
 
@@ -139,10 +117,19 @@ impl AsyncClient {
         self.stop.store(true, Ordering::Relaxed);
     }
 
+    /// Stops the worker and waits until it exits.
+    pub fn shutdown(&mut self) {
+        self.stop();
+        let _ = self.receiver.take();
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+
     /// Stops the loop and returns the underlying client.
     pub fn into_client(mut self) -> Option<Client> {
-        self.stop();
-        self.client.take()
+        self.shutdown();
+        Arc::try_unwrap(self.client.take()?).ok()
     }
 
     /// Waits for the next event from the stream.
@@ -160,6 +147,29 @@ impl AsyncClient {
         None
     }
 
+    /// Waits until the provided predicate matches an event.
+    pub async fn wait_for_predicate<F>(&mut self, mut predicate: F) -> Option<(Event, Message)>
+    where
+        F: FnMut(Event, &Message) -> bool,
+    {
+        while let Some((event, msg)) = self.next().await {
+            if predicate(event, &msg) {
+                return Some((event, msg));
+            }
+        }
+        None
+    }
+
+    /// Waits for the next event with a typed payload.
+    pub async fn wait_for_data(&mut self) -> Option<(Event, Message, EventData)> {
+        while let Some((event, msg)) = self.next().await {
+            if let Some(data) = msg.data() {
+                return Some((event, msg, data));
+            }
+        }
+        None
+    }
+
     /// Waits for a specific event until timeout is reached.
     #[cfg(feature = "async-tokio")]
     pub async fn wait_for_event_timeout(
@@ -168,6 +178,34 @@ impl AsyncClient {
         timeout: Duration,
     ) -> Option<Message> {
         tokio::time::timeout(timeout, self.wait_for_event(expected))
+            .await
+            .ok()
+            .flatten()
+    }
+
+    /// Waits until the provided predicate matches an event or timeout is reached.
+    #[cfg(feature = "async-tokio")]
+    pub async fn wait_for_predicate_timeout<F>(
+        &mut self,
+        predicate: F,
+        timeout: Duration,
+    ) -> Option<(Event, Message)>
+    where
+        F: FnMut(Event, &Message) -> bool,
+    {
+        tokio::time::timeout(timeout, self.wait_for_predicate(predicate))
+            .await
+            .ok()
+            .flatten()
+    }
+
+    /// Waits for the next typed payload event or timeout is reached.
+    #[cfg(feature = "async-tokio")]
+    pub async fn wait_for_data_timeout(
+        &mut self,
+        timeout: Duration,
+    ) -> Option<(Event, Message, EventData)> {
+        tokio::time::timeout(timeout, self.wait_for_data())
             .await
             .ok()
             .flatten()
@@ -182,38 +220,27 @@ impl Stream for AsyncClient {
         if this.stop.load(Ordering::Relaxed) {
             return Poll::Ready(None);
         }
-        let Some(client) = this.client.as_ref() else {
+        let Some(receiver) = this.receiver.as_ref() else {
             return Poll::Ready(None);
         };
-        if let Some(item) = this.buffer.pop_front() {
-            return Poll::Ready(Some(item));
-        }
-        if let Some((event, message)) = client.poll(this.poll_timeout_ms) {
-            this.buffer.push_back((event, message));
-            while this.buffer.len() < this.buffer_cap {
-                let Some((event, message)) = client.poll(0) else {
-                    break;
-                };
-                this.buffer.push_back((event, message));
+        match receiver.try_recv() {
+            Ok(item) => Poll::Ready(Some(item)),
+            Err(mpsc::TryRecvError::Disconnected) => Poll::Ready(None),
+            Err(mpsc::TryRecvError::Empty) => {
+                this.waker.register(cx.waker());
+                match receiver.try_recv() {
+                    Ok(item) => Poll::Ready(Some(item)),
+                    Err(mpsc::TryRecvError::Disconnected) => Poll::Ready(None),
+                    Err(mpsc::TryRecvError::Empty) => Poll::Pending,
+                }
             }
-            let item = this.buffer.pop_front();
-            return Poll::Ready(item);
         }
-        this.waker.register(cx.waker());
-        this.wake_pending.store(true, Ordering::Relaxed);
-        Poll::Pending
     }
 }
 
 impl Drop for AsyncClient {
     fn drop(&mut self) {
-        self.stop.store(true, Ordering::Relaxed);
-        if let Some(ticker) = self.ticker.take() {
-            #[cfg(feature = "async-tokio")]
-            ticker.abort();
-            #[cfg(not(feature = "async-tokio"))]
-            let _ = ticker.join();
-        }
+        self.shutdown();
     }
 }
 
