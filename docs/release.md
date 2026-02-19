@@ -42,6 +42,9 @@ Dependabot is configured for both Cargo and GitHub Actions:
 - Includes major updates (grouped separately for Cargo).
 - Opens grouped PRs to reduce review noise.
 - Works with pinned workflow SHAs by updating to newer pinned commits.
+- Auto-assigns and auto-requests review from `BlindMaster24`.
+- Auto-merges Dependabot patch/minor PRs after required checks pass.
+- Publishes a weekly digest issue with all open dependency PRs.
 
 ## Manual Checks
 

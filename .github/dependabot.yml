@@ -7,6 +7,10 @@ updates:
       time: "04:00"
     open-pull-requests-limit: 20
     versioning-strategy: increase
+    assignees:
+      - BlindMaster24
+    reviewers:
+      - BlindMaster24
     labels:
       - dependencies
       - rust
@@ -29,6 +33,10 @@ updates:
       interval: daily
       time: "04:30"
     open-pull-requests-limit: 20
+    assignees:
+      - BlindMaster24
+    reviewers:
+      - BlindMaster24
     labels:
       - dependencies
       - github-actions
