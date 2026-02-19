@@ -12,7 +12,9 @@ teamtalk = { version = "2.0.0", features = ["dispatch", "async"] }
 ## Available Features
 
 - `dispatch`: event dispatcher with handler routing and reconnect support.
-- `async`: async wrapper with stream helpers (`next_event`, `wait_for_event`).
+- `async`: async wrapper with stream helpers (`next_event`, `wait_for_event`,
+  `wait_for_predicate`, `wait_for_data`) and explicit shutdown (`shutdown`,
+  `into_client`).
 - `async-tokio`: Tokio wake integration for the async wrapper (requires a Tokio runtime).
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
@@ -59,6 +61,8 @@ cargo build --no-default-features --features tls-rustls
 - State store facade: `enable_state_store`, `store_snapshot`, `store_user`, `store_channel`.
 - Message builder: `MessageBuilder` for outgoing text messages.
 - Typed event payload facade: `Message::data` and `try_as_*` helpers.
+- Async typed waits: `AsyncClient::wait_for_data` and
+  `AsyncClient::wait_for_data_timeout` (`async-tokio`).
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.

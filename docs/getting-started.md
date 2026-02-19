@@ -128,3 +128,37 @@ loop {
 Store the returned `EventSubscriptionId` to drop the handler later, or use
 `client.unsubscribe_event_group("cli-watchers")` to remove a whole group in one call.
 
+## Async Flow
+
+Enable async support in `Cargo.toml`:
+
+```toml
+[dependencies]
+teamtalk = { version = "2.0.0", features = ["async"] }
+```
+
+Use the async wrapper when you want stream-style event handling:
+
+```rust
+use teamtalk::{Client, Event};
+
+fn main() -> teamtalk::Result<()> {
+    let client = Client::new()?;
+    let mut stream = client.into_async();
+
+    futures::executor::block_on(async {
+        let _ = stream
+            .wait_for_predicate(|event, _| {
+                matches!(event, Event::ConnectionLost | Event::ConnectFailed)
+            })
+            .await;
+    });
+
+    stream.shutdown();
+    let _client = stream.into_client();
+    Ok(())
+}
+```
+
+For Tokio timeout helpers (`wait_for_event_timeout`, `wait_for_data_timeout`),
+enable `async-tokio` in addition to `async`.

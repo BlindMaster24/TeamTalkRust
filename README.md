@@ -111,6 +111,13 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - Recovery state is memory-only: connect/login/channel credentials are reused while the process runs, but not persisted across restarts.
 - Per-phase retry tuning is available via `ReconnectWorkflowConfig` (`login` and `join` policies).
 - New hooks/events expose phase progress and failures: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
+
+### Async Event Stream
+
+- `into_async()` starts a worker-backed async stream over events.
+- Use `wait_for_event`, `wait_for_predicate`, and `wait_for_data` to avoid manual loops.
+- For explicit lifecycle, call `shutdown()` and then `into_client()` when done.
+- With `async-tokio`, timeout helpers are available (`wait_for_event_timeout`, `wait_for_data_timeout`).
 ## Project Structure
 
 - [crates/teamtalk-sys](crates/teamtalk-sys/): Low-level bindgen bindings to the SDK.
@@ -133,4 +140,3 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 ## License
 
 MIT
-

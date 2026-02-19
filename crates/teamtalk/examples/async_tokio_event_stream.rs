@@ -3,6 +3,8 @@ use futures::StreamExt;
 #[cfg(feature = "async-tokio")]
 use std::env;
 #[cfg(feature = "async-tokio")]
+use std::time::Duration;
+#[cfg(feature = "async-tokio")]
 use teamtalk::{AsyncConfig, Client, Event};
 
 #[cfg(feature = "async-tokio")]
@@ -34,11 +36,20 @@ fn main() -> teamtalk::Result<()> {
 
     rt.block_on(async {
         let mut stream = client.into_async_with_config(AsyncConfig::default());
-        while let Some((event, _)) = stream.next().await {
-            if matches!(event, Event::ConnectSuccess) {
-                // Use login_remember/login_with_params in real bots.
-            }
-        }
+
+        // Timeout helper for bounded waits in bots/services.
+        let _ = stream
+            .wait_for_event_timeout(Event::ConnectSuccess, Duration::from_secs(5))
+            .await;
+
+        // Typed payload helper: waits for next event that carries data.
+        let _ = stream.wait_for_data_timeout(Duration::from_secs(5)).await;
+
+        // Stream-style API is still available.
+        let _ = stream.next().await;
+
+        stream.shutdown();
+        let _ = stream.into_client();
     });
 
     Ok(())
