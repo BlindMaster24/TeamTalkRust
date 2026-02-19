@@ -20,3 +20,40 @@ semver_check = true
 name = "teamtalk-sys"
 release = false
 publish = false
+
+[changelog]
+protect_breaking_commits = true
+sort_commits = "newest"
+trim = true
+commit_preprocessors = [
+  { pattern = "\\(#([0-9]+)\\)", replace = "([#${1}](https://github.com/BlindMaster24/TeamTalkRust/pull/${1}))" },
+]
+commit_parsers = [
+  { body = "BREAKING CHANGE:|BREAKING-CHANGE:", group = "<!-- 00 -->Breaking" },
+  { footer = "BREAKING CHANGE:|BREAKING-CHANGE:", group = "<!-- 00 -->Breaking" },
+  { message = "^[a-z]+(\\(.+\\))?!:.*", group = "<!-- 00 -->Breaking" },
+  { message = "^feat(\\(.+\\))?:.*", group = "<!-- 10 -->Added" },
+  { message = "^(changed|change|refactor|perf)(\\(.+\\))?:.*", group = "<!-- 20 -->Changed" },
+  { message = "^(deprecated|deprecate)(\\(.+\\))?:.*", group = "<!-- 30 -->Deprecated" },
+  { message = "^(removed|remove|deleted|delete)(\\(.+\\))?:.*", group = "<!-- 40 -->Removed" },
+  { message = "^(fix|hotfix|bugfix|revert)(\\(.+\\))?:.*", group = "<!-- 50 -->Fixed" },
+  { message = "^security(\\(.+\\))?:.*", group = "<!-- 60 -->Security" },
+  { message = "^docs(\\(.+\\))?:.*", group = "<!-- 70 -->Docs" },
+  { message = "^(ci|build)(\\(.+\\))?:.*", group = "<!-- 80 -->CI" },
+  { message = "^(deps|dep)(\\(.+\\))?:.*", group = "<!-- 90 -->Dependencies" },
+  { message = "^chore\\((deps|deps-dev|deps-build|upgrade|versions?)\\):.*", group = "<!-- 90 -->Dependencies" },
+  { message = "^.*", group = "<!-- 99 -->Other" },
+]
+body = """
+## [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits %}
+{%- if commit.scope -%}
+- *({{ commit.scope }})* {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}{%- if commit.links %} ({% for link in commit.links %}[{{ link.text }}]({{ link.href }}) {% endfor -%}){% endif %}
+{% else -%}
+- {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}{%- if commit.links %} ({% for link in commit.links %}[{{ link.text }}]({{ link.href }}) {% endfor -%}){% endif %}
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+"""

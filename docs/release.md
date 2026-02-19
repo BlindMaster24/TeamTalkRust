@@ -46,6 +46,31 @@ Dependabot is configured for both Cargo and GitHub Actions:
 - Auto-merges Dependabot patch/minor PRs after required checks pass.
 - Publishes a weekly digest issue with all open dependency PRs.
 
+## Release Notes Section Contract
+
+Release-plz changelog generation is explicitly configured in
+[release-plz.toml](../release-plz.toml) via `[changelog].commit_parsers`.
+Section order is fixed and stable:
+
+1. Breaking
+2. Added
+3. Changed
+4. Deprecated
+5. Removed
+6. Fixed
+7. Security
+8. Docs
+9. CI
+10. Dependencies
+11. Other
+
+Rules:
+
+- Commit grouping is strict-first (Conventional Commit style).
+- Any commit not matched by a specific parser is placed in `Other`.
+- `Other` is intentionally the last section.
+- `release_commits` remains disabled by policy, so release-plz still evaluates all commits for release updates.
+
 ## Manual Checks
 
 Use these checks locally before merging:
@@ -87,6 +112,15 @@ release-plz release-pr --dry-run
 
 This validates the computed version bump and changelog changes without opening
 or updating a PR.
+
+### Publish Preflight Checklist
+
+Before a real release:
+
+1. Run `release-plz release-pr --dry-run`.
+2. Confirm `CRATES_IO_TOKEN` exists and is valid.
+3. Confirm workflow permissions are `Read and write`.
+4. Confirm release-plz workflow run can complete `release-pr` and `release` jobs.
 
 ### Trigger Release Workflow Manually
 
