@@ -49,6 +49,11 @@ impl AsyncConfig {
 }
 
 /// Async stream of client events backed by a worker thread.
+///
+/// # Threading
+/// `AsyncClient` is `Send` but intentionally not `Sync`.
+/// Keep it owned by one async task/runtime and use its wait/shutdown helpers
+/// for coordination.
 pub struct AsyncClient {
     client: Option<Arc<Client>>,
     stop: Arc<AtomicBool>,
