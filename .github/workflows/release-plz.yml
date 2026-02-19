@@ -19,14 +19,17 @@ jobs:
     concurrency:
       group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
+    env:
+      RELEASE_PLZ_APP_ID: ${{ secrets.RELEASE_PLZ_APP_ID }}
+      RELEASE_PLZ_APP_PRIVATE_KEY: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
     steps:
       - name: Generate GitHub App token
-        if: ${{ secrets.RELEASE_PLZ_APP_ID != '' && secrets.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_PLZ_APP_ID != '' && env.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
         id: app-token
         uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         with:
-          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          app-id: ${{ env.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ env.RELEASE_PLZ_APP_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -91,14 +94,17 @@ jobs:
     concurrency:
       group: release-plz-release-${{ github.ref }}
       cancel-in-progress: false
+    env:
+      RELEASE_PLZ_APP_ID: ${{ secrets.RELEASE_PLZ_APP_ID }}
+      RELEASE_PLZ_APP_PRIVATE_KEY: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
     steps:
       - name: Generate GitHub App token
-        if: ${{ secrets.RELEASE_PLZ_APP_ID != '' && secrets.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_PLZ_APP_ID != '' && env.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
         id: app-token
         uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         with:
-          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          app-id: ${{ env.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ env.RELEASE_PLZ_APP_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -132,14 +138,17 @@ jobs:
     concurrency:
       group: release-plz-release-manual-${{ github.ref }}
       cancel-in-progress: false
+    env:
+      RELEASE_PLZ_APP_ID: ${{ secrets.RELEASE_PLZ_APP_ID }}
+      RELEASE_PLZ_APP_PRIVATE_KEY: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
     steps:
       - name: Generate GitHub App token
-        if: ${{ secrets.RELEASE_PLZ_APP_ID != '' && secrets.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
+        if: ${{ env.RELEASE_PLZ_APP_ID != '' && env.RELEASE_PLZ_APP_PRIVATE_KEY != '' }}
         id: app-token
         uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         with:
-          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          app-id: ${{ env.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ env.RELEASE_PLZ_APP_PRIVATE_KEY }}
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
