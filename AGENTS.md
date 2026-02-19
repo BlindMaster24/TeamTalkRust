@@ -120,6 +120,19 @@
 - Release commit must only contain version + changelog + synced references.
 - Release automation uses `release-plz` via `.github/workflows/release-plz.yml` and `release-plz.toml`.
 - No unrelated refactors in release commits.
+- Current release-plz baseline:
+  - `docs/changelog.md` is the canonical source for release notes and `## Unreleased` must exist.
+  - `release_always = false` is enabled in `release-plz.toml`.
+  - `semver_check = true` is enabled for `teamtalk`; breaking API changes can force major releases.
+  - Keep `release_commits` commented unless explicitly requested; it is an opt-in noise filter.
+- Workflow hardening baseline:
+  - Keep action refs pinned to commit SHAs in `.github/workflows/release-plz.yml`.
+  - Keep concurrency groups on release jobs to avoid duplicate publish/tag races.
+  - Keep manual fallback (`workflow_dispatch`) enabled for recovery.
+- Changelog writing baseline:
+  - Keep entries user-facing only (API/behavior/docs affecting users).
+  - Avoid duplicate summary + detailed bullets for the same change.
+  - Do not mix CI/process notes into user-facing release notes.
 ## API Review Checklist (before shipping)
 - Backward compatibility assessed (breaking vs additive).
 - Deprecation plan and migration notes where needed.
@@ -394,6 +407,14 @@
 - **Dependency updates:**
   - Use a dedicated commit for dependency bumps unless required by the same change.
   - Document user-visible dependency impacts in `docs/changelog.md` when relevant.
+  - Dependabot policy for this repository:
+    - `.github/dependabot.yml` runs daily for Cargo and GitHub Actions.
+    - Cargo updates are grouped into `cargo-patch-minor` and `cargo-major`.
+    - GitHub Actions updates are grouped under `github-actions-all`.
+    - Dependabot PRs auto-assign and auto-request review from `BlindMaster24`.
+    - Patch/minor Dependabot PRs are auto-merge candidates via `.github/workflows/dependabot-automerge.yml`.
+    - Weekly digest issue is maintained via `.github/workflows/dependency-digest.yml`.
+    - Keep workflow action refs pinned to SHAs so Dependabot updates explicit SHAs.
 - **Refactor discipline:**
   - Refactors must not change behavior; if they do, split or document and test.
   - Keep refactor commits small and isolated from feature work.
