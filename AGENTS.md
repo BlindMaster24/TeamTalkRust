@@ -147,6 +147,18 @@
   - Keep entries user-facing only (API/behavior/docs affecting users).
   - Avoid duplicate summary + detailed bullets for the same change.
   - Do not mix CI/process notes into user-facing release notes.
+- Release-plz docs map (must read before changing release behavior):
+  - `.codex/release-plz/Configuration.txt`: all `release-plz.toml` keys and behavior (`release_always`, `release_commits`, `semver_check`, `[changelog]` options).
+  - `.codex/release-plz/Changelog.txt`: changelog generation model and parser rules.
+  - `.codex/release-plz/GitHub Action.txt`: Action setup, required permissions, `dry_run`, token model, inputs/outputs.
+  - `.codex/release-plz/CLI Usage.txt`: manual commands (`release-pr`, `release`) and local verification flow.
+  - `.codex/release-plz/Troubleshooting.txt`: common failure patterns and recommended fixes.
+  - `.codex/release-plz/FAQ.txt`, `.codex/release-plz/Extra.txt`: edge-case behavior and advanced options.
+- Breaking-change method for release-plz (required when semver-check reports API break):
+  - Preferred commit title format: `feat(scope)!: ...` or `fix(scope)!: ...`.
+  - Required footer for explicit migration signal: `BREAKING CHANGE: <what changed and how to migrate>`.
+  - Keep migration note concise and user-actionable (what changed, why, replacement pattern).
+  - Do not hide breaking notes only in PR comments; keep them in commit message and release notes.
 ## API Review Checklist (before shipping)
 - Backward compatibility assessed (breaking vs additive).
 - Deprecation plan and migration notes where needed.
