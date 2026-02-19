@@ -43,6 +43,26 @@ Dev install via cargo:
 cargo add teamtalk --git https://github.com/BlindMaster24/TeamTalkRust.git --branch main
 ```
 
+## Task Runner (Optional)
+
+This repository includes a root [`justfile`](justfile) with shortcuts for
+checks, docs, dependencies, and release operations.
+
+Install optional tooling:
+
+```bash
+cargo install just cargo-edit cargo-outdated cargo-llvm-cov
+```
+
+Common commands:
+
+```bash
+just quick
+just ci
+just deps-safe-cycle
+just release-status
+```
+
 ## Quick Start
 
 ```rust

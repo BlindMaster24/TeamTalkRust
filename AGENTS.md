@@ -229,6 +229,14 @@
   - Components list: `rustup component list` and `rustup component list --installed`
   - Targets list: `rustup target list` and `rustup target list --installed`
 - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+## Task Runner (`just`)
+- The repo ships a root `justfile` as a convenience CLI for common workflows.
+- `just` is optional; every task must still be runnable with direct `cargo`/`gh`/scripts commands.
+- Install recommended tooling:
+  - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov`
+- Discover tasks with `just --list`.
+- Use `just` for repeatable local flows (for example `just quick`, `just ci`, `just deps-safe-cycle`, `just release-status`).
+- Use direct commands as fallback when `just` is unavailable.
 ## Command Invocation Conventions
 - When a task requires multiple shell commands, run them sequentially and keep each command explicit.
 - In PowerShell, use `;` as the command separator (not `&&`).
