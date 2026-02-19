@@ -9,6 +9,7 @@ tag creation, GitHub releases, and crates.io publishing.
 - release-plz config: [release-plz.toml](../release-plz.toml)
 - Dependabot config: [dependabot.yml](../.github/dependabot.yml)
 - Repository secret: `CRATES_IO_TOKEN`
+- Preferred repository secret: `RELEASE_PLZ_TOKEN` (PAT or GitHub App token)
 - GitHub Actions default workflow permissions: `Read and write`
 
 ## Normal Development Flow
@@ -33,6 +34,24 @@ On every push to `main`:
    - [features.md](features.md)
 3. After merge of the release PR, `Release-plz release` publishes the crate and
    creates the tag/release.
+
+## GitHub Token Policy (Recommended)
+
+This repository supports a token fallback, but for reliable release automation
+the preferred setup is:
+
+1. Create `RELEASE_PLZ_TOKEN` with:
+   - `contents: write`
+   - `pull requests: write`
+2. Keep `CRATES_IO_TOKEN` for crates publish.
+3. Let workflows use `RELEASE_PLZ_TOKEN` first and `GITHUB_TOKEN` as fallback.
+
+Why this is preferred:
+
+- release-plz may use temporary clones and `git push`, so explicit git auth is
+  more reliable than relying on checkout-only credentials.
+- default `GITHUB_TOKEN` has workflow-trigger limitations in some setups.
+- a dedicated token keeps release permissions explicit and easier to audit.
 
 ## Dependency Update Automation
 
