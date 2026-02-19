@@ -286,6 +286,78 @@
     - `just audit-pass`
 - For unknown/new commands, run `just --list` and then execute the matching recipe.
 - Use direct commands as fallback when `just` is unavailable.
+### Detailed `just` Usage and Fallback Matrix
+- Execution order policy:
+  - Prefer `just` recipe first.
+  - If `just` is missing: run equivalent manual command(s).
+  - If recipe exists but dependent CLI is missing (for example `gh`, `cargo-outdated`, nightly+miri), either:
+    1) install missing tool via `just tools-install` (or direct install), or
+    2) continue with available checks and clearly report which optional step was skipped.
+- Daily operations (recommended sequence):
+  1. `just env-check` (verify toolchain + CLI presence).
+  2. `just quick` (fast health check during active development).
+  3. `just test-feature <feature>` when working in one feature slice.
+  4. `just release-status` when release state/PR state matters.
+- Weekly maintenance (recommended sequence):
+  1. `just deps-outdated`
+  2. `just deps-safe-cycle`
+  3. `just runs-fail`
+- Pre-release operations (recommended sequence):
+  1. `just qa-full`
+  2. `just release-dry`
+  3. `just release-watch`
+- Release-day operations (explicit publish path):
+  1. `just release-status`
+  2. `just release-run`
+  3. `just release-watch`
+- Fallback equivalents for critical recipes:
+  - `just quick` ->
+    - `cargo fmt --all -- --check`
+    - `cargo check --workspace --all-targets`
+    - `cargo test --workspace --all-targets`
+  - `just qa-full` / `just ci` ->
+    - `cargo fmt --all -- --check`
+    - `cargo check --workspace --all-targets --all-features`
+    - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+    - `cargo test --workspace --all-targets --all-features`
+    - `cargo doc --no-deps --all-features`
+    - `bash ./scripts/check-doc-links.sh` (or `./scripts/check-doc-links.ps1`)
+    - `bash ./scripts/check-version-refs.sh` (or `./scripts/check-version-refs.ps1`)
+  - `just deps-refresh-compatible` ->
+    - `cargo upgrade --manifest-path crates/teamtalk/Cargo.toml`
+    - `cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml`
+    - `cargo update`
+  - `just deps-refresh-major` ->
+    - `cargo upgrade --manifest-path crates/teamtalk/Cargo.toml --incompatible allow --pinned allow`
+    - `cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml --incompatible allow --pinned allow`
+    - `cargo update`
+  - `just release-dry` ->
+    - `gh workflow run release-plz.yml -f dry_run=true`
+  - `just release-run` ->
+    - `gh workflow run release-plz.yml -f dry_run=false`
+  - `just release-watch` ->
+    - `gh run watch $(gh run list --workflow "Release-plz" --limit 1 --json databaseId --jq '.[0].databaseId')`
+- Expected tool prerequisites by recipe family:
+  - Cargo-only recipes: Rust toolchain + workspace dependencies.
+  - `deps-outdated*`: `cargo-outdated` installed.
+  - `miri-test`: nightly toolchain + `miri` component installed.
+  - Release/GitHub recipes: authenticated `gh` CLI and repository access.
+- Failure handling policy:
+  - Never silently skip a failed step.
+  - Report exact failing recipe and command output summary.
+  - For optional recipes (bench, miri, outdated), state "optional check skipped" with reason.
+  - For required release/quality recipes, stop and fix before proceeding to commit/push.
+- Command selection policy by intent:
+  - "quick local confidence" -> `just quick`
+  - "full ready-to-push quality gate" -> `just qa-full`
+  - "dependency refresh without majors" -> `just deps-safe-cycle`
+  - "dependency refresh including majors" -> `just deps-major-cycle`
+  - "check release pipeline without publish" -> `just release-dry` + `just release-watch`
+  - "perform publish run" -> `just release-run` + `just release-watch`
+- Windows/Linux shell policy:
+  - Use PowerShell variants when available on Windows (`*-ps`).
+  - Use bash variants in Linux/macOS and CI.
+  - Keep command separators platform-correct (`;` in PowerShell).
 ## Command Invocation Conventions
 - When a task requires multiple shell commands, run them sequentially and keep each command explicit.
 - In PowerShell, use `;` as the command separator (not `&&`).
