@@ -38,7 +38,7 @@ jobs:
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release-pr
         id: release-plz
-        uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
+        uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5.127
         with:
           command: release-pr
         env:
@@ -102,7 +102,7 @@ jobs:
         run: |
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release
-        uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
+        uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5.127
         with:
           command: release
         env:
@@ -136,7 +136,7 @@ jobs:
         run: |
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Run release-plz release
-        uses: release-plz/action@476794ede164c5137bfc3a1dc6ed3675275690f9 # v0.5.99
+        uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5.127
         with:
           command: release
         env:
