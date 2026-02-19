@@ -7,6 +7,17 @@ public API with compatibility expectations for downstream users.
 
 ## Unreleased
 
+### Added
+- `state` feature flag (enabled by default) for state-store APIs.
+- State-store facade helpers: `enable_state_store`, `store_snapshot`, `store_user`, `store_channel`.
+- Async stream helpers: `AsyncClient::next_event`, `AsyncClient::wait_for_event`.
+- Tokio timeout helper: `AsyncClient::wait_for_event_timeout` (`async-tokio` only).
+- High-level sync wait helpers: `Client::login_and_wait`, `Client::join_channel_and_wait`.
+- Typed payload facade on messages: `EventData`, `Message::data`, and `try_as_*` helpers.
+
+### Changed
+- `poll()` now emits optional tracing logs for event flow and state transitions under `logging`.
+
 ## 1.3.0
 
 ### Added

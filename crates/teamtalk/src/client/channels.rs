@@ -84,6 +84,40 @@ impl Client {
         cmd_id
     }
 
+    /// Joins a channel and waits for join completion or command error.
+    pub fn join_channel_and_wait(
+        &self,
+        id: ChannelId,
+        password: &str,
+        timeout_ms: i32,
+    ) -> Result<super::Message, crate::events::Error> {
+        let cmd_id = self.join_channel(id, password);
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: "join command rejected in current state".to_string(),
+            });
+        }
+        let waited = self.poll_until(timeout_ms, |event, msg| match event {
+            crate::events::Event::UserJoined => msg
+                .user()
+                .map(|user| user.id == self.my_id())
+                .unwrap_or(false),
+            crate::events::Event::CmdError => msg.source() == cmd_id,
+            _ => false,
+        });
+        let Some((event, message)) = waited else {
+            return Err(crate::events::Error::Timeout);
+        };
+        if matches!(event, crate::events::Event::CmdError) {
+            return Err(crate::events::Error::CommandFailed {
+                code: message.source(),
+                message: "join command failed".to_string(),
+            });
+        }
+        Ok(message)
+    }
+
     /// Joins a channel by id without a password.
     pub fn join_channel_unprotected(&self, channel_id: ChannelId) -> i32 {
         self.join_channel(channel_id, "")

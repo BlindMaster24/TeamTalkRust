@@ -1,6 +1,7 @@
 //! Async wrapper around the polling client.
 use crate::client::{Client, Message};
 use crate::events::Event;
+use futures::StreamExt;
 use futures::stream::Stream;
 use futures::task::AtomicWaker;
 use std::collections::VecDeque;
@@ -142,6 +143,34 @@ impl AsyncClient {
     pub fn into_client(mut self) -> Option<Client> {
         self.stop();
         self.client.take()
+    }
+
+    /// Waits for the next event from the stream.
+    pub async fn next_event(&mut self) -> Option<(Event, Message)> {
+        self.next().await
+    }
+
+    /// Waits until a specific event is received.
+    pub async fn wait_for_event(&mut self, expected: Event) -> Option<Message> {
+        while let Some((event, msg)) = self.next().await {
+            if event == expected {
+                return Some(msg);
+            }
+        }
+        None
+    }
+
+    /// Waits for a specific event until timeout is reached.
+    #[cfg(feature = "async-tokio")]
+    pub async fn wait_for_event_timeout(
+        &mut self,
+        expected: Event,
+        timeout: Duration,
+    ) -> Option<Message> {
+        tokio::time::timeout(timeout, self.wait_for_event(expected))
+            .await
+            .ok()
+            .flatten()
     }
 }
 

@@ -32,9 +32,11 @@ pub use client::recording::{
 pub use client::users::{LoginParams, SendTextOptions};
 pub use client::{
     Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
-    ClientManager, ClientRegistry, EventContext, EventSubscriptionId, Message, ReconnectConfig,
-    ServerInfo,
+    ClientManager, ClientRegistry, EventContext, EventData, EventSubscriptionId, Message,
+    ReconnectConfig,
 };
+#[cfg(feature = "state")]
+pub use client::{ServerInfo, StoreSnapshot};
 #[cfg(feature = "dispatch")]
 pub use dispatch::{
     ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher,

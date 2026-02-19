@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 pub use teamtalk_sys as ffi;
 
 use super::bus;
+#[cfg(feature = "state")]
 use super::cache;
 use super::hooks;
 
@@ -32,6 +33,7 @@ pub struct Client {
     #[cfg(feature = "scripts")]
     pub(crate) scripts: Mutex<Option<ScriptManager>>,
     pub(crate) auto_reconnect: Mutex<AutoReconnectState>,
+    #[cfg(feature = "state")]
     pub(crate) cache: Mutex<cache::CacheState>,
 }
 
@@ -81,6 +83,7 @@ impl Client {
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
+                #[cfg(feature = "state")]
                 cache: Mutex::new(cache::CacheState::default()),
             })
         }
@@ -120,6 +123,7 @@ impl Client {
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
+                #[cfg(feature = "state")]
                 cache: Mutex::new(cache::CacheState::default()),
             })
         }
@@ -157,6 +161,7 @@ impl Client {
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
+                #[cfg(feature = "state")]
                 cache: Mutex::new(cache::CacheState::default()),
             })
         }
@@ -622,6 +627,18 @@ pub struct Message {
     raw: ffi::TTMessage,
 }
 
+/// Typed payload extracted from a TeamTalk message.
+pub enum EventData {
+    TextMessage(crate::types::TextMessage),
+    Channel(crate::types::Channel),
+    ServerProperties(crate::types::ServerProperties),
+    ServerStatistics(crate::types::ServerStatistics),
+    FileTransfer(crate::types::FileTransfer),
+    User(crate::types::User),
+    UserAccount(crate::types::UserAccount),
+    ErrorMessage(crate::types::ErrorMessage),
+}
+
 impl Message {
     fn has_tt_type(&self, expected: ffi::TTType) -> bool {
         self.raw.ttType == expected
@@ -783,6 +800,34 @@ impl Message {
     pub fn raw(&self) -> &ffi::TTMessage {
         &self.raw
     }
+
+    /// Returns typed payload for the current event, if available.
+    pub fn data(&self) -> Option<EventData> {
+        self.text()
+            .map(EventData::TextMessage)
+            .or_else(|| self.channel().map(EventData::Channel))
+            .or_else(|| self.server_properties().map(EventData::ServerProperties))
+            .or_else(|| self.server_statistics().map(EventData::ServerStatistics))
+            .or_else(|| self.file_transfer().map(EventData::FileTransfer))
+            .or_else(|| self.user().map(EventData::User))
+            .or_else(|| self.account().map(EventData::UserAccount))
+            .or_else(|| self.error_message().map(EventData::ErrorMessage))
+    }
+
+    /// Returns the text message payload when this message carries it.
+    pub fn try_as_text_message(&self) -> Option<crate::types::TextMessage> {
+        self.text()
+    }
+
+    /// Returns the user payload when this message carries it.
+    pub fn try_as_user(&self) -> Option<crate::types::User> {
+        self.user()
+    }
+
+    /// Returns the channel payload when this message carries it.
+    pub fn try_as_channel(&self) -> Option<crate::types::Channel> {
+        self.channel()
+    }
 }
 
 impl Drop for Client {
@@ -818,11 +863,19 @@ impl Client {
             let event = Event::from(msg.nClientEvent);
             let message = Message::from_raw(event, msg);
             self.update_state_for_event(event, &message);
+            #[cfg(feature = "state")]
             self.update_cache_for_event(event, &message);
             self.invoke_hooks(event, &message);
             self.dispatch_bus(event, &message);
             #[cfg(feature = "scripts")]
             self.dispatch_scripts(event, &message);
+            #[cfg(feature = "logging")]
+            tracing::trace!(
+                event = ?event,
+                source = message.source(),
+                state = ?self.connection_state(),
+                "teamtalk poll event"
+            );
             self.handle_auto_reconnect();
             Some((event, message))
         } else {
@@ -874,6 +927,8 @@ impl Client {
     }
 
     fn update_state_for_event(&self, event: Event, msg: &Message) {
+        #[cfg(feature = "logging")]
+        let prev_state = self.connection_state();
         match event {
             Event::ConnectSuccess => {
                 self.set_connection_state(ConnectionState::Connected);
@@ -1001,6 +1056,18 @@ impl Client {
             auto.force_disconnect = true;
             drop(auto);
             self.set_connection_state(ConnectionState::Disconnected);
+        }
+        #[cfg(feature = "logging")]
+        {
+            let next_state = self.connection_state();
+            if next_state != prev_state {
+                tracing::debug!(
+                    event = ?event,
+                    previous = ?prev_state,
+                    current = ?next_state,
+                    "connection state transition"
+                );
+            }
         }
     }
 

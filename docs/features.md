@@ -12,13 +12,14 @@ teamtalk = { version = "1.3.0", features = ["dispatch", "async"] }
 ## Available Features
 
 - `dispatch`: event dispatcher with handler routing and reconnect support.
-- `async`: async wrapper without a worker thread (single-threaded polling).
+- `async`: async wrapper with stream helpers (`next_event`, `wait_for_event`).
 - `async-tokio`: Tokio wake integration for the async wrapper (requires a Tokio runtime).
 - `logging`: event logging integration.
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
 - `scripts`: Lua scripting support for extensions.
 - `plugins`: native plugin loading for extensions.
+- `state`: in-memory state store helpers (`store_snapshot`, `store_user`, `store_channel`).
 - `tls-native`: system TLS via the native OS backend (default).
 - `tls-rustls`: pure Rust TLS for builds without OpenSSL.
 
@@ -33,6 +34,7 @@ cargo build --no-default-features --features tls-rustls
 - Connection state tracking via `ConnectionState` and `Client::connection_state`.
 - Hooks API via `ClientHooks` for event callbacks.
 - Poll helpers: `Client::poll_until` and `Client::wait_for`.
+- High-level wait helpers: `Client::login_and_wait` and `Client::join_channel_and_wait`.
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
 - Recording guard: `RecordSession` for safe start/stop of channel recording.    
 - Managed recording: `RecordingSession`, `RecordingOptions`, `RecordingTarget`.  
@@ -54,7 +56,9 @@ cargo build --no-default-features --features tls-rustls
 - Multi-client manager: `ClientManager` with event channel and health snapshots.
 - Cache helpers: user/channel caches with `refresh_*` and `cached_*` accessors.
 - Server info snapshot: `Client::server_info` from cached properties and stats.
+- State store facade: `enable_state_store`, `store_snapshot`, `store_user`, `store_channel`.
 - Message builder: `MessageBuilder` for outgoing text messages.
+- Typed event payload facade: `Message::data` and `try_as_*` helpers.
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
@@ -62,4 +66,3 @@ cargo build --no-default-features --features tls-rustls
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Auto phase hooks/events: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).
-

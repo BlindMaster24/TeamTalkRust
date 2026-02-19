@@ -22,6 +22,9 @@ pub struct ServerInfo {
     pub channels: Vec<Channel>,
 }
 
+/// Snapshot exported by the state store.
+pub type StoreSnapshot = ServerInfo;
+
 impl Client {
     /// Enables the user cache. When auto-sync is true, events update the cache.
     pub fn enable_user_cache(&self, auto_sync: bool) {
@@ -134,6 +137,27 @@ impl Client {
             users: cache.users.values().cloned().collect(),
             channels: cache.channels.values().cloned().collect(),
         }
+    }
+
+    /// Enables both user and channel stores with a shared auto-sync mode.
+    pub fn enable_state_store(&self, auto_sync: bool) {
+        self.enable_user_cache(auto_sync);
+        self.enable_channel_cache(auto_sync);
+    }
+
+    /// Returns a full snapshot of the in-memory state store.
+    pub fn store_snapshot(&self) -> StoreSnapshot {
+        self.server_info()
+    }
+
+    /// Returns a user from the state store.
+    pub fn store_user(&self, user_id: UserId) -> Option<User> {
+        self.cached_user(user_id)
+    }
+
+    /// Returns a channel from the state store.
+    pub fn store_channel(&self, channel_id: ChannelId) -> Option<Channel> {
+        self.cached_channel(channel_id)
     }
 
     pub(crate) fn update_cache_for_event(&self, event: Event, msg: &super::Message) {

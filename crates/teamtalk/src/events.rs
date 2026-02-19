@@ -230,6 +230,8 @@ pub enum Error {
     ClientError { code: i32, message: String },
     #[error("IO error: {message}")]
     IoError { message: String },
+    #[error("Operation timed out")]
+    Timeout,
 }
 
 /// Convenience result type for TeamTalk operations.

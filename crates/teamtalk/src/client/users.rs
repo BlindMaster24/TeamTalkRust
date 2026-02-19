@@ -213,6 +213,33 @@ impl Client {
         ))
     }
 
+    /// Logs in and waits for the login event or command error.
+    pub fn login_and_wait(
+        &self,
+        nickname: &str,
+        username: &str,
+        password: &str,
+        client_name: &str,
+        timeout_ms: i32,
+    ) -> Result<super::Message, crate::events::Error> {
+        let cmd_id = self.login(nickname, username, password, client_name);
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::AuthFailed);
+        }
+        let waited = self.poll_until(timeout_ms, |event, msg| match event {
+            crate::events::Event::MySelfLoggedIn => true,
+            crate::events::Event::CmdError => msg.source() == cmd_id,
+            _ => false,
+        });
+        let Some((event, message)) = waited else {
+            return Err(crate::events::Error::Timeout);
+        };
+        if matches!(event, crate::events::Event::CmdError) {
+            return Err(crate::events::Error::AuthFailed);
+        }
+        Ok(message)
+    }
+
     /// Stores login parameters and immediately logs in.
     pub fn login_remember(
         &self,

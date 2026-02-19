@@ -7,6 +7,7 @@ pub mod backend;
 #[cfg(not(feature = "mock"))]
 pub(crate) mod backend;
 pub mod bus;
+#[cfg(feature = "state")]
 pub mod cache;
 pub mod channels;
 pub mod connection;
@@ -27,11 +28,12 @@ pub mod users;
 pub mod video;
 
 pub use bus::{EventContext, EventSubscriptionGroup, EventSubscriptionId, SubscriptionBuilder};
-pub use cache::ServerInfo;
+#[cfg(feature = "state")]
+pub use cache::{ServerInfo, StoreSnapshot};
 pub use connection::{
     ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectWorkflowConfig,
 };
-pub use core::{Client, ClientCommands, ClientEvents, Message};
+pub use core::{Client, ClientCommands, ClientEvents, EventData, Message};
 pub use hooks::ClientHooks;
 pub use manager::{ClientEvent, ClientHealth, ClientManager};
 pub use registry::{ClientInfo, ClientRegistry};
