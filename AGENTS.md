@@ -136,6 +136,9 @@
   - `release_always = false` is enabled in `release-plz.toml`.
   - `semver_check = true` is enabled for `teamtalk`; breaking API changes can force major releases.
   - Keep `release_commits` commented unless explicitly requested; it is an opt-in noise filter.
+  - Publish policy is split:
+    - `push` to `main` runs only `release-pr` updates.
+    - publish runs on merged `release-plz/*` PRs and on explicit manual dispatch.
 - Workflow hardening baseline:
   - Keep action refs pinned to commit SHAs in `.github/workflows/release-plz.yml`.
   - Keep concurrency groups on release jobs to avoid duplicate publish/tag races.

@@ -32,8 +32,12 @@ On every push to `main`:
    - [README](../README.md)
    - [getting-started.md](getting-started.md)
    - [features.md](features.md)
-3. After merge of the release PR, `Release-plz release` publishes the crate and
-   creates the tag/release.
+3. No publish happens on plain pushes to `main`.
+
+On merge of a `release-plz/*` PR into `main`:
+
+1. `Release-plz release` runs and publishes the crate.
+2. release-plz creates the tag and GitHub release.
 
 ## GitHub Token Policy (Recommended)
 
@@ -152,6 +156,8 @@ Use GitHub CLI to start the workflow dispatch job:
 ```bash
 gh workflow run "Release-plz" --ref main
 ```
+
+Manual publish mode: default `dry_run=false` (real publish).
 
 Manual dry-run (no publish):
 
