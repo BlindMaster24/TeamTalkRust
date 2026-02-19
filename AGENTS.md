@@ -132,7 +132,7 @@
     - `gh api repos/actions/create-github-app-token/git/tags/<sha> --jq '.object.sha, .object.type'`
 - No unrelated refactors in release commits.
 - Current release-plz baseline:
-  - `docs/changelog.md` is the canonical source for release notes and `## Unreleased` must exist.
+  - `docs/changelog.md` is the canonical source for released notes (versioned sections only).
   - `release_always = false` is enabled in `release-plz.toml`.
   - `semver_check = true` is enabled for `teamtalk`; breaking API changes can force major releases.
   - Keep `release_commits` commented unless explicitly requested; it is an opt-in noise filter.
@@ -310,7 +310,7 @@
 
 ## Documentation Updates from a Specific Commit
 - When asked to update docs from a baseline commit, diff from that commit to `HEAD`.
-- Summarize all user-facing changes in `docs/changelog.md` under `Unreleased`.
+- Summarize all user-facing changes in the next release section of `docs/changelog.md`.
 - Update affected guides (README + docs/) only when behavior or usage changed.
 - Replace raw `docs/` or `crates/` paths in prose with Markdown links.
 
@@ -370,10 +370,10 @@
 - Use `scripts/update-version.ps1` or `scripts/update-version.sh` to sync version references.
 - Use `scripts/check-version-refs.ps1` or `scripts/check-version-refs.sh` to verify refs are already synced.
 - Keep `docs/changelog.md` limited to user-facing changes; keep CI/CD details in `docs/dev.md`.
-- Every user-facing change must be added to `docs/changelog.md` under `Unreleased` in the same PR/commit set.
+- Every user-facing change must be represented by release-plz output in the next release section.
 - Version bumps must be in a dedicated commit, even if requested alongside other changes.
 - Release workflow:
-  - Push normal feature/fix PRs with `docs/changelog.md` updates under `## Unreleased`.
+  - Push normal feature/fix PRs with Conventional Commits; release-plz generates changelog sections.
   - On push to `main`, release-plz opens/updates a release PR (version + changelog).
   - release-plz workflow then syncs version refs in `README.md`, `docs/getting-started.md`, and `docs/features.md`.
   - After release PR merge, release-plz tags and publishes the release.

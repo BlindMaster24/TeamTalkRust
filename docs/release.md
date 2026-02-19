@@ -15,12 +15,10 @@ tag creation, GitHub releases, and crates.io publishing.
 ## Normal Development Flow
 
 1. Merge feature and fix PRs to `main`.
-2. Keep [changelog.md](changelog.md) updated under `## Unreleased` for all
-   user-facing changes.
-3. Keep Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`) so release-plz
-   can infer the correct semantic version bump.
-4. Keep `## Unreleased` concise and up to date; release-plz moves it into the
-   next version section automatically.
+2. Keep Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`) so release-plz
+   can infer the correct semantic version bump and changelog grouping.
+3. Keep changelog edits (if any) in the release PR only; avoid manual
+   pre-population of changelog sections during feature PRs.
 
 ## Automated Release Flow
 

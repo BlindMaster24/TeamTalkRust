@@ -25,6 +25,14 @@ publish = false
 protect_breaking_commits = true
 sort_commits = "newest"
 trim = true
+header = """
+# Changelog
+
+## Versioning
+
+This project follows semantic versioning. A major release indicates stable
+public API with compatibility expectations for downstream users.
+"""
 commit_preprocessors = [
   { pattern = "\\(#([0-9]+)\\)", replace = "([#${1}](https://github.com/BlindMaster24/TeamTalkRust/pull/${1}))" },
 ]
