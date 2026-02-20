@@ -9,7 +9,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "2.0.0"
+teamtalk = "3.0.0"
 ```
 
 For the latest development version from `main`:
@@ -134,7 +134,7 @@ Enable async support in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "2.0.0", features = ["async"] }
+teamtalk = { version = "3.0.0", features = ["async"] }
 ```
 
 Use the async wrapper when you want stream-style event handling:
