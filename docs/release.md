@@ -120,6 +120,14 @@ BREAKING CHANGE: AsyncClient no longer implements Sync. Keep AsyncClient in one
 runtime/task and use wait helpers plus shutdown/into_client for lifecycle.
 ```
 
+Include the migration guide in the same footer when available:
+
+```text
+BREAKING CHANGE: AsyncClient no longer implements Sync. Keep AsyncClient in one
+runtime/task and use wait helpers plus shutdown/into_client for lifecycle.
+Migration: https://github.com/BlindMaster24/TeamTalkRust/blob/main/docs/migrations/2-to-3.md
+```
+
 ## SemVer Gate in CI
 
 Pull requests to `main` run a dedicated semver compatibility check for the
