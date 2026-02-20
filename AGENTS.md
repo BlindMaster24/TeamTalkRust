@@ -159,6 +159,8 @@
   - Required footer for explicit migration signal: `BREAKING CHANGE: <what changed and how to migrate>`.
   - Keep migration note concise and user-actionable (what changed, why, replacement pattern).
   - Do not hide breaking notes only in PR comments; keep them in commit message and release notes.
+  - Important: for `teamtalk` release notes, the breaking commit must touch `crates/teamtalk/**`; docs-only commits (for example only `docs/**`) won't be included in the package changelog block.
+  - If you need a migration link in generated changelog, place it in the same breaking commit footer that touches the package: `BREAKING CHANGE: ... Migration: <url>`.
 - If release PR shows major bump but changelog has no `Breaking` section:
   - Cause: semver-check detects API break, but changelog groups are still based on commit parser rules.
   - Fix sequence:
