@@ -398,10 +398,23 @@
 - `cargo add <crate>` / `cargo remove <crate>` come from `cargo-edit` and modify `Cargo.toml` directly.
 - `cargo upgrade` (from `cargo-edit`) updates dependency requirements in `Cargo.toml`; by default it can include major updates.
 - Install tooling: `cargo install cargo-edit`; verify commands with `cargo --list`.
+- Full workspace manifests in this repo:
+  - `crates/teamtalk/Cargo.toml`
+  - `crates/teamtalk-sys/Cargo.toml`
+  - `crates/teamtalk-macros/Cargo.toml`
 - Safe non-major policy:
-  - Update manifest constraints without major jumps: `cargo upgrade --workspace --incompatible false`.
+  - Verify latest published crate versions first with `cargo search <crate> --limit 1`.
+  - Update manifest constraints without major jumps:
+    - `cargo upgrade --manifest-path crates/teamtalk/Cargo.toml --incompatible false`
+    - `cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml --incompatible false`
+    - `cargo upgrade --manifest-path crates/teamtalk-macros/Cargo.toml --incompatible false`
   - Then refresh lockfile: `cargo update`.
   - Then run DoD checks (`fmt`, `check`, `clippy`, `test`, `doc`, doc links).
+- Full major-refresh policy:
+  - `cargo upgrade --manifest-path crates/teamtalk/Cargo.toml --incompatible allow --pinned allow`
+  - `cargo upgrade --manifest-path crates/teamtalk-sys/Cargo.toml --incompatible allow --pinned allow`
+  - `cargo upgrade --manifest-path crates/teamtalk-macros/Cargo.toml --incompatible allow --pinned allow`
+  - `cargo update`
 - `cargo update` alone does not change `Cargo.toml`; it only updates `Cargo.lock` within already-allowed semver ranges.
 - Prefer pinning dependency features explicitly in `Cargo.toml`; avoid implicit default features unless intentional.
 - Before upgrading dependencies, inspect current tree with `cargo tree` and re-check after upgrade for changed transitive graph.

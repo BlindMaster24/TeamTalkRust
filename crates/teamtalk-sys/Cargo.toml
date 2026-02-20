@@ -9,8 +9,8 @@ repository = "https://github.com/BlindMaster24/TeamTalkRust"
 homepage = "https://github.com/BlindMaster24/TeamTalkRust"
 
 [dependencies]
-libloading = "0.9"
-once_cell = "1.21"
+libloading = "0.9.0"
+once_cell = "1.21.3"
 
 [build-dependencies]
-bindgen = "0.72"
+bindgen = "0.72.1"
