@@ -91,7 +91,6 @@ jobs:
             --no-progress
             --max-redirects 5
             --retry-wait-time 2
-            --exclude-mail
             README.md docs/**/*.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
