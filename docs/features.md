@@ -69,6 +69,7 @@ cargo build --no-default-features --features tls-rustls
 - Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
   command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
+- Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
 - Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.

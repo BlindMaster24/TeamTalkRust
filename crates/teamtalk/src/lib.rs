@@ -30,9 +30,9 @@ pub use bot::SqliteStateStore;
 pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
 #[cfg(feature = "bot")]
 pub use bot::{
-    Bot, BotBuilder, BotConfig, Command, CommandOnly, Context, HandlerResult, JobErrorPolicy,
-    MemoryStateStore, Middleware, RateLimitBySource, RouteMatcher, Router, Scheduler, StateStore,
-    parse_command,
+    Bot, BotBuilder, BotConfig, Command, CommandOnly, Context, DialogMachine, DialogState,
+    HandlerResult, JobErrorPolicy, MemoryStateStore, Middleware, RateLimitBySource, RouteMatcher,
+    Router, Scheduler, StateStore, parse_command,
 };
 pub use client::audio::AudioDeviceProfile;
 pub use client::audio::{

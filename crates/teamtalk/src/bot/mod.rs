@@ -2,6 +2,7 @@
 
 mod command;
 mod context;
+mod fsm;
 mod middleware;
 mod router;
 mod runtime;
@@ -13,6 +14,7 @@ mod runtime_async;
 
 pub use command::{Command, parse_command};
 pub use context::Context;
+pub use fsm::{DialogMachine, DialogState};
 pub use middleware::{CommandOnly, Middleware, RateLimitBySource};
 pub use router::{HandlerResult, RouteMatcher, Router};
 pub use runtime::{Bot, BotBuilder, BotConfig};
