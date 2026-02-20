@@ -22,6 +22,10 @@ pub mod mock;
 
 #[cfg(feature = "async")]
 pub use async_api::{AsyncClient, AsyncConfig};
+#[cfg(all(feature = "bot", feature = "bot-redis"))]
+pub use bot::RedisStateStore;
+#[cfg(all(feature = "bot", feature = "bot-sqlite"))]
+pub use bot::SqliteStateStore;
 #[cfg(all(feature = "bot", feature = "async"))]
 pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
 #[cfg(feature = "bot")]

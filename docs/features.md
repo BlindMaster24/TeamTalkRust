@@ -23,6 +23,8 @@ teamtalk = { version = "2.0.0", features = ["dispatch", "async"] }
 - `plugins`: native plugin loading for extensions.
 - `state`: in-memory state store helpers (`store_snapshot`, `store_user`, `store_channel`).
 - `bot`: high-level bot framework (router, commands, middleware, scheduler, state store).
+- `bot-redis`: Redis-backed bot state store adapter (`RedisStateStore`).
+- `bot-sqlite`: SQLite-backed bot state store adapter (`SqliteStateStore`).
 - `tls-native`: system TLS via the native OS backend (default).
 - `tls-rustls`: pure Rust TLS for builds without OpenSSL.
 

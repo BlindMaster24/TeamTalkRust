@@ -17,6 +17,10 @@ pub use middleware::Middleware;
 pub use router::{HandlerResult, RouteMatcher, Router};
 pub use runtime::{Bot, BotBuilder, BotConfig};
 pub use scheduler::{JobErrorPolicy, Scheduler};
+#[cfg(feature = "bot-redis")]
+pub use storage::RedisStateStore;
+#[cfg(feature = "bot-sqlite")]
+pub use storage::SqliteStateStore;
 pub use storage::{MemoryStateStore, StateStore};
 
 #[cfg(feature = "async")]
