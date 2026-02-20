@@ -1,0 +1,27 @@
+name: Semver
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  semver:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
+
+      - name: Install cargo-semver-checks
+        run: cargo install --locked cargo-semver-checks --version 0.46.0
+
+      - name: Run semver checks for teamtalk
+        run: cargo semver-checks check-release --package teamtalk

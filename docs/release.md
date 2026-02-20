@@ -6,6 +6,7 @@ tag creation, GitHub releases, and crates.io publishing.
 ## Prerequisites
 
 - Workflow config: [release-plz.yml](../.github/workflows/release-plz.yml)
+- SemVer check workflow: [semver.yml](../.github/workflows/semver.yml)
 - release-plz config: [release-plz.toml](../release-plz.toml)
 - Dependabot config: [dependabot.yml](../.github/dependabot.yml)
 - Repository secret: `CRATES_IO_TOKEN`
@@ -118,6 +119,21 @@ For the current async architecture change, use wording like:
 BREAKING CHANGE: AsyncClient no longer implements Sync. Keep AsyncClient in one
 runtime/task and use wait helpers plus shutdown/into_client for lifecycle.
 ```
+
+## SemVer Gate in CI
+
+Pull requests to `main` run a dedicated semver compatibility check for the
+public API:
+
+```bash
+cargo semver-checks check-release --package teamtalk
+```
+
+If this check fails, either:
+
+- make the change additive/non-breaking, or
+- keep the break and mark it explicitly with `!` and `BREAKING CHANGE:` so the
+  release PR can correctly bump the major version.
 
 ## Manual Checks
 
