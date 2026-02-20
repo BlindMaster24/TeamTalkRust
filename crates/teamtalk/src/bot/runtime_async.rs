@@ -1,7 +1,8 @@
 use super::router::HandlerResult;
 use super::{MemoryStateStore, Router, Scheduler, StateStore};
 use crate::async_api::AsyncClient;
-use crate::events::Result;
+use crate::client::{EventData, Message};
+use crate::events::{Event, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -118,5 +119,37 @@ impl AsyncBot {
 
     pub fn client_mut(&mut self) -> &mut AsyncClient {
         &mut self.client
+    }
+
+    pub async fn wait_for_event(&mut self, event: Event) -> Option<Message> {
+        self.client.wait_for_event(event).await
+    }
+
+    pub async fn wait_for_predicate<F>(&mut self, predicate: F) -> Option<(Event, Message)>
+    where
+        F: FnMut(Event, &Message) -> bool,
+    {
+        self.client.wait_for_predicate(predicate).await
+    }
+
+    pub async fn wait_for_data(&mut self) -> Option<(Event, Message, EventData)> {
+        self.client.wait_for_data().await
+    }
+
+    #[cfg(feature = "async-tokio")]
+    pub async fn wait_for_event_timeout(
+        &mut self,
+        event: Event,
+        timeout: std::time::Duration,
+    ) -> Option<Message> {
+        self.client.wait_for_event_timeout(event, timeout).await
+    }
+
+    #[cfg(feature = "async-tokio")]
+    pub async fn wait_for_data_timeout(
+        &mut self,
+        timeout: std::time::Duration,
+    ) -> Option<(Event, Message, EventData)> {
+        self.client.wait_for_data_timeout(timeout).await
     }
 }

@@ -2,6 +2,7 @@
 members = [
     "crates/teamtalk-sys",
     "crates/teamtalk",
+    "crates/teamtalk-macros",
 ]
 resolver = "2"
 

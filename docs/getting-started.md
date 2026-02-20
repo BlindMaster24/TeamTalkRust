@@ -208,3 +208,24 @@ BotApp::new()
     .with_config(BotConfig::new().poll_timeout_ms(100))
     .run_sync(client)?;
 ```
+
+## Bot Macros (Optional)
+
+Enable `bot-macros` when you want attribute-based handler registration:
+
+```toml
+[dependencies]
+teamtalk = { version = "3.0.0", features = ["bot", "bot-macros"] }
+```
+
+```rust
+use teamtalk::{teamtalk_command, HandlerResult, Router};
+
+#[teamtalk_command("ping")]
+fn ping(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
+    let _ = ctx.reply_private("pong");
+    Ok(HandlerResult::Continue)
+}
+
+let router = register_ping(Router::new());
+```

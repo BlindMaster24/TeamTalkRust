@@ -60,6 +60,8 @@ pub use dispatch::{
 pub use events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "mock")]
 pub use mock::{MockClient, MockMessage, MockUserBuilder};
+#[cfg(feature = "bot-macros")]
+pub use teamtalk_macros::{teamtalk_command, teamtalk_event};
 pub use types::{ClientId, MessageBuilder};
 
 /// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
