@@ -13,7 +13,7 @@ mod runtime_async;
 
 pub use command::{Command, parse_command};
 pub use context::Context;
-pub use middleware::Middleware;
+pub use middleware::{CommandOnly, Middleware, RateLimitBySource};
 pub use router::{HandlerResult, RouteMatcher, Router};
 pub use runtime::{Bot, BotBuilder, BotConfig};
 pub use scheduler::{JobErrorPolicy, Scheduler};

@@ -68,6 +68,7 @@ cargo build --no-default-features --features tls-rustls
   `AsyncClient::wait_for_data_timeout` (`async-tokio`).
 - Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
   command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
+- Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
 - Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
