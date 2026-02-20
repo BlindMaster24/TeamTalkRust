@@ -1,6 +1,6 @@
 #![cfg(feature = "bot")]
 
-use teamtalk::{DialogMachine, MemoryStateStore};
+use teamtalk::{DialogFlow, DialogMachine, MemoryStateStore};
 
 #[test]
 fn dialog_machine_roundtrip() {
@@ -18,4 +18,16 @@ fn dialog_machine_roundtrip() {
     let stopped = fsm.stop(42).expect("stop state");
     assert_eq!(stopped.dialog, "onboarding");
     assert!(fsm.current(42).is_none());
+}
+
+#[test]
+fn dialog_flow_contains_start_and_steps() {
+    let flow = DialogFlow::new("onboarding", "ask_name")
+        .step("ask_email")
+        .step("done");
+    assert_eq!(flow.name(), "onboarding");
+    assert_eq!(flow.start_step(), "ask_name");
+    assert!(flow.contains_step("ask_name"));
+    assert!(flow.contains_step("ask_email"));
+    assert!(!flow.contains_step("missing"));
 }

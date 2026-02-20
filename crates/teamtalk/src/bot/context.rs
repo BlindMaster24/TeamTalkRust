@@ -1,10 +1,11 @@
 use super::args::Args;
 use super::command::Command;
-use super::fsm::{DialogMachine, DialogState};
+use super::fsm::{DialogFlow, DialogMachine, DialogState};
 use super::storage::StateStore;
 use crate::client::{Client, Message};
 use crate::events::Event;
 use crate::types::{ChannelId, UserId};
+use std::time::Duration;
 
 pub struct Context<'a> {
     pub client: &'a Client,
@@ -57,6 +58,46 @@ impl<'a> Context<'a> {
             return self.client.send_to_channel(channel_id, text);
         }
         self.reply_private(text)
+    }
+
+    pub fn wait_for_event(&self, event: Event, timeout: Duration) -> Option<Message> {
+        self.client
+            .wait_for(event, timeout.as_millis().min(i32::MAX as u128) as i32)
+    }
+
+    pub fn wait_text_from(&self, from: UserId, timeout: Duration) -> Option<Message> {
+        self.client
+            .poll_until(
+                timeout.as_millis().min(i32::MAX as u128) as i32,
+                |event, msg| event == Event::TextMessage && msg.source() == from.0,
+            )
+            .map(|(_, msg)| msg)
+    }
+
+    pub fn wait_command_from_sender(
+        &self,
+        command_name: &str,
+        timeout: Duration,
+    ) -> Option<Message> {
+        let sender = self.sender_id().0;
+        let expected = command_name.to_ascii_lowercase();
+        self.client
+            .poll_until(
+                timeout.as_millis().min(i32::MAX as u128) as i32,
+                |event, msg| {
+                    if event != Event::TextMessage || msg.source() != sender {
+                        return false;
+                    }
+                    let Some(text) = msg.text() else {
+                        return false;
+                    };
+                    let Some(parsed) = super::parse_command(&text.text, &['/', '!']) else {
+                        return false;
+                    };
+                    parsed.name == expected
+                },
+            )
+            .map(|(_, msg)| msg)
     }
 
     pub fn state_get(&self, key: &str) -> Option<String> {
@@ -133,6 +174,10 @@ impl<'a> Context<'a> {
     pub fn dialog_start(&mut self, dialog: impl Into<String>, step: impl Into<String>) {
         let source = self.message.source();
         self.dialog().start(source, dialog, step);
+    }
+
+    pub fn dialog_start_flow(&mut self, flow: &DialogFlow) {
+        self.dialog_start(flow.name(), flow.start_step());
     }
 
     pub fn dialog_current(&mut self) -> Option<DialogState> {

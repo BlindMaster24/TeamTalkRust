@@ -169,17 +169,27 @@ With the `bot` feature, handlers can use context helpers instead of manual
 message plumbing:
 
 ```rust
-use teamtalk::{HandlerResult, Router};
+use std::time::Duration;
+use teamtalk::{DialogFlow, HandlerResult, Router};
 
-let router = Router::new().on_command("ban", |ctx| {
-    let args = ctx.args().expect("command args");
-    let user_id: i32 = args.require(0, "/ban <user_id>")?;
-    let _reason = args.rest(1).unwrap_or_else(|| "no reason".to_owned());
+let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
 
-    ctx.user_state_set("last_ban_target", user_id.to_string());
-    let _ = ctx.reply_private("Command accepted");
-    Ok(HandlerResult::Continue)
-});
+let router = Router::new()
+    .on_command("ban", |ctx| {
+        let args = ctx.args().expect("command args");
+        let user_id: i32 = args.require(0, "/ban <user_id>")?;
+        let _reason = args.rest(1).unwrap_or_else(|| "no reason".to_owned());
+
+        ctx.user_state_set("last_ban_target", user_id.to_string());
+        let _ = ctx.reply_private("Command accepted");
+        Ok(HandlerResult::Continue)
+    })
+    .on_command("start", move |ctx| {
+        ctx.dialog_start_flow(&onboarding);
+        let _ = ctx.reply_private("What is your name?");
+        let _ = ctx.wait_command_from_sender("cancel", Duration::from_secs(30));
+        Ok(HandlerResult::Continue)
+    });
 ```
 
 You can wire bot runtime components through `BotApp`:

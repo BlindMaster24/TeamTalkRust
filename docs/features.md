@@ -73,7 +73,9 @@ cargo build --no-default-features --features tls-rustls
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
 - Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
+- Dialog flow helper: `DialogFlow` for reusable dialog definitions.
 - Bot context reply helpers: `reply`, `reply_private`, and `reply_channel`.
+- Bot wait helpers: `wait_for_event`, `wait_text_from`, and `wait_command_from_sender`.
 - Scoped state helpers: `user_state_*`, `channel_state_*`, and `global_state_*`.
 - Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Outgoing long text is chunked automatically and sent as multipart

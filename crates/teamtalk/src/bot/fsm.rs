@@ -28,6 +28,44 @@ pub struct DialogMachine<'a> {
     prefix: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DialogFlow {
+    name: String,
+    start_step: String,
+    steps: Vec<String>,
+}
+
+impl DialogFlow {
+    pub fn new(name: impl Into<String>, start_step: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            start_step: start_step.into(),
+            steps: Vec::new(),
+        }
+    }
+
+    pub fn step(mut self, step: impl Into<String>) -> Self {
+        self.steps.push(step.into());
+        self
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn start_step(&self) -> &str {
+        &self.start_step
+    }
+
+    pub fn steps(&self) -> &[String] {
+        &self.steps
+    }
+
+    pub fn contains_step(&self, step: &str) -> bool {
+        step == self.start_step || self.steps.iter().any(|item| item == step)
+    }
+}
+
 impl<'a> DialogMachine<'a> {
     pub fn new(store: &'a mut dyn StateStore) -> Self {
         Self {

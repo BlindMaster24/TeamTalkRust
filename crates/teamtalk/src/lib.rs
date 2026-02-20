@@ -28,9 +28,10 @@ pub use bot::RedisStateStore;
 pub use bot::SqliteStateStore;
 #[cfg(feature = "bot")]
 pub use bot::{
-    Args, Bot, BotApp, BotBuilder, BotConfig, Command, CommandOnly, Context, DialogMachine,
-    DialogState, HandlerResult, JobErrorPolicy, MemoryStateStore, Middleware, RateLimitBySource,
-    RouteMatcher, Router, Scheduler, StateStore, UnknownCommandPolicy, parse_command,
+    Args, Bot, BotApp, BotBuilder, BotConfig, Command, CommandOnly, Context, DialogFlow,
+    DialogMachine, DialogState, HandlerResult, JobErrorPolicy, MemoryStateStore, Middleware,
+    RateLimitBySource, RouteMatcher, Router, Scheduler, StateStore, UnknownCommandPolicy,
+    parse_command,
 };
 #[cfg(all(feature = "bot", feature = "async"))]
 pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
