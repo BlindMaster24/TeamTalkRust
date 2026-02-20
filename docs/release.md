@@ -128,6 +128,9 @@ runtime/task and use wait helpers plus shutdown/into_client for lifecycle.
 Migration: https://github.com/BlindMaster24/TeamTalkRust/blob/main/docs/migrations/2-to-3.md
 ```
 
+For major releases, keep the migration guide URL directly in the breaking
+commit summary as well, so release notes can surface it without manual edits.
+
 ## SemVer Gate in CI
 
 Pull requests to `main` run a dedicated semver compatibility check for the
