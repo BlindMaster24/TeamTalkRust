@@ -19,6 +19,7 @@ offline = []
 scripts = ["dep:mlua"]
 plugins = ["dep:libloading"]
 state = []
+bot = []
 tls-native = ["reqwest/native-tls"]
 tls-rustls = ["reqwest/rustls"]
 

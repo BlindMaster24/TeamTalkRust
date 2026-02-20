@@ -2,6 +2,8 @@
 use std::path::Path;
 use utils::ToTT;
 
+#[cfg(feature = "bot")]
+pub mod bot;
 pub mod client;
 pub mod events;
 pub mod extensions;
@@ -20,6 +22,13 @@ pub mod mock;
 
 #[cfg(feature = "async")]
 pub use async_api::{AsyncClient, AsyncConfig};
+#[cfg(all(feature = "bot", feature = "async"))]
+pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
+#[cfg(feature = "bot")]
+pub use bot::{
+    Bot, BotBuilder, BotConfig, Command, Context, HandlerResult, JobErrorPolicy, MemoryStateStore,
+    Middleware, RouteMatcher, Router, Scheduler, StateStore, parse_command,
+};
 pub use client::audio::AudioDeviceProfile;
 pub use client::audio::{
     AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,

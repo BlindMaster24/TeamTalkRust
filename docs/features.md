@@ -22,6 +22,7 @@ teamtalk = { version = "2.0.0", features = ["dispatch", "async"] }
 - `scripts`: Lua scripting support for extensions.
 - `plugins`: native plugin loading for extensions.
 - `state`: in-memory state store helpers (`store_snapshot`, `store_user`, `store_channel`).
+- `bot`: high-level bot framework (router, commands, middleware, scheduler, state store).
 - `tls-native`: system TLS via the native OS backend (default).
 - `tls-rustls`: pure Rust TLS for builds without OpenSSL.
 
@@ -63,6 +64,9 @@ cargo build --no-default-features --features tls-rustls
 - Typed event payload facade: `Message::data` and `try_as_*` helpers.
 - Async typed waits: `AsyncClient::wait_for_data` and
   `AsyncClient::wait_for_data_timeout` (`async-tokio`).
+- Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
+  command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
+- Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
