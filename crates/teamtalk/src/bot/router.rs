@@ -2,7 +2,8 @@ use super::command::parse_command;
 use super::context::Context;
 use super::middleware::Middleware;
 use crate::client::{Client, Message};
-use crate::events::{Event, Result};
+use crate::events::{Error, Event, Result};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HandlerResult {
@@ -24,10 +25,30 @@ struct Route {
     handler: Box<Handler>,
 }
 
+pub struct RouteGroup<'a> {
+    router: &'a mut Router,
+    namespace: String,
+}
+
+impl<'a> RouteGroup<'a> {
+    pub fn on_command<F>(self, name: impl Into<String>, handler: F) -> Self
+    where
+        F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
+    {
+        let full = format!("{} {}", self.namespace, name.into().to_ascii_lowercase());
+        self.router.routes.push(Route {
+            matcher: RouteMatcher::Command(full),
+            handler: Box::new(handler),
+        });
+        self
+    }
+}
+
 pub struct Router {
     command_prefixes: Vec<char>,
     middlewares: Vec<Box<dyn Middleware + Send>>,
     routes: Vec<Route>,
+    on_unknown_command: Option<Box<Handler>>,
 }
 
 impl Default for Router {
@@ -36,6 +57,7 @@ impl Default for Router {
             command_prefixes: vec!['/', '!'],
             middlewares: Vec::new(),
             routes: Vec::new(),
+            on_unknown_command: None,
         }
     }
 }
@@ -80,6 +102,26 @@ impl Router {
         self
     }
 
+    pub fn command_group<F>(mut self, namespace: impl Into<String>, configure: F) -> Self
+    where
+        F: FnOnce(RouteGroup<'_>) -> RouteGroup<'_>,
+    {
+        let group = RouteGroup {
+            router: &mut self,
+            namespace: namespace.into().to_ascii_lowercase(),
+        };
+        let _ = configure(group);
+        self
+    }
+
+    pub fn on_unknown_command<F>(mut self, handler: F) -> Self
+    where
+        F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
+    {
+        self.on_unknown_command = Some(Box::new(handler));
+        self
+    }
+
     pub fn on_any<F>(mut self, handler: F) -> Self
     where
         F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
@@ -111,25 +153,60 @@ impl Router {
         };
 
         for middleware in &mut self.middlewares {
-            if matches!(middleware.before(&mut ctx)?, HandlerResult::Stop) {
+            let result = catch_unwind(AssertUnwindSafe(|| middleware.before(&mut ctx))).map_err(
+                |_| Error::IoError {
+                    message: "middleware panic in before()".to_owned(),
+                },
+            )??;
+            if matches!(result, HandlerResult::Stop) {
                 return Ok(HandlerResult::Stop);
             }
         }
 
         let mut outcome = HandlerResult::Continue;
+        let has_command = ctx.command.is_some();
+        let mut matched_command = false;
+
         for route in &mut self.routes {
-            if !route.matcher.matches(&ctx) {
+            let matches = route.matcher.matches(&ctx);
+            if !matches {
                 continue;
             }
 
-            outcome = (route.handler)(&mut ctx)?;
+            if matches!(route.matcher, RouteMatcher::Command(_)) {
+                matched_command = true;
+            }
+
+            outcome =
+                catch_unwind(AssertUnwindSafe(|| (route.handler)(&mut ctx))).map_err(|_| {
+                    Error::IoError {
+                        message: "handler panic".to_owned(),
+                    }
+                })??;
             if matches!(outcome, HandlerResult::Stop) {
                 break;
             }
         }
 
+        if has_command
+            && !matched_command
+            && matches!(outcome, HandlerResult::Continue)
+            && self.on_unknown_command.is_some()
+        {
+            let fallback = self.on_unknown_command.as_mut().expect("checked is_some");
+            outcome = catch_unwind(AssertUnwindSafe(|| fallback(&mut ctx))).map_err(|_| {
+                Error::IoError {
+                    message: "unknown-command handler panic".to_owned(),
+                }
+            })??;
+        }
+
         for middleware in self.middlewares.iter_mut().rev() {
-            middleware.after(&mut ctx)?;
+            catch_unwind(AssertUnwindSafe(|| middleware.after(&mut ctx))).map_err(|_| {
+                Error::IoError {
+                    message: "middleware panic in after()".to_owned(),
+                }
+            })??;
         }
 
         Ok(outcome)
@@ -141,10 +218,19 @@ impl RouteMatcher {
         match self {
             Self::Any => true,
             Self::Event(event) => event == &ctx.event,
-            Self::Command(name) => ctx
-                .command
-                .as_ref()
-                .is_some_and(|command| command.name == *name),
+            Self::Command(name) => {
+                if let Some(command) = ctx.command.as_ref() {
+                    if command.name == *name {
+                        return true;
+                    }
+
+                    if let Some((prefix, rest)) = command.raw.split_once(' ') {
+                        let full = format!("{} {}", prefix.to_ascii_lowercase(), rest);
+                        return full == *name;
+                    }
+                }
+                false
+            }
         }
     }
 }
