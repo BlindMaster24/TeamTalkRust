@@ -191,9 +191,8 @@ impl Router {
         if has_command
             && !matched_command
             && matches!(outcome, HandlerResult::Continue)
-            && self.on_unknown_command.is_some()
+            && let Some(fallback) = self.on_unknown_command.as_mut()
         {
-            let fallback = self.on_unknown_command.as_mut().expect("checked is_some");
             outcome = catch_unwind(AssertUnwindSafe(|| fallback(&mut ctx))).map_err(|_| {
                 Error::IoError {
                     message: "unknown-command handler panic".to_owned(),
