@@ -8,7 +8,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver};
 use std::task::{Context, Poll};
-use std::time::Duration;
 
 use futures::StreamExt;
 use std::thread::{self, JoinHandle};
@@ -182,7 +181,7 @@ impl AsyncClient {
     pub async fn wait_for_event_timeout(
         &mut self,
         expected: Event,
-        timeout: Duration,
+        timeout: std::time::Duration,
     ) -> Option<Message> {
         tokio::time::timeout(timeout, self.wait_for_event(expected))
             .await
@@ -195,7 +194,7 @@ impl AsyncClient {
     pub async fn wait_for_predicate_timeout<F>(
         &mut self,
         predicate: F,
-        timeout: Duration,
+        timeout: std::time::Duration,
     ) -> Option<(Event, Message)>
     where
         F: FnMut(Event, &Message) -> bool,
@@ -210,7 +209,7 @@ impl AsyncClient {
     #[cfg(feature = "async-tokio")]
     pub async fn wait_for_data_timeout(
         &mut self,
-        timeout: Duration,
+        timeout: std::time::Duration,
     ) -> Option<(Event, Message, EventData)> {
         tokio::time::timeout(timeout, self.wait_for_data())
             .await
