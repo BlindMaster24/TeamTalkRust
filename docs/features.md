@@ -68,8 +68,12 @@ cargo build --no-default-features --features tls-rustls
   `AsyncClient::wait_for_data_timeout` (`async-tokio`).
 - Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
   command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
+- Command args helpers: `Args::get`, `Args::require`, and `Args::rest`.
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
+- Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
 - Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
+- Bot context reply helpers: `reply`, `reply_private`, and `reply_channel`.
+- Scoped state helpers: `user_state_*`, `channel_state_*`, and `global_state_*`.
 - Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Outgoing long text is chunked automatically and sent as multipart
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.

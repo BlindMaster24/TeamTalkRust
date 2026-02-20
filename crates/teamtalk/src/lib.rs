@@ -26,14 +26,14 @@ pub use async_api::{AsyncClient, AsyncConfig};
 pub use bot::RedisStateStore;
 #[cfg(all(feature = "bot", feature = "bot-sqlite"))]
 pub use bot::SqliteStateStore;
-#[cfg(all(feature = "bot", feature = "async"))]
-pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
 #[cfg(feature = "bot")]
 pub use bot::{
-    Bot, BotBuilder, BotConfig, Command, CommandOnly, Context, DialogMachine, DialogState,
+    Args, Bot, BotBuilder, BotConfig, Command, CommandOnly, Context, DialogMachine, DialogState,
     HandlerResult, JobErrorPolicy, MemoryStateStore, Middleware, RateLimitBySource, RouteMatcher,
-    Router, Scheduler, StateStore, parse_command,
+    Router, Scheduler, StateStore, UnknownCommandPolicy, parse_command,
 };
+#[cfg(all(feature = "bot", feature = "async"))]
+pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
 pub use client::audio::AudioDeviceProfile;
 pub use client::audio::{
     AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,

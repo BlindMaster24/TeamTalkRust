@@ -7,9 +7,7 @@ fn main() -> Result<()> {
 
     let router = Router::new().on_command("start", |ctx| {
         ctx.dialog_start("onboarding", "ask_name");
-        if let Some(text) = ctx.message.text() {
-            let _ = text.send_private(ctx.client, "??????! ??? ???? ??????");
-        }
+        let _ = ctx.reply_private("Welcome! What is your name?");
         Ok(HandlerResult::Continue)
     });
 

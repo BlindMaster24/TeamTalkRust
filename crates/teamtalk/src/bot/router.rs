@@ -12,6 +12,12 @@ pub enum HandlerResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UnknownCommandPolicy {
+    Ignore,
+    Reply(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RouteMatcher {
     Any,
     Event(Event),
@@ -49,6 +55,7 @@ pub struct Router {
     middlewares: Vec<Box<dyn Middleware + Send>>,
     routes: Vec<Route>,
     on_unknown_command: Option<Box<Handler>>,
+    unknown_command_policy: UnknownCommandPolicy,
 }
 
 impl Default for Router {
@@ -58,6 +65,7 @@ impl Default for Router {
             middlewares: Vec::new(),
             routes: Vec::new(),
             on_unknown_command: None,
+            unknown_command_policy: UnknownCommandPolicy::Ignore,
         }
     }
 }
@@ -119,6 +127,11 @@ impl Router {
         F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
     {
         self.on_unknown_command = Some(Box::new(handler));
+        self
+    }
+
+    pub fn with_unknown_command_policy(mut self, policy: UnknownCommandPolicy) -> Self {
+        self.unknown_command_policy = policy;
         self
     }
 
@@ -188,16 +201,17 @@ impl Router {
             }
         }
 
-        if has_command
-            && !matched_command
-            && matches!(outcome, HandlerResult::Continue)
-            && let Some(fallback) = self.on_unknown_command.as_mut()
-        {
-            outcome = catch_unwind(AssertUnwindSafe(|| fallback(&mut ctx))).map_err(|_| {
-                Error::IoError {
-                    message: "unknown-command handler panic".to_owned(),
-                }
-            })??;
+        if has_command && !matched_command && matches!(outcome, HandlerResult::Continue) {
+            if let Some(fallback) = self.on_unknown_command.as_mut() {
+                outcome =
+                    catch_unwind(AssertUnwindSafe(|| fallback(&mut ctx))).map_err(|_| {
+                        Error::IoError {
+                            message: "unknown-command handler panic".to_owned(),
+                        }
+                    })??;
+            } else if let UnknownCommandPolicy::Reply(reply) = &self.unknown_command_policy {
+                let _ = ctx.reply_private(reply);
+            }
         }
 
         for middleware in self.middlewares.iter_mut().rev() {

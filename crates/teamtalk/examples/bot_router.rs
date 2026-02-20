@@ -6,15 +6,11 @@ fn main() -> Result<()> {
     let client = teamtalk::Client::new()?;
     let router = Router::new()
         .on_command("help", |ctx| {
-            if let Some(text) = ctx.message.text() {
-                let _ = text.send_private(ctx.client, "Available commands: /help /ping");
-            }
+            let _ = ctx.reply_private("Available commands: /help /ping");
             Ok(HandlerResult::Continue)
         })
         .on_command("ping", |ctx| {
-            if let Some(text) = ctx.message.text() {
-                let _ = text.send_private(ctx.client, "pong");
-            }
+            let _ = ctx.reply_private("pong");
             Ok(HandlerResult::Continue)
         })
         .on_event(Event::ConnectionLost, |_ctx| Ok(HandlerResult::Stop));

@@ -162,3 +162,22 @@ fn main() -> teamtalk::Result<()> {
 
 For Tokio timeout helpers (`wait_for_event_timeout`, `wait_for_data_timeout`),
 enable `async-tokio` in addition to `async`.
+
+## Bot Context Helpers
+
+With the `bot` feature, handlers can use context helpers instead of manual
+message plumbing:
+
+```rust
+use teamtalk::{HandlerResult, Router};
+
+let router = Router::new().on_command("ban", |ctx| {
+    let args = ctx.args().expect("command args");
+    let user_id: i32 = args.require(0, "/ban <user_id>")?;
+    let _reason = args.rest(1).unwrap_or_else(|| "no reason".to_owned());
+
+    ctx.user_state_set("last_ban_target", user_id.to_string());
+    let _ = ctx.reply_private("Command accepted");
+    Ok(HandlerResult::Continue)
+});
+```

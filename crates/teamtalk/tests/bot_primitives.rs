@@ -1,6 +1,6 @@
 #![cfg(feature = "bot")]
 
-use teamtalk::{MemoryStateStore, StateStore, parse_command};
+use teamtalk::{Args, MemoryStateStore, StateStore, parse_command};
 
 #[test]
 fn parse_command_splits_name_and_args() {
@@ -14,6 +14,22 @@ fn parse_command_splits_name_and_args() {
 #[test]
 fn parse_command_rejects_non_prefixed_input() {
     assert!(parse_command("help", &['/']).is_none());
+}
+
+#[test]
+fn args_helpers_parse_and_rest() {
+    let raw = vec!["10".to_owned(), "hello".to_owned(), "world".to_owned()];
+    let args = Args::new(&raw);
+    assert_eq!(args.get::<i32>(0).expect("parse int"), Some(10));
+    assert!(args.get::<bool>(1).is_err());
+    assert_eq!(args.rest(1).as_deref(), Some("hello world"));
+}
+
+#[test]
+fn args_require_returns_error_for_missing_value() {
+    let raw = vec!["5".to_owned()];
+    let args = Args::new(&raw);
+    assert!(args.require::<i32>(1, "/set <value>").is_err());
 }
 
 #[test]
