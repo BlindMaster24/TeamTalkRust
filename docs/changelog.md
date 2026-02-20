@@ -4,6 +4,27 @@
 
 This project follows semantic versioning. A major release indicates stable
 public API with compatibility expectations for downstream users.
+## [3.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v2.0.0...v3.0.0) - 2026-02-20
+
+### Breaking
+- *(async)* [**breaking**] add migration link to AsyncClient threading docs — AsyncClient no longer implements Sync. Keep AsyncClient in one runtime/task and coordinate via wait helpers plus shutdown/into_client. Migration: https://github.com/BlindMaster24/TeamTalkRust/blob/main/docs/migrations/2-to-3.md
+- *(async)* [**breaking**] document AsyncClient Sync removal in API docs — AsyncClient no longer implements Sync. Keep AsyncClient in one runtime/task and coordinate via wait helpers and shutdown/into_client.
+
+### Added
+- *(bot)* add dialog state machine helpers
+- *(bot)* add command and rate-limit middleware
+- *(bot)* add redis and sqlite state store adapters
+- *(bot)* add command groups and unknown fallback
+- *(bot)* add sync and async bot framework layer
+- *(async)* move stream polling to worker queue
+
+### Docs
+- *(async)* refresh stream examples and usage guides
+
+## Versioning
+
+This project follows semantic versioning. A major release indicates stable
+public API with compatibility expectations for downstream users.
 
 ## [2.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v1.3.0...v2.0.0) - 2026-02-19
 
