@@ -139,6 +139,22 @@
   - Publish policy is split:
     - `push` to `main` runs only `release-pr` updates.
     - publish runs on merged `release-plz/*` PRs and on explicit manual dispatch.
+  - Publishing guardrail with `release_always = false`:
+    - `release-plz release` publishes only when the current commit is associated with a merged `release-plz/*` PR.
+    - Running `release-plz release` manually on arbitrary `main` commits will log: `skipping release: current commit is not from a release PR`.
+    - If you need a publish retry, use a merged `release-plz/*` branch/PR flow instead of forcing publish from a random commit.
+  - `dry_run` action input safety:
+    - In `release-plz/action`, `dry_run` is presence-sensitive in the wrapper script; avoid passing `dry_run: false` explicitly in always-on publish jobs.
+    - For non-dry publish jobs, omit the `dry_run` input entirely.
+    - For manual workflows, split steps:
+      - step A (`if: inputs.dry_run == true`) with `dry_run: true`
+      - step B (`if: inputs.dry_run != true`) without `dry_run` input
+    - Symptom of misconfiguration: release job succeeds but logs `due to dry, skipping ... creation of tag ... creation of git release`.
+  - Post-publish verification checklist:
+    - Verify release workflow job success (`gh run list --workflow release-plz.yml`).
+    - Verify GitHub release exists (`gh release list --limit 5`).
+    - Verify tag exists on remote (`git ls-remote --tags origin | rg "refs/tags/vX.Y.Z"`).
+    - If release exists but crate is missing, inspect `Run release-plz release` logs for token/publish lines.
 - Workflow hardening baseline:
   - Keep action refs pinned to commit SHAs in `.github/workflows/release-plz.yml`.
   - Keep concurrency groups on release jobs to avoid duplicate publish/tag races.
@@ -179,6 +195,11 @@
   2. If workflow is green but output is unexpected, inspect PR body/changelog block.
   3. Treat semver-check findings as versioning signals, not action failures.
   4. Avoid manual changelog edits in `main`; prefer parser-driven commits so release-plz regenerates deterministically.
+  5. For missing tags/releases, inspect `Run release-plz release` logs for:
+     - `due to dry, skipping ...`
+     - `skipping release: current commit is not from a release PR`
+     - token/publish errors.
+  6. If publish was skipped due to release-PR association, create/merge a `release-plz/*` branch PR to trigger canonical publish path.
 ## API Review Checklist (before shipping)
 - Backward compatibility assessed (breaking vs additive).
 - Deprecation plan and migration notes where needed.
