@@ -54,6 +54,8 @@ impl AsyncConfig {
 /// `AsyncClient` is `Send` but intentionally not `Sync`.
 /// Keep it owned by one async task/runtime and use its wait/shutdown helpers
 /// for coordination.
+///
+/// Migration guide: <https://github.com/BlindMaster24/TeamTalkRust/blob/main/docs/migrations/2-to-3.md>.
 pub struct AsyncClient {
     client: Option<Arc<Client>>,
     stop: Arc<AtomicBool>,
