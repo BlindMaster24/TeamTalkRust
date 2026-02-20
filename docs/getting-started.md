@@ -181,3 +181,20 @@ let router = Router::new().on_command("ban", |ctx| {
     Ok(HandlerResult::Continue)
 });
 ```
+
+You can wire bot runtime components through `BotApp`:
+
+```rust
+use teamtalk::{BotApp, BotConfig, HandlerResult, Router};
+
+let router = Router::new().on_command("ping", |ctx| {
+    let _ = ctx.reply_private("pong");
+    Ok(HandlerResult::Continue)
+});
+
+let client = teamtalk::Client::new()?;
+BotApp::new()
+    .with_router(router)
+    .with_config(BotConfig::new().poll_timeout_ms(100))
+    .run_sync(client)?;
+```

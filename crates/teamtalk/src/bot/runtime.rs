@@ -72,6 +72,11 @@ impl BotBuilder {
         self
     }
 
+    pub fn with_boxed_state_store(mut self, store: Box<dyn StateStore>) -> Self {
+        self.state = store;
+        self
+    }
+
     pub fn with_config(mut self, config: BotConfig) -> Self {
         self.config = config;
         self

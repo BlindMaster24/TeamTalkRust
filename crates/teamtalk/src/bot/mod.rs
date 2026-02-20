@@ -1,5 +1,6 @@
 //! High-level bot framework built on top of TeamTalk client polling.
 
+mod app;
 mod args;
 mod command;
 mod context;
@@ -13,6 +14,7 @@ mod storage;
 #[cfg(feature = "async")]
 mod runtime_async;
 
+pub use app::BotApp;
 pub use args::Args;
 pub use command::{Command, parse_command};
 pub use context::Context;

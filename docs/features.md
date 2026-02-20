@@ -68,6 +68,7 @@ cargo build --no-default-features --features tls-rustls
   `AsyncClient::wait_for_data_timeout` (`async-tokio`).
 - Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
   command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
+- Bot app facade: `BotApp` for single-point runtime wiring and sync/async entry methods.
 - Command args helpers: `Args::get`, `Args::require`, and `Args::rest`.
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
