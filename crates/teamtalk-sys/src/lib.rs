@@ -23,9 +23,15 @@ pub fn load(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn try_api() -> Result<Arc<TeamTalk5>, std::io::Error> {
+    INSTANCE.get().cloned().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "TeamTalk DLL not loaded. Call teamtalk_sys::load() first.",
+        )
+    })
+}
+
 pub fn api() -> Arc<TeamTalk5> {
-    INSTANCE
-        .get()
-        .expect("TeamTalk DLL not loaded! Call teamtalk_sys::load() first.")
-        .clone()
+    try_api().unwrap_or_else(|error| panic!("{error}"))
 }
