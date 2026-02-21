@@ -499,6 +499,7 @@
 - Use neutral, direct language; avoid subjective or marketing terms like "production".
 - Keep paragraphs short (1-3 sentences) and prefer lists for steps.
 - Split large topics into subfolders under `docs/` with a small `README.md` index.
+- Do not add `docs/migrations/README.md`; keep migration docs as explicit versioned files (for example `docs/migrations/2-to-3.md`) and link them directly.
 - User docs should explain both "what" and "why" in short, practical terms.
 - When introducing new high-level APIs, document both the default and `*_ex` variants.
 - Document all auto-features with explicit opt-in instructions and default state.
