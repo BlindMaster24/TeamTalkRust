@@ -140,10 +140,14 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - With `async-tokio`, timeout helpers are available (`wait_for_event_timeout`, `wait_for_data_timeout`).
 ## Project Structure
 
-- [crates/teamtalk-sys](crates/teamtalk-sys/): Low-level bindgen bindings to the SDK.
-- [crates/teamtalk](crates/teamtalk/): High-level Rust wrapper.
-- [crates/teamtalk/examples](crates/teamtalk/examples/): Runnable examples.
-- [docs](docs/README.md): User guides.
+- [crates/teamtalk](crates/teamtalk/): High-level safe SDK (`client`, `events`, `types`, `utils`).
+- [crates/teamtalk/tests](crates/teamtalk/tests/): Integration tests for public API behavior.
+- [crates/teamtalk/examples](crates/teamtalk/examples/): Runnable usage examples.
+- [crates/teamtalk-sys](crates/teamtalk-sys/): Raw FFI bindings generated from `TeamTalk.h`.
+- [crates/teamtalk-macros](crates/teamtalk-macros/): Optional proc-macros used by high-level APIs.
+- [docs](docs/README.md): User-facing guides and release process docs.
+- [TEAMTALK_DLL](TEAMTALK_DLL/): Downloaded TeamTalk SDK runtime and C-API documentation (local workspace asset).
+- [qtTeamTalk](qtTeamTalk/): Upstream TeamTalk Qt client source snapshot used for reference.
 
 ## Philosophy
 
