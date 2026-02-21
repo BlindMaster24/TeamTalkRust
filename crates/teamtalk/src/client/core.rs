@@ -29,7 +29,9 @@ pub struct Client {
     pub(crate) label: Mutex<Option<String>>,
     pub(crate) state: Mutex<ConnectionState>,
     pub(crate) hooks: Mutex<hooks::ClientHooks>,
+    pub(crate) hooks_revision: AtomicU64,
     pub(crate) bus: Mutex<bus::EventBus>,
+    pub(crate) bus_revision: AtomicU64,
     #[cfg(feature = "scripts")]
     pub(crate) scripts: Mutex<Option<ScriptManager>>,
     pub(crate) auto_reconnect: Mutex<AutoReconnectState>,
@@ -79,7 +81,9 @@ impl Client {
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
+                hooks_revision: AtomicU64::new(0),
                 bus: Mutex::new(bus::EventBus::default()),
+                bus_revision: AtomicU64::new(0),
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
@@ -119,7 +123,9 @@ impl Client {
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
+                hooks_revision: AtomicU64::new(0),
                 bus: Mutex::new(bus::EventBus::default()),
+                bus_revision: AtomicU64::new(0),
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
@@ -157,7 +163,9 @@ impl Client {
                 label: Mutex::new(None),
                 state: Mutex::new(ConnectionState::Idle),
                 hooks: Mutex::new(hooks::ClientHooks::default()),
+                hooks_revision: AtomicU64::new(0),
                 bus: Mutex::new(bus::EventBus::default()),
+                bus_revision: AtomicU64::new(0),
                 #[cfg(feature = "scripts")]
                 scripts: Mutex::new(None),
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
@@ -246,18 +254,30 @@ impl Client {
 
     /// Removes an event subscription.
     pub fn unsubscribe_event(&self, id: bus::EventSubscriptionId) -> bool {
-        self.bus.lock().unwrap().unsubscribe(id)
+        let removed = self.bus.lock().unwrap().unsubscribe(id);
+        if removed {
+            self.bus_revision.fetch_add(1, Ordering::Relaxed);
+        }
+        removed
     }
 
     /// Clears all event subscriptions.
     pub fn clear_event_subscriptions(&self) {
-        self.bus.lock().unwrap().clear();
+        let mut bus = self.bus.lock().unwrap();
+        if bus.len() > 0 {
+            bus.clear();
+            self.bus_revision.fetch_add(1, Ordering::Relaxed);
+        }
     }
 
     /// Removes all subscriptions in the specified group.
     pub fn unsubscribe_event_group(&self, group: impl AsRef<str>) -> usize {
         let group = bus::EventSubscriptionGroup::new(group.as_ref());
-        self.bus.lock().unwrap().unsubscribe_group(&group)
+        let removed = self.bus.lock().unwrap().unsubscribe_group(&group);
+        if removed > 0 {
+            self.bus_revision.fetch_add(1, Ordering::Relaxed);
+        }
+        removed
     }
 
     /// Returns the number of active event subscriptions.
@@ -268,11 +288,13 @@ impl Client {
     /// Replaces the current hook set.
     pub fn set_hooks(&self, hooks: hooks::ClientHooks) {
         *self.hooks.lock().unwrap() = hooks;
+        self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Clears all hooks.
     pub fn clear_hooks(&self) {
         *self.hooks.lock().unwrap() = hooks::ClientHooks::default();
+        self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(feature = "scripts")]
@@ -306,11 +328,27 @@ impl Client {
     }
 
     pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
-        self.hooks.lock().unwrap().fire(self, event, msg);
+        let revision_before = self.hooks_revision.load(Ordering::Relaxed);
+        let mut local_hooks = {
+            let mut hooks = self.hooks.lock().unwrap();
+            std::mem::take(&mut *hooks)
+        };
+        local_hooks.fire(self, event, msg);
+        if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
+            *self.hooks.lock().unwrap() = local_hooks;
+        }
     }
 
     pub(crate) fn dispatch_bus(&self, event: crate::events::Event, msg: &Message) {
-        self.bus.lock().unwrap().dispatch(self, event, msg);
+        let revision_before = self.bus_revision.load(Ordering::Relaxed);
+        let mut local_bus = {
+            let mut bus = self.bus.lock().unwrap();
+            std::mem::take(&mut *bus)
+        };
+        local_bus.dispatch(self, event, msg);
+        if self.bus_revision.load(Ordering::Relaxed) == revision_before {
+            *self.bus.lock().unwrap() = local_bus;
+        }
     }
 
     #[cfg(feature = "scripts")]
@@ -321,7 +359,15 @@ impl Client {
     }
 
     pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {
-        self.hooks.lock().unwrap().fire_joined(self, channel_id);
+        let revision_before = self.hooks_revision.load(Ordering::Relaxed);
+        let mut local_hooks = {
+            let mut hooks = self.hooks.lock().unwrap();
+            std::mem::take(&mut *hooks)
+        };
+        local_hooks.fire_joined(self, channel_id);
+        if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
+            *self.hooks.lock().unwrap() = local_hooks;
+        }
     }
 
     pub(crate) fn handle_auto_reconnect(&self) {
