@@ -97,7 +97,7 @@ impl Client {
     pub fn cached_user_by_username(&self, username: &str) -> Option<User> {
         self.cache
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .users
             .values()
             .find(|u| u.username == username)
@@ -108,7 +108,7 @@ impl Client {
     pub fn cached_channel(&self, channel_id: ChannelId) -> Option<Channel> {
         self.cache
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .channels
             .get(&channel_id)
             .cloned()
@@ -118,7 +118,7 @@ impl Client {
     pub fn cached_channels(&self) -> Vec<Channel> {
         self.cache
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .channels
             .values()
             .cloned()
@@ -129,7 +129,7 @@ impl Client {
     pub fn cached_channel_by_name(&self, name: &str) -> Option<Channel> {
         self.cache
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .channels
             .values()
             .find(|c| c.name == name)
@@ -140,7 +140,7 @@ impl Client {
     pub fn cached_channel_by_path(&self, path: &str) -> Option<Channel> {
         self.cache
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .channels
             .values()
             .find(|c| self.get_channel_path(c.id).as_deref() == Some(path))

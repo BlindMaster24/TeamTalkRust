@@ -203,7 +203,7 @@ impl Client {
     pub fn mock_last_channel_password_for_tests(&self) -> Option<String> {
         self.auto_reconnect
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .last_channel_password
             .clone()
     }

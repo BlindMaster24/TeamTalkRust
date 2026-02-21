@@ -322,7 +322,7 @@ impl<'a> SubscriptionBuilder<'a> {
             .client
             .bus
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| e.into_inner())
             .subscribe(config, Box::new(handler));
         self.client
             .bus_revision
