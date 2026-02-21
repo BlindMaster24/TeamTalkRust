@@ -20,7 +20,7 @@ env:
 jobs:
   release-plz-pr:
     name: Release-plz PR
-    if: github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore: release')
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -55,7 +55,49 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token || env.RELEASE_PLZ_GITHUB_TOKEN }}
         run: |
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - name: Preflight release-pr guard
+        id: preflight
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || env.RELEASE_PLZ_GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          api() {
+            curl -fsSL \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com$1"
+          }
+
+          open_release_prs=$(api "/repos/${REPO}/pulls?state=open&head=${OWNER}:release-plz/&base=main&per_page=100" | jq 'length')
+          if [ "${open_release_prs}" -gt 0 ]; then
+            echo "run_release_pr=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=open release-plz PR already exists" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          associated_release_prs=$(
+            api "/repos/${REPO}/commits/${SHA}/pulls?per_page=100" \
+              | jq '[.[] | select(.merged_at != null and (.head.ref | startswith("release-plz/")))] | length'
+          )
+          if [ "${associated_release_prs}" -gt 0 ]; then
+            echo "run_release_pr=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=current push is a merged release-plz PR commit" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "run_release_pr=true" >> "$GITHUB_OUTPUT"
+          echo "skip_reason=none" >> "$GITHUB_OUTPUT"
+      - name: Log preflight decision
+        shell: bash
+        run: |
+          echo "release-pr guard decision: run=${{ steps.preflight.outputs.run_release_pr }}, reason='${{ steps.preflight.outputs.skip_reason }}'"
       - name: Run release-plz release-pr
+        if: ${{ steps.preflight.outputs.run_release_pr == 'true' }}
         id: release-plz
         uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5.127
         with:
