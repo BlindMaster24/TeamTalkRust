@@ -146,8 +146,8 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - [crates/teamtalk-sys](crates/teamtalk-sys/): Raw FFI bindings generated from `TeamTalk.h`.
 - [crates/teamtalk-macros](crates/teamtalk-macros/): Optional proc-macros used by high-level APIs.
 - [docs](docs/README.md): User-facing guides and release process docs.
-- [TEAMTALK_DLL](TEAMTALK_DLL/): Downloaded TeamTalk SDK runtime and C-API documentation (local workspace asset).
-- [qtTeamTalk](qtTeamTalk/): Upstream TeamTalk Qt client source snapshot used for reference.
+- `TEAMTALK_DLL/`: Downloaded TeamTalk SDK runtime and C-API documentation (local workspace asset, git-ignored in CI).
+- `qtTeamTalk/`: Upstream TeamTalk Qt client source snapshot used for reference (optional local mirror).
 
 ## Philosophy
 
