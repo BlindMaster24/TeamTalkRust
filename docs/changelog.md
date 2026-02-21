@@ -28,6 +28,34 @@
 ### Added
 - *(bot)* add optional bot macros and async wait parity
 
+## [3.1.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.0.0...teamtalk-v3.1.0) - 2026-02-21
+
+### Added
+- *(bot)* add optional bot macros and async wait parity
+- *(bot)* add dialog flow and wait helpers in context
+- *(bot)* add BotApp facade for sync and async runtimes
+- *(bot)* add typed args, reply helpers, and unknown command policy
+
+### Changed
+- *(client)* remove remaining lock unwrap panics
+- *(client)* recover from poisoned mutexes
+- *(client)* avoid lock-held callback dispatch
+
+### Fixed
+- *(deps)* switch macros dep to workspace source
+- *(async)* harden shutdown wake and DLL load guard
+
+### Dependencies
+- *(deps)* refresh workspace dependency versions
+
+### Other
+- *(teamtalk)* release v3.1.0 ([#21](https://github.com/BlindMaster24/TeamTalkRust/pull/21))
+
+## [0.1.0](https://github.com/BlindMaster24/TeamTalkRust/releases/tag/teamtalk-macros-v0.1.0) - 2026-02-21
+
+### Added
+- *(bot)* add optional bot macros and async wait parity
+
 ## [3.1.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v3.0.0...v3.1.0) - 2026-02-21
 
 ### Added
