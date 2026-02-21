@@ -15,7 +15,7 @@ impl Client {
     /// This helper returns `false` if the client is already in a connect/login
     /// lifecycle state.
     pub fn set_encryption_context(&self, context: &EncryptionContext) -> bool {
-        let state = *self.state.lock().expect("client state mutex poisoned");
+        let state = *self.state.lock().unwrap_or_else(|e| e.into_inner());
         if !can_set_encryption_context_in_state(state) {
             return false;
         }
