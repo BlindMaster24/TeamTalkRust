@@ -4,6 +4,29 @@
 
 This project follows semantic versioning. A major release indicates stable
 public API with compatibility expectations for downstream users.
+## [3.1.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v3.0.0...v3.1.0) - 2026-02-21
+
+### Added
+- *(bot)* add optional bot macros and async wait parity
+- *(bot)* add dialog flow and wait helpers in context
+- *(bot)* add BotApp facade for sync and async runtimes
+- *(bot)* add typed args, reply helpers, and unknown command policy
+
+### Changed
+- *(client)* remove remaining lock unwrap panics
+- *(client)* recover from poisoned mutexes
+- *(client)* avoid lock-held callback dispatch
+
+### Fixed
+- *(async)* harden shutdown wake and DLL load guard
+
+### Dependencies
+- *(deps)* refresh workspace dependency versions
+
+## Versioning
+
+This project follows semantic versioning. A major release indicates stable
+public API with compatibility expectations for downstream users.
 ## [3.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/v2.0.0...v3.0.0) - 2026-02-20
 
 ### Breaking
