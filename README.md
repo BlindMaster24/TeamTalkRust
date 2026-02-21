@@ -21,7 +21,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "3.0.0"
+teamtalk = "3.1.0"
 ```
 
 For the latest development version from `main`:
