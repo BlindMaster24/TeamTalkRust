@@ -28,10 +28,8 @@ trim = true
 header = """
 # Changelog
 
-## Versioning
-
-This project follows semantic versioning. A major release indicates stable
-public API with compatibility expectations for downstream users.
+For breaking changes and upgrade steps, see:
+- [Migration Guides](https://github.com/BlindMaster24/TeamTalkRust/tree/main/docs/migrations)
 """
 commit_preprocessors = [
   { pattern = "\\(#([0-9]+)\\)", replace = "([#${1}](https://github.com/BlindMaster24/TeamTalkRust/pull/${1}))" },
