@@ -14,7 +14,12 @@ static INSTANCE: OnceCell<Arc<TeamTalk5>> = OnceCell::new();
 
 pub fn load(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let lib = unsafe { TeamTalk5::new(path)? };
-    let _ = INSTANCE.set(Arc::new(lib));
+    INSTANCE.set(Arc::new(lib)).map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "TeamTalk DLL is already loaded for this process; multiple Client instances are supported, but loading a second DLL instance/path is not supported",
+        )
+    })?;
     Ok(())
 }
 

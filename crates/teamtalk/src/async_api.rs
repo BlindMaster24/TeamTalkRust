@@ -109,6 +109,10 @@ impl AsyncClient {
     }
 
     /// Runs a closure with a mutable client reference.
+    ///
+    /// This method stops and joins the async worker before invoking the closure.
+    /// After calling this method, the current `AsyncClient` instance no longer
+    /// functions as an event stream.
     pub fn with_client_mut<F, R>(&mut self, f: F) -> Option<R>
     where
         F: FnOnce(&mut Client) -> R,
@@ -121,6 +125,7 @@ impl AsyncClient {
     /// Stops the async polling loop.
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
+        self.waker.wake();
     }
 
     /// Stops the worker and waits until it exits.
