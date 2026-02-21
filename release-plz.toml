@@ -15,6 +15,15 @@ publish = true
 changelog_path = "docs/changelog.md"
 changelog_update = true
 semver_check = true
+version_group = "teamtalk-core"
+
+[[package]]
+name = "teamtalk-macros"
+release = true
+publish = true
+changelog_path = "docs/changelog.md"
+changelog_update = true
+version_group = "teamtalk-core"
 
 [[package]]
 name = "teamtalk-sys"
