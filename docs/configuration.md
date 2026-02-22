@@ -13,20 +13,37 @@ folder.
 ### SDK Version Override
 
 By default, the loader uses the pinned version in [SDK_VERSION.txt](../crates/teamtalk/SDK_VERSION.txt).
+You can set this file to either a concrete version (for example `v5.18a`) or
+`latest`.
 
 Set `TEAMTALK_SDK_VERSION` to override the pinned version:
 
 - `TEAMTALK_SDK_VERSION=v5.19` downloads that version.
 - `TEAMTALK_SDK_VERSION=latest` forces the latest SDK from BearWare.
 
+Set `TEAMTALK_SDK_VERSION_URL` to override the remote URL used when
+`SDK_VERSION.txt` contains `latest`:
+
+- Default:
+  `https://raw.githubusercontent.com/BlindMaster24/TeamTalkRust/main/crates/teamtalk/SDK_VERSION.txt`
+- Example custom mirror:
+  `TEAMTALK_SDK_VERSION_URL=https://example.com/SDK_VERSION.txt`
+
 Priority order:
 
 1. `TEAMTALK_SDK_VERSION`
-2. SDK version file
-3. Latest from BearWare (fallback)
+2. `SDK_VERSION.txt`
+3. Installed `TEAMTALK_DLL/TEAMTALK_SDK_VERSION.txt`
+4. Latest from BearWare (fallback)
 
-If a requested version fails to download, the loader falls back to the latest
-SDK.
+When `SDK_VERSION.txt` is set to `latest`, the loader resolves the target
+version from the repository copy in real time and updates local SDK files when
+that remote value changes. If the remote lookup fails, the loader keeps the
+already installed SDK when available; if no SDK is installed yet, startup fails
+with an error.
+
+If a requested version download fails, the loader falls back to the latest SDK
+(except in `offline` mode).
 
 ## Networking
 

@@ -10,6 +10,24 @@ use std::path::{Path, PathBuf};
 const DOCS_DIR_NAME: &str = "Documentation";
 const DOCS_CAPI_DIR_NAME: &str = "C-API";
 const DOCS_MANIFEST_NAME: &str = "TEAMTALK_DOCUMENTATION_MANIFEST.txt";
+const SDK_VERSION_URL_ENV: &str = "TEAMTALK_SDK_VERSION_URL";
+const REMOTE_SDK_VERSION_URL: &str = "https://raw.githubusercontent.com/BlindMaster24/TeamTalkRust/main/crates/teamtalk/SDK_VERSION.txt";
+
+#[cfg(feature = "logging")]
+fn loader_info(message: &str) {
+    tracing::info!("{message}");
+}
+
+#[cfg(not(feature = "logging"))]
+fn loader_info(_message: &str) {}
+
+#[cfg(feature = "logging")]
+fn loader_warn(message: &str) {
+    tracing::warn!("{message}");
+}
+
+#[cfg(not(feature = "logging"))]
+fn loader_warn(_message: &str) {}
 
 /// Finds the TeamTalk SDK binaries or downloads them if missing.
 pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -32,11 +50,6 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         .to_string();
     let env_version = env_sdk_version();
     let pinned_version = pinned_sdk_version();
-    let requested_version = requested_version(
-        env_version.clone(),
-        pinned_version.as_deref(),
-        &current_version,
-    );
     let dll_exists = dll_path.exists()
         && fs::metadata(&dll_path)
             .map(|m| m.len() > 1024)
@@ -49,6 +62,14 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         }
         return Err("Offline mode enabled but SDK files or documentation are missing".into());
     }
+
+    let requested_version = resolve_requested_version(
+        env_version.clone(),
+        pinned_version.as_deref(),
+        &current_version,
+        dll_exists,
+        docs_complete,
+    )?;
 
     let download_version = |version: &str| -> Result<(), Box<dyn std::error::Error>> {
         download_and_extract(&sdk_dir, version, dll_name)?;
@@ -71,26 +92,26 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         }
 
         if let Err(err) = download_version(version) {
-            eprintln!(
+            loader_warn(&format!(
                 "Failed to download requested SDK version {}: {}. Falling back to latest.",
                 version, err
-            );
+            ));
         } else {
             return Ok(dll_path);
         }
     } else if requested_version.force_latest {
         let latest = latest_version()?;
-        println!("Downloading latest SDK: {}", latest);
+        loader_info(&format!("Downloading latest SDK: {}", latest));
         download_version(&latest)?;
         return Ok(dll_path);
     }
 
     if dll_exists && !current_version.is_empty() {
         if !docs_complete {
-            println!(
+            loader_info(&format!(
                 "Documentation missing or incomplete. Re-downloading SDK: {}",
                 current_version
-            );
+            ));
             download_version(&current_version)?;
             return Ok(dll_path);
         }
@@ -99,7 +120,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         if current_version == latest {
             return Ok(dll_path);
         }
-        println!("Updating SDK: {} -> {}", current_version, latest);
+        loader_info(&format!("Updating SDK: {} -> {}", current_version, latest));
         download_version(&latest)?;
         return Ok(dll_path);
     }
@@ -117,13 +138,16 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         } else {
             "Documentation is missing or incomplete"
         };
-        println!("{}. Downloading SDK: {}", repair_reason, repair_version);
+        loader_info(&format!(
+            "{}. Downloading SDK: {}",
+            repair_reason, repair_version
+        ));
         download_version(&repair_version)?;
         return Ok(dll_path);
     }
 
     let latest = latest_version()?;
-    println!("Fresh SDK setup. Downloading: {}", latest);
+    loader_info(&format!("Fresh SDK setup. Downloading: {}", latest));
     download_version(&latest)?;
 
     Ok(dll_path)
@@ -152,6 +176,29 @@ fn get_latest_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
         .ok_or("No SDK versions found".into())
 }
 
+fn fetch_remote_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
+    let url = env_sdk_version_url();
+    let response = Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()?
+        .get(&url)
+        .send()?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "Remote SDK_VERSION request failed from {} with status {}",
+            url,
+            response.status(),
+        )
+        .into());
+    }
+    let body = response.text()?;
+    let version = body.trim();
+    if version.is_empty() {
+        return Err(format!("Remote SDK_VERSION.txt is empty at {}", url).into());
+    }
+    Ok(version.to_string())
+}
+
 fn env_sdk_version() -> Option<String> {
     env::var("TEAMTALK_SDK_VERSION").ok().and_then(|value| {
         let trimmed = value.trim();
@@ -161,6 +208,14 @@ fn env_sdk_version() -> Option<String> {
             Some(trimmed.to_string())
         }
     })
+}
+
+fn env_sdk_version_url() -> String {
+    env::var(SDK_VERSION_URL_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| REMOTE_SDK_VERSION_URL.to_string())
 }
 
 fn pinned_sdk_version() -> Option<String> {
@@ -215,6 +270,52 @@ fn requested_version(
         requested,
         force_latest: false,
     }
+}
+
+fn resolve_requested_version(
+    env_version: Option<String>,
+    pinned_version: Option<&str>,
+    file_version: &str,
+    dll_exists: bool,
+    docs_complete: bool,
+) -> Result<RequestedVersion, Box<dyn std::error::Error>> {
+    if let Some(version) = env_version {
+        return Ok(requested_version(
+            Some(version),
+            pinned_version,
+            file_version,
+        ));
+    }
+
+    if let Some(version) = pinned_version {
+        let trimmed = version.trim();
+        if trimmed.eq_ignore_ascii_case("latest") {
+            match fetch_remote_sdk_version() {
+                Ok(remote) => {
+                    return Ok(requested_version(Some(remote), None, file_version));
+                }
+                Err(err) => {
+                    if dll_exists && docs_complete && !file_version.trim().is_empty() {
+                        loader_warn(&format!(
+                            "Failed to fetch remote SDK_VERSION.txt: {}. Using installed SDK: {}",
+                            err, file_version
+                        ));
+                        return Ok(RequestedVersion {
+                            requested: Some(file_version.trim().to_string()),
+                            force_latest: false,
+                        });
+                    }
+                    return Err(format!(
+                        "Failed to fetch remote SDK_VERSION.txt and no installed SDK is available: {}",
+                        err
+                    )
+                    .into());
+                }
+            }
+        }
+    }
+
+    Ok(requested_version(None, pinned_version, file_version))
 }
 
 fn download_and_extract(
