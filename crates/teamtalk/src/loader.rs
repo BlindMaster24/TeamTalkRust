@@ -13,21 +13,21 @@ const DOCS_MANIFEST_NAME: &str = "TEAMTALK_DOCUMENTATION_MANIFEST.txt";
 const SDK_VERSION_URL_ENV: &str = "TEAMTALK_SDK_VERSION_URL";
 const REMOTE_SDK_VERSION_URL: &str = "https://raw.githubusercontent.com/BlindMaster24/TeamTalkRust/main/crates/teamtalk/SDK_VERSION.txt";
 
-#[cfg(feature = "logging")]
-fn loader_info(message: &str) {
-    tracing::info!("{message}");
+enum LoaderLogLevel {
+    Info,
+    Warn,
 }
 
-#[cfg(not(feature = "logging"))]
-fn loader_info(_message: &str) {}
+fn loader_log(level: LoaderLogLevel, message: &str) {
+    #[cfg(feature = "logging")]
+    match level {
+        LoaderLogLevel::Info => tracing::info!("{message}"),
+        LoaderLogLevel::Warn => tracing::warn!("{message}"),
+    }
 
-#[cfg(feature = "logging")]
-fn loader_warn(message: &str) {
-    tracing::warn!("{message}");
+    #[cfg(not(feature = "logging"))]
+    let _ = (level, message);
 }
-
-#[cfg(not(feature = "logging"))]
-fn loader_warn(_message: &str) {}
 
 /// Finds the TeamTalk SDK binaries or downloads them if missing.
 pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -92,26 +92,35 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         }
 
         if let Err(err) = download_version(version) {
-            loader_warn(&format!(
-                "Failed to download requested SDK version {}: {}. Falling back to latest.",
-                version, err
-            ));
+            loader_log(
+                LoaderLogLevel::Warn,
+                &format!(
+                    "Failed to download requested SDK version {}: {}. Falling back to latest.",
+                    version, err
+                ),
+            );
         } else {
             return Ok(dll_path);
         }
     } else if requested_version.force_latest {
         let latest = latest_version()?;
-        loader_info(&format!("Downloading latest SDK: {}", latest));
+        loader_log(
+            LoaderLogLevel::Info,
+            &format!("Downloading latest SDK: {}", latest),
+        );
         download_version(&latest)?;
         return Ok(dll_path);
     }
 
     if dll_exists && !current_version.is_empty() {
         if !docs_complete {
-            loader_info(&format!(
-                "Documentation missing or incomplete. Re-downloading SDK: {}",
-                current_version
-            ));
+            loader_log(
+                LoaderLogLevel::Info,
+                &format!(
+                    "Documentation missing or incomplete. Re-downloading SDK: {}",
+                    current_version
+                ),
+            );
             download_version(&current_version)?;
             return Ok(dll_path);
         }
@@ -120,7 +129,10 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         if current_version == latest {
             return Ok(dll_path);
         }
-        loader_info(&format!("Updating SDK: {} -> {}", current_version, latest));
+        loader_log(
+            LoaderLogLevel::Info,
+            &format!("Updating SDK: {} -> {}", current_version, latest),
+        );
         download_version(&latest)?;
         return Ok(dll_path);
     }
@@ -138,16 +150,19 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         } else {
             "Documentation is missing or incomplete"
         };
-        loader_info(&format!(
-            "{}. Downloading SDK: {}",
-            repair_reason, repair_version
-        ));
+        loader_log(
+            LoaderLogLevel::Info,
+            &format!("{}. Downloading SDK: {}", repair_reason, repair_version),
+        );
         download_version(&repair_version)?;
         return Ok(dll_path);
     }
 
     let latest = latest_version()?;
-    loader_info(&format!("Fresh SDK setup. Downloading: {}", latest));
+    loader_log(
+        LoaderLogLevel::Info,
+        &format!("Fresh SDK setup. Downloading: {}", latest),
+    );
     download_version(&latest)?;
 
     Ok(dll_path)
@@ -296,10 +311,13 @@ fn resolve_requested_version(
                 }
                 Err(err) => {
                     if dll_exists && docs_complete && !file_version.trim().is_empty() {
-                        loader_warn(&format!(
-                            "Failed to fetch remote SDK_VERSION.txt: {}. Using installed SDK: {}",
-                            err, file_version
-                        ));
+                        loader_log(
+                            LoaderLogLevel::Warn,
+                            &format!(
+                                "Failed to fetch remote SDK_VERSION.txt: {}. Using installed SDK: {}",
+                                err, file_version
+                            ),
+                        );
                         return Ok(RequestedVersion {
                             requested: Some(file_version.trim().to_string()),
                             force_latest: false,
