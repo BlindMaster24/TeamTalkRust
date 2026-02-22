@@ -75,3 +75,33 @@ For encrypted connections, configure the encryption context using certificate
 and key files, then connect with `encrypted = true`.
 
 For loader TLS options and build troubleshooting, see [docs/tls.md](tls.md).
+
+## Logging
+
+The SDK does not print loader messages to stdout/stderr by default.
+
+To enable loader/event logs, enable the `logging` feature and initialize a
+`tracing` subscriber in your application:
+
+```rust
+fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::from_default_env()
+        )
+        .init();
+
+    // app startup...
+}
+```
+
+Recommended runtime filters:
+
+- `RUST_LOG=teamtalk=info` for regular operational logs.
+- `RUST_LOG=teamtalk=warn` for warnings only.
+
+Notes:
+
+- Logging output is controlled by the application owner (bot/service), not by
+  the library itself.
+- Without a subscriber, `tracing` events are emitted but not displayed.

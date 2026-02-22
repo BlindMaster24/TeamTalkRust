@@ -16,7 +16,7 @@ teamtalk = { version = "3.1.0", features = ["dispatch", "async"] }
   `wait_for_predicate`, `wait_for_data`) and explicit shutdown (`shutdown`,
   `into_client`).
 - `async-tokio`: Tokio wake integration for the async wrapper (requires a Tokio runtime).
-- `logging`: event logging integration.
+- `logging`: enables `tracing` integration for SDK logs (including loader logs).
 - `mock`: in-memory event source for tests.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
 - `scripts`: Lua scripting support for extensions.

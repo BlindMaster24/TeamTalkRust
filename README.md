@@ -12,6 +12,7 @@
 - **Pure Event-Driven Architecture:** Reactive model via `client.poll()` with no arbitrary sleeps.
 - **Strict Typing:** Strong IDs such as `UserId` and `ChannelId` prevent misuse.
 - **Dynamic Runtime Loading:** `loader.rs` downloads SDK binaries when needed.
+- **Opt-in Structured Logging:** enable `logging` and configure `tracing_subscriber` in your app.
 - **Full API Coverage:** Events, audio, video, desktop, files, and administration.
 - **Documentation:** API reference plus guides under [docs](docs/README.md).
 
