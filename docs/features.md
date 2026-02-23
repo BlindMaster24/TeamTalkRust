@@ -23,7 +23,8 @@ teamtalk = { version = "3.1.0", features = ["dispatch", "async"] }
 - `plugins`: native plugin loading for extensions.
 - `state`: in-memory state store helpers (`store_snapshot`, `store_user`, `store_channel`).
 - `bot`: high-level bot framework (router, commands, middleware, scheduler, state store).
-- `bot-macros`: attribute macros for bot handlers (`#[teamtalk_command]`, `#[teamtalk_event]`).
+- `bot-macros`: attribute macros for bot handlers
+  (`#[teamtalk_command]`, `#[teamtalk_event]`, `#[teamtalk_middleware]`).
 - `bot-redis`: Redis-backed bot state store adapter (`RedisStateStore`).
 - `bot-sqlite`: SQLite-backed bot state store adapter (`SqliteStateStore`).
 - `tls-native`: system TLS via the native OS backend (default).
@@ -71,10 +72,20 @@ cargo build --no-default-features --features tls-rustls
   command parsing (`parse_command`), and in-memory state (`MemoryStateStore`).
 - Bot app facade: `BotApp` for single-point runtime wiring and sync/async entry methods.
 - Command args helpers: `Args::get`, `Args::require`, and `Args::rest`.
+- Declarative command schemas: `CommandPattern` with `Router::on_command_pattern*`
+  and `Router::try_on_command_pattern*` for argument-count validation.
+- Auto help responses: `Router::with_auto_help`, `with_help_command`,
+  `with_auto_help_command`, `with_help_header`, `with_help_footer`, and
+  `without_auto_help`.
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
+- Function middleware adapters: `FnMiddleware`, `Router::use_middleware_fn`, and
+  `Router::use_middleware_hooks`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
 - Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
 - Dialog flow helper: `DialogFlow` for reusable dialog definitions.
+- Scene-style dialog routing: `Router::on_dialog_step`, `Router::on_dialog`,
+  and checked transitions via `Context::dialog_start_checked` and
+  `Context::dialog_advance_checked`.
 - Bot context reply helpers: `reply`, `reply_private`, and `reply_channel`.
 - Bot wait helpers: `wait_for_event`, `wait_text_from`, and `wait_command_from_sender`.
 - Scoped state helpers: `user_state_*`, `channel_state_*`, and `global_state_*`.

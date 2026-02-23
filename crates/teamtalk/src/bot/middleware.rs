@@ -13,6 +13,50 @@ pub trait Middleware {
     }
 }
 
+type BeforeHook = dyn FnMut(&mut super::Context<'_>) -> Result<HandlerResult> + Send;
+type AfterHook = dyn FnMut(&mut super::Context<'_>) -> Result<()> + Send;
+
+pub struct FnMiddleware {
+    before: Box<BeforeHook>,
+    after: Option<Box<AfterHook>>,
+}
+
+impl FnMiddleware {
+    pub fn new<F>(before: F) -> Self
+    where
+        F: FnMut(&mut super::Context<'_>) -> Result<HandlerResult> + Send + 'static,
+    {
+        Self {
+            before: Box::new(before),
+            after: None,
+        }
+    }
+
+    pub fn with_after<F, A>(before: F, after: A) -> Self
+    where
+        F: FnMut(&mut super::Context<'_>) -> Result<HandlerResult> + Send + 'static,
+        A: FnMut(&mut super::Context<'_>) -> Result<()> + Send + 'static,
+    {
+        Self {
+            before: Box::new(before),
+            after: Some(Box::new(after)),
+        }
+    }
+}
+
+impl Middleware for FnMiddleware {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        (self.before)(ctx)
+    }
+
+    fn after(&mut self, ctx: &mut super::Context<'_>) -> Result<()> {
+        if let Some(after) = self.after.as_mut() {
+            return after(ctx);
+        }
+        Ok(())
+    }
+}
+
 pub struct CommandOnly;
 
 impl Middleware for CommandOnly {

@@ -1,6 +1,6 @@
 #![cfg(feature = "bot")]
 
-use teamtalk::{Args, MemoryStateStore, StateStore, parse_command};
+use teamtalk::{Args, CommandPattern, MemoryStateStore, StateStore, parse_command};
 
 #[test]
 fn parse_command_splits_name_and_args() {
@@ -45,4 +45,14 @@ fn memory_store_roundtrip() {
         Some("awaiting_code")
     );
     assert!(store.get("dialog:user:10").is_none());
+}
+
+#[test]
+fn command_pattern_usage_and_bounds() {
+    let pattern = CommandPattern::parse("ban <user> [reason...]").expect("pattern");
+    assert_eq!(pattern.command(), "ban");
+    assert_eq!(pattern.usage(), "ban <user> [reason...]");
+    assert_eq!(pattern.usage_with_prefix('/'), "/ban <user> [reason...]");
+    assert_eq!(pattern.min_args(), 1);
+    assert_eq!(pattern.max_args(), None);
 }

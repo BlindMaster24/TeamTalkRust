@@ -169,25 +169,56 @@ With the `bot` feature, handlers can use context helpers instead of manual
 message plumbing:
 
 ```rust
-use std::time::Duration;
-use teamtalk::{DialogFlow, HandlerResult, Router};
+use teamtalk::{CommandPattern, DialogFlow, HandlerResult, Router};
 
 let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
+let ban_pattern = CommandPattern::parse("ban <user_id> [reason...]")?;
+let onboarding_start = onboarding.clone();
+let onboarding_name = onboarding.clone();
 
 let router = Router::new()
-    .on_command("ban", |ctx| {
-        let args = ctx.args().expect("command args");
-        let user_id: i32 = args.require(0, "/ban <user_id>")?;
-        let _reason = args.rest(1).unwrap_or_else(|| "no reason".to_owned());
+    .with_auto_help_command("commands")
+    .use_middleware_fn(|ctx| {
+        Ok(if ctx.command.is_some() {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    })
+    .on_command_pattern_with_help(
+        ban_pattern,
+        "Ban user by id with optional reason",
+        |ctx| {
+            let args = ctx.args().expect("command args");
+            let user_id: i32 = args.require(0, "/ban <user_id> [reason...]")?;
+            let _reason = args.rest(1).unwrap_or_else(|| "no reason".to_owned());
 
-        ctx.user_state_set("last_ban_target", user_id.to_string());
-        let _ = ctx.reply_private("Command accepted");
+            ctx.user_state_set("last_ban_target", user_id.to_string());
+            let _ = ctx.reply_private("Command accepted");
+            Ok(HandlerResult::Continue)
+        },
+    )
+    .on_command("start", move |ctx| {
+        ctx.dialog_start_checked(&onboarding_start)?;
+        let _ = ctx.reply_private("What is your name?");
         Ok(HandlerResult::Continue)
     })
-    .on_command("start", move |ctx| {
-        ctx.dialog_start_flow(&onboarding);
-        let _ = ctx.reply_private("What is your name?");
-        let _ = ctx.wait_command_from_sender("cancel", Duration::from_secs(30));
+    .on_dialog_step("onboarding", "ask_name", move |ctx| {
+        let Some(name) = ctx.text() else {
+            return Ok(HandlerResult::Continue);
+        };
+        ctx.user_state_set("name", name);
+        ctx.dialog_advance_checked(&onboarding_name, "ask_email")?;
+        let _ = ctx.reply_private("Now send your email:");
+        Ok(HandlerResult::Continue)
+    })
+    .on_dialog_step("onboarding", "ask_email", |ctx| {
+        let Some(email) = ctx.text() else {
+            return Ok(HandlerResult::Continue);
+        };
+        ctx.user_state_set("email", email);
+        let _ = ctx.reply_private("Onboarding complete.");
+        let _ = ctx.dialog_stop();
         Ok(HandlerResult::Continue)
     });
 ```
@@ -219,7 +250,7 @@ teamtalk = { version = "3.1.0", features = ["bot", "bot-macros"] }
 ```
 
 ```rust
-use teamtalk::{teamtalk_command, HandlerResult, Router};
+use teamtalk::{teamtalk_command, teamtalk_middleware, HandlerResult, Router};
 
 #[teamtalk_command("ping")]
 fn ping(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
@@ -227,5 +258,14 @@ fn ping(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
     Ok(HandlerResult::Continue)
 }
 
-let router = register_ping(Router::new());
+#[teamtalk_middleware]
+fn command_only(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
+    Ok(if ctx.command.is_some() {
+        HandlerResult::Continue
+    } else {
+        HandlerResult::Stop
+    })
+}
+
+let router = register_command_only(register_ping(Router::new()));
 ```

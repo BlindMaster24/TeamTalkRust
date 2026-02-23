@@ -54,3 +54,21 @@ pub fn teamtalk_event(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     expanded.into()
 }
+
+#[proc_macro_attribute]
+pub fn teamtalk_middleware(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let function = parse_macro_input!(item as ItemFn);
+    let fn_name = function.sig.ident.clone();
+    let register_name = format_ident!("register_{}", fn_name);
+
+    let expanded = quote! {
+        #function
+
+        /// Auto-generated registration helper for this middleware hook.
+        pub fn #register_name(router: ::teamtalk::Router) -> ::teamtalk::Router {
+            router.use_middleware_fn(#fn_name)
+        }
+    };
+
+    expanded.into()
+}

@@ -16,10 +16,10 @@ mod runtime_async;
 
 pub use app::BotApp;
 pub use args::Args;
-pub use command::{Command, parse_command};
+pub use command::{Command, CommandArgPattern, CommandPattern, CommandPatternError, parse_command};
 pub use context::Context;
 pub use fsm::{DialogFlow, DialogMachine, DialogState};
-pub use middleware::{CommandOnly, Middleware, RateLimitBySource};
+pub use middleware::{CommandOnly, FnMiddleware, Middleware, RateLimitBySource};
 pub use router::{HandlerResult, RouteMatcher, Router, UnknownCommandPolicy};
 pub use runtime::{Bot, BotBuilder, BotConfig};
 pub use scheduler::{JobErrorPolicy, Scheduler};

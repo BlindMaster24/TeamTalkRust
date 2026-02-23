@@ -3,7 +3,7 @@ use super::command::Command;
 use super::fsm::{DialogFlow, DialogMachine, DialogState};
 use super::storage::StateStore;
 use crate::client::{Client, Message};
-use crate::events::Event;
+use crate::events::{Error, Event, Result};
 use crate::types::{ChannelId, UserId};
 use std::time::Duration;
 
@@ -180,6 +180,14 @@ impl<'a> Context<'a> {
         self.dialog_start(flow.name(), flow.start_step());
     }
 
+    pub fn dialog_start_checked(&mut self, flow: &DialogFlow) -> Result<()> {
+        if flow.name().is_empty() || flow.start_step().is_empty() {
+            return Err(Error::InvalidParam);
+        }
+        self.dialog_start_flow(flow);
+        Ok(())
+    }
+
     pub fn dialog_current(&mut self) -> Option<DialogState> {
         let source = self.message.source();
         self.dialog().current(source)
@@ -190,8 +198,25 @@ impl<'a> Context<'a> {
         self.dialog().advance(source, step)
     }
 
+    pub fn dialog_advance_checked(
+        &mut self,
+        flow: &DialogFlow,
+        step: impl Into<String>,
+    ) -> Result<Option<DialogState>> {
+        let step = step.into();
+        if !flow.contains_step(&step) {
+            return Err(Error::InvalidParam);
+        }
+        Ok(self.dialog_advance(step))
+    }
+
     pub fn dialog_stop(&mut self) -> Option<DialogState> {
         let source = self.message.source();
         self.dialog().stop(source)
+    }
+
+    pub fn dialog_is(&mut self, dialog: &str, step: &str) -> bool {
+        let source = self.message.source();
+        self.dialog().is_in(source, dialog, step)
     }
 }
