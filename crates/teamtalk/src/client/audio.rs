@@ -542,6 +542,7 @@ pub struct AudioBlockView<'a> {
     pub channels: i32,
     pub stream_types: u32,
     pub samples: i32,
+    pub sample_index: u32,
     pub data: &'a [i16],
 }
 
@@ -558,6 +559,7 @@ impl<'a> AudioBlockView<'a> {
             channels: block.nChannels,
             stream_types: block.uStreamTypes,
             samples: block.nSamples,
+            sample_index: block.uSampleIndex,
             data,
         })
     }
