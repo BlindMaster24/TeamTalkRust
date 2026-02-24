@@ -354,8 +354,11 @@ impl Client {
     where
         S: AudioBlockSink + Send + 'static,
     {
+        // Register callback first to avoid dropping initial blocks between
+        // event enable and handler subscription.
+        let subscription = self.subscribe_audio_blocks(user_id, types, sink);
         let _ = self.enable_audio_block_event(user_id, types, true);
-        self.subscribe_audio_blocks(user_id, types, sink)
+        subscription
     }
 
     /// Subscribes to audio blocks with a custom format.
@@ -369,8 +372,11 @@ impl Client {
     where
         S: AudioBlockSink + Send + 'static,
     {
+        // Register callback first to avoid dropping initial blocks between
+        // event enable and handler subscription.
+        let subscription = self.subscribe_audio_blocks(user_id, types, sink);
         let _ = self.enable_audio_block_event_ex(user_id, types, format, true);
-        self.subscribe_audio_blocks(user_id, types, sink)
+        subscription
     }
 
     #[allow(clippy::too_many_arguments)]

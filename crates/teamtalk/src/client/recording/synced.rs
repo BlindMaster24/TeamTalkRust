@@ -165,9 +165,21 @@ impl SyncedUserRecordingSession {
         if self.users.contains_key(&user_id) {
             return Ok(());
         }
-        if self.options.subscribe_audio {
-            let _ = client.subscribe(user_id, Subscriptions::all_audio());
+
+        if should_warn_missing_audio_subscriptions(self.options.subscribe_audio, user.as_ref()) {
+            #[cfg(feature = "logging")]
+            tracing::warn!(
+                user_id = user_id.0,
+                "synced recording started with subscribe_audio=false and no local audio subscriptions"
+            );
         }
+
+        if self.options.subscribe_audio {
+            let _ = client.subscribe(user_id, synced_audio_subscription_mask());
+        }
+
+        client.enable_audio_block_event(user_id, self.options.stream_types, true);
+
         let track = UserTrack::new(
             &self.options.folder,
             &self.options.file_vars,
@@ -177,15 +189,15 @@ impl SyncedUserRecordingSession {
             self.options.default_sample_rate,
             self.options.default_channels,
         )?;
-        client.enable_audio_block_event(user_id, self.options.stream_types, true);
         self.users.insert(user_id, track);
+        self.drain_pending_blocks(client, user_id)?;
         Ok(())
     }
 
     fn stop_user(&mut self, client: &Client, user_id: UserId) {
         client.enable_audio_block_event(user_id, self.options.stream_types, false);
         if self.options.subscribe_audio {
-            let _ = client.unsubscribe_all_from_user(user_id);
+            let _ = client.unsubscribe(user_id, synced_audio_subscription_mask());
         }
         self.users.remove(&user_id);
     }
@@ -214,6 +226,34 @@ impl SyncedUserRecordingSession {
         }
         unsafe {
             let _ = client.release_user_audio_block(ptr);
+        }
+        Ok(())
+    }
+
+    fn drain_pending_blocks(&mut self, client: &Client, user_id: UserId) -> Result<()> {
+        loop {
+            let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id)
+            else {
+                break;
+            };
+            let block = unsafe { &*ptr };
+            let Some(view) = AudioBlockView::from_block(block) else {
+                unsafe {
+                    let _ = client.release_user_audio_block(ptr);
+                }
+                continue;
+            };
+
+            let elapsed = self.start.elapsed();
+            if let Some(track) = self.users.get_mut(&user_id) {
+                track.ensure_format(view.sample_rate, view.channels)?;
+                track.pad_to(elapsed)?;
+                track.write_block(&view)?;
+            }
+
+            unsafe {
+                let _ = client.release_user_audio_block(ptr);
+            }
         }
         Ok(())
     }
@@ -448,8 +488,59 @@ impl Drop for WavWriter {
     }
 }
 
+fn synced_audio_subscription_mask() -> Subscriptions {
+    Subscriptions::all_audio()
+}
+
+fn should_warn_missing_audio_subscriptions(subscribe_audio: bool, user: Option<&User>) -> bool {
+    if subscribe_audio {
+        return false;
+    }
+    let Some(current_user) = user else {
+        return false;
+    };
+    !current_user.local_subscriptions.has(Subscriptions::VOICE)
+        && !current_user
+            .local_subscriptions
+            .has(Subscriptions::MEDIAFILE)
+}
+
 fn render_vars(template: &str, user_id: UserId, username: &str) -> String {
     template
         .replace("%user_id%", &user_id.0.to_string())
         .replace("%username%", username)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn synced_mask_is_audio_only() {
+        assert_eq!(
+            synced_audio_subscription_mask().raw(),
+            Subscriptions::all_audio().raw()
+        );
+    }
+
+    #[test]
+    fn warn_when_manual_subscriptions_missing() {
+        let user = User::default();
+        assert!(should_warn_missing_audio_subscriptions(false, Some(&user)));
+    }
+
+    #[test]
+    fn no_warn_when_manual_voice_present() {
+        let user = User {
+            local_subscriptions: Subscriptions::from_raw(Subscriptions::VOICE),
+            ..User::default()
+        };
+        assert!(!should_warn_missing_audio_subscriptions(false, Some(&user)));
+    }
+
+    #[test]
+    fn no_warn_when_subscribe_audio_enabled() {
+        let user = User::default();
+        assert!(!should_warn_missing_audio_subscriptions(true, Some(&user)));
+    }
 }
