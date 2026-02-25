@@ -630,6 +630,26 @@
   - Never leave docs describing removed/renamed APIs.
 - **Example usage rule:**
   - If a new public API is added, add/update an example or doc snippet that compiles.
+
+## Professional Terminal & Commit Practices
+- **Multi-line Commits & Lists via Terminal:**
+  - **PowerShell (Recommended):** Use multiple `-m` flags. Git automatically inserts a blank line between the first `-m` (summary) and subsequent `-m` (body) blocks.
+    `git commit -m "feat(scope): summary" -m "- first bullet point" -m "- second bullet point"`
+  - **Bash (Git Bash):** Use a single `-m` with open quotes and press `Enter` for manual newlines.
+  - **Indentation:** When writing lists in the terminal, start bullet points with a hyphen and a space (`- `).
+- **Standard Scopes for this Repo:**
+  - `loader`: SDK downloading, caching, and platform logic.
+  - `core`: Client initialization, FFI, and main loops.
+  - `audio`: Sound devices, profiles, and stream capturing.
+  - `bot`: Bot logic, routers, storage, and states.
+  - `deps`: Cargo dependency updates.
+  - `docs`: Updates to documentation or `GEMINI.md`.
+- **Terminal Efficiency Tips:**
+  - **Reverse Search:** Press `Ctrl + R` in PowerShell/Bash to quickly find and reuse your previous `git commit` commands.
+  - **Pretty Logs:** Set up a global alias for a clean, visual history:
+    `git config --global alias.lg "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"`
+  - **Quick Undo:** To undo the last commit while keeping your changes staged: `git reset --soft HEAD~1`.
+
 - **Safety sanity checks (before commit):**
   - Search for accidental debug artifacts (`TODO`, `FIXME`, `println!`, `dbg!`, `unwrap` in library code).
   - Ensure no secrets, tokens, or local paths are introduced in diffs.
