@@ -212,8 +212,10 @@ impl Event {
 /// Error type used across TeamTalk operations.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Init failed")]
-    InitFailed,
+    #[error("SDK Loader failed: {0}")]
+    LoaderFailed(#[from] crate::loader::LoaderError),
+    #[error("Init failed: {message}")]
+    InitFailed { message: String },
     #[error("Command failed: {code} ({message})")]
     CommandFailed { code: i32, message: String },
     #[error("Connection failed")]

@@ -71,7 +71,9 @@ impl Client {
             Arc::new(super::backend::FfiBackend);
         let ptr = backend.init_poll();
         if ptr.is_null() {
-            Err(Error::InitFailed)
+            Err(Error::InitFailed {
+                message: "Failed to initialize backend".into(),
+            })
         } else {
             Ok(Self {
                 name: None,
@@ -113,7 +115,9 @@ impl Client {
             Arc::new(super::backend::FfiBackend);
         let ptr = backend.init_hwnd(hwnd, msg);
         if ptr.is_null() {
-            Err(Error::InitFailed)
+            Err(Error::InitFailed {
+                message: "Failed to initialize backend".into(),
+            })
         } else {
             Ok(Self {
                 name: None,
@@ -153,7 +157,9 @@ impl Client {
     pub fn with_backend(backend: Arc<dyn super::backend::TeamTalkBackend>) -> Result<Self> {
         let ptr = backend.init_poll();
         if ptr.is_null() {
-            Err(Error::InitFailed)
+            Err(Error::InitFailed {
+                message: "Failed to initialize backend".into(),
+            })
         } else {
             Ok(Self {
                 name: None,

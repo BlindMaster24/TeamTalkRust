@@ -66,9 +66,13 @@ pub use types::{ClientId, MessageBuilder};
 
 /// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {
-    let dll_path = loader::find_or_download_dll().map_err(|_| Error::InitFailed)?;
-    let dll_path = dll_path.to_str().ok_or(Error::InitFailed)?;
-    teamtalk_sys::load(dll_path).map_err(|_| Error::InitFailed)?;
+    let dll_path = loader::find_or_download_dll()?;
+    let dll_path = dll_path.to_str().ok_or_else(|| Error::InitFailed {
+        message: "Invalid characters in DLL path".to_string(),
+    })?;
+    teamtalk_sys::load(dll_path).map_err(|e| Error::InitFailed {
+        message: format!("Failed to load dynamic library: {}", e),
+    })?;
     Ok(())
 }
 
@@ -86,7 +90,11 @@ pub fn set_license(name: &str, key: &str) -> Result<bool> {
 
 /// Initializes the TeamTalk SDK using a custom DLL path.
 pub fn init_with_path<P: AsRef<Path>>(path: P) -> Result<()> {
-    teamtalk_sys::load(path.as_ref().to_str().ok_or(Error::InitFailed)?)
-        .map_err(|_| Error::InitFailed)?;
+    let dll_path = path.as_ref().to_str().ok_or_else(|| Error::InitFailed {
+        message: "Invalid characters in custom DLL path".to_string(),
+    })?;
+    teamtalk_sys::load(dll_path).map_err(|e| Error::InitFailed {
+        message: format!("Failed to load dynamic library: {}", e),
+    })?;
     Ok(())
 }
