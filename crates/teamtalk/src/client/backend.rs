@@ -1,5 +1,6 @@
 use crate::types::{AudioCodec, Channel, ChannelId};
 use crate::utils::ToTT;
+#[cfg(feature = "mock")]
 use parking_lot::Mutex;
 use teamtalk_sys as ffi;
 
