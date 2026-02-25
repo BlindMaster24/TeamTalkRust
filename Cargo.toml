@@ -7,7 +7,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-teamtalk-macros = { version = "0.1.0", path = "crates/teamtalk-macros" }
+teamtalk-macros = { version = "0.1.1", path = "crates/teamtalk-macros" }
 
 [workspace.lints.rust]
 warnings = "deny"

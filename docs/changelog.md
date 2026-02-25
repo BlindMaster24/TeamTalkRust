@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.1.0...teamtalk-v4.0.0) - 2026-02-25
+
+### Added
+- *(logging)* implement unified logging system and update loader
+- *(loader)* add global cache, network retries and progress reporting
+- *(audio)* expose sample_index in audio block view
+- *(examples)* add voice stream and segment recording samples
+- *(bot)* add command schemas, fn middleware, and scene routing
+- *(loader)* support remote latest pin with URL override
+
+### Changed
+- *(core)* replace std::sync::Mutex with parking_lot::Mutex
+- *(loader)* harden sdk installation with locks and atomic moves
+- *(loader)* unify internal logging helper
+
+### Fixed
+- *(backend)* fix unused Mutex import warning
+- *(core)* bubble up loader errors to public API
+- *(recording)* harden synced audio block capture
+
+### Dependencies
+- *(deps)* remove unused \evalexpr\ dependency
+
+## [0.1.1](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-macros-v0.1.0...teamtalk-macros-v0.1.1) - 2026-02-25
+
+### Added
+- *(bot)* add command schemas, fn middleware, and scene routing
+
 ## [3.1.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.0.0...teamtalk-v3.1.0) - 2026-02-21
 
 ### Added
