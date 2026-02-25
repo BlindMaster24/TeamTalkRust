@@ -618,8 +618,13 @@
   - Ensure the staged diff matches the commit message intent.
 - **Commit message rules (practical):**
   - Summary ≤ 72 chars, imperative, one intent.
+  - Use Conventional Commits (`type(scope): description`).
+  - Types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`.
+  - Use lowercase for the summary.
   - Use body when rationale, tradeoffs, or migrations are involved.
   - For multi-step work, include a short body line describing the step.
+  - **Terminal Tip:** Use multiple `-m` flags for multi-line messages without opening an editor:
+    `git commit -m "feat(scope): title" -m "- first change" -m "- second change"`
 - **Docs accuracy rule:**
   - If docs mention an API/behavior, confirm it exists in code or update docs.
   - Never leave docs describing removed/renamed APIs.
