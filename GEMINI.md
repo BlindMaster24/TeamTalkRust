@@ -18,6 +18,12 @@
 ## Library Architecture & API Design (Rust)
 - Keep crates layered: `teamtalk-sys` = raw FFI, `teamtalk` = safe, ergonomic SDK.
 - Public API should be minimal, stable, and documented; everything else stays `pub(crate)`.
+- **Mutex Usage:** Always prefer `parking_lot::Mutex` over `std::sync::Mutex`.
+  - `parking_lot` is faster and does not use "poisoning" (locking never returns a `Result`).
+  - This eliminates the need for `.unwrap()` or `.unwrap_or_else(|e| e.into_inner())` on locks.
+- **Error Handling:** Never swallow errors during initialization or loading.
+  - Always bubble up specific error types (like `LoaderError`) to the public API.
+  - Use informative error variants (e.g., `InitFailed { message: String }`) instead of unit variants.
 - Prefer newtype wrappers for IDs and handles; avoid raw primitives at boundaries.
 - Use traits when you need polymorphism or testability; avoid traits as a default abstraction.
 - Prefer composition over deep inheritance‑style trait hierarchies.
@@ -531,7 +537,7 @@
 ## Required Prompts
 - Ask before adding new docs pages outside `docs/`.
 - Ask whether to update `AGENTS.md` when the user introduces new permanent requirements.
-- Never use `git add .`; always stage only the files relevant to the task.
+- **NEVER use `git add .`**; always stage only the specific files relevant to the current task.
 - Local pre-commit hooks use `lefthook.yml`; Windows overrides can use `lefthook-local.yml` (see `lefthook-local.example.yml`).
 
 ## Definition of Done
