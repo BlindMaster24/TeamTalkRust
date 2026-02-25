@@ -318,12 +318,7 @@ impl<'a> SubscriptionBuilder<'a> {
             group: self.group,
             predicate: self.predicate,
         };
-        let id = self
-            .client
-            .bus
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .subscribe(config, Box::new(handler));
+        let id = self.client.bus.lock().subscribe(config, Box::new(handler));
         self.client
             .bus_revision
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);

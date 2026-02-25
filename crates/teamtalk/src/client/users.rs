@@ -189,10 +189,7 @@ impl Client {
 
     /// Stores login parameters for automatic login.
     pub fn set_login_params(&self, params: LoginParams) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.login = Some(params);
         auto.login_gave_up = false;
         auto.pending_login_cmd = None;
@@ -200,11 +197,7 @@ impl Client {
 
     /// Returns stored login parameters, if any.
     pub fn login_params(&self) -> Option<LoginParams> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .login
-            .clone()
+        self.auto_reconnect.lock().login.clone()
     }
 
     /// Logs in using stored login parameters.

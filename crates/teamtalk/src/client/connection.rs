@@ -250,10 +250,7 @@ impl Client {
 
     /// Enables automatic reconnection using the provided config.
     pub fn enable_auto_reconnect(&self, config: ReconnectConfig) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.enabled = true;
         auto.handler = Some(ReconnectHandler::new(config));
         auto.extra_events.clear();
@@ -267,10 +264,7 @@ impl Client {
         config: ReconnectConfig,
         extra_events: Vec<crate::events::Event>,
     ) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.enabled = true;
         auto.handler = Some(ReconnectHandler::new(config));
         auto.extra_events = dedupe_events(extra_events);
@@ -280,10 +274,7 @@ impl Client {
 
     /// Disables automatic reconnection.
     pub fn disable_auto_reconnect(&self) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.enabled = false;
         auto.handler = None;
         auto.login_handler = None;
@@ -299,21 +290,14 @@ impl Client {
 
     /// Sets per-phase retry behavior for in-session recovery.
     pub fn set_reconnect_workflow_config(&self, workflow: ReconnectWorkflowConfig) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.workflow = workflow;
         reset_auto_recovery_handlers(&mut auto);
     }
 
     /// Returns per-phase retry behavior for in-session recovery.
     pub fn reconnect_workflow_config(&self) -> ReconnectWorkflowConfig {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .workflow
-            .clone()
+        self.auto_reconnect.lock().workflow.clone()
     }
 
     /// Enables full in-session recovery and stores connect/login params in memory.
@@ -332,43 +316,27 @@ impl Client {
 
     /// Returns true if automatic reconnection is enabled.
     pub fn auto_reconnect_enabled(&self) -> bool {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .enabled
+        self.auto_reconnect.lock().enabled
     }
 
     /// Stores connection parameters for automatic reconnection.
     pub fn set_reconnect_params(&self, params: ConnectParamsOwned) {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .params = Some(params);
+        self.auto_reconnect.lock().params = Some(params);
     }
 
     /// Returns the stored reconnection parameters, if any.
     pub fn reconnect_params(&self) -> Option<ConnectParamsOwned> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .params
-            .clone()
+        self.auto_reconnect.lock().params.clone()
     }
 
     /// Sets extra events that should trigger automatic reconnection.
     pub fn set_auto_reconnect_events(&self, extra_events: Vec<crate::events::Event>) {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .extra_events = dedupe_events(extra_events);
+        self.auto_reconnect.lock().extra_events = dedupe_events(extra_events);
     }
 
     /// Adds one extra event that should trigger automatic reconnection.
     pub fn add_auto_reconnect_event(&self, event: crate::events::Event) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         if auto
             .extra_events
             .iter()
@@ -381,10 +349,7 @@ impl Client {
 
     /// Removes one extra event trigger by event kind.
     pub fn remove_auto_reconnect_event(&self, event: crate::events::Event) -> bool {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         let before = auto.extra_events.len();
         auto.extra_events
             .retain(|existing| std::mem::discriminant(existing) != std::mem::discriminant(&event));
@@ -393,27 +358,17 @@ impl Client {
 
     /// Returns the extra events that trigger automatic reconnection.
     pub fn auto_reconnect_events(&self) -> Vec<crate::events::Event> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .extra_events
-            .clone()
+        self.auto_reconnect.lock().extra_events.clone()
     }
 
     /// Returns the last remembered channel, if any.
     pub fn last_channel(&self) -> Option<crate::types::ChannelId> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .last_channel
+        self.auto_reconnect.lock().last_channel
     }
 
     /// Remembers the channel and optional password used for auto-join after reconnect.
     pub fn set_last_channel(&self, channel: crate::types::ChannelId, password: Option<&str>) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.last_channel = Some(channel);
         auto.last_channel_password = match password {
             Some(value) if !value.is_empty() => Some(value.to_string()),
@@ -425,10 +380,7 @@ impl Client {
 
     /// Clears the remembered channel.
     pub fn clear_last_channel(&self) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.last_channel = None;
         auto.last_channel_password = None;
         auto.pending_join_cmd = None;

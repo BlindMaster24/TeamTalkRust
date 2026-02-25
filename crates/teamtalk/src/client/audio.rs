@@ -2,9 +2,10 @@
 use super::Client;
 use crate::events::Event;
 use crate::types::{AudioPreprocessor, SoundDevice, UserId};
+use parking_lot::Mutex;
 use std::io::Write;
 use std::net::UdpSocket;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use teamtalk_sys as ffi;
 
 /// Audio device selection preset.
@@ -517,9 +518,8 @@ impl Client {
                     return;
                 };
                 let block = unsafe { &*ptr };
-                if let Some(view) = AudioBlockView::from_block(block)
-                    && let Ok(mut sink) = sink_ref.lock()
-                {
+                if let Some(view) = AudioBlockView::from_block(block) {
+                    let mut sink = sink_ref.lock();
                     sink.handle(&view);
                 }
                 unsafe {

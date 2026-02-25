@@ -33,7 +33,7 @@ impl StateStore for MemoryStateStore {
 
 #[cfg(feature = "bot-redis")]
 pub struct RedisStateStore {
-    conn: std::sync::Mutex<redis::Connection>,
+    conn: parking_lot::Mutex<redis::Connection>,
     key_prefix: String,
 }
 
@@ -47,7 +47,7 @@ impl RedisStateStore {
         let client = redis::Client::open(url)?;
         let conn = client.get_connection()?;
         Ok(Self {
-            conn: std::sync::Mutex::new(conn),
+            conn: parking_lot::Mutex::new(conn),
             key_prefix: prefix.to_owned(),
         })
     }
@@ -62,28 +62,24 @@ impl StateStore for RedisStateStore {
     fn get(&self, key: &str) -> Option<String> {
         use redis::Commands;
         let full = self.key(key);
-        let mut conn = self.conn.lock().ok()?;
+        let mut conn = self.conn.lock();
         conn.get(full).ok()
     }
 
     fn set(&mut self, key: String, value: String) {
         use redis::Commands;
         let full = self.key(&key);
-        if let Ok(mut conn) = self.conn.lock() {
-            let _: redis::RedisResult<()> = conn.set(full, value);
-        }
+        let mut conn = self.conn.lock();
+        let _: redis::RedisResult<()> = conn.set(full, value);
     }
 
     fn remove(&mut self, key: &str) -> Option<String> {
         use redis::Commands;
         let full = self.key(key);
-        if let Ok(mut conn) = self.conn.lock() {
-            let old = conn.get(full.clone()).ok();
-            let _: redis::RedisResult<usize> = conn.del(full);
-            old
-        } else {
-            None
-        }
+        let mut conn = self.conn.lock();
+        let old = conn.get(full.clone()).ok();
+        let _: redis::RedisResult<usize> = conn.del(full);
+        old
     }
 }
 

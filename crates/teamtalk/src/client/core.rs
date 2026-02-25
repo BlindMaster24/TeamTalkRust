@@ -3,8 +3,9 @@ use crate::events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "scripts")]
 use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
+use parking_lot::Mutex;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 pub use teamtalk_sys as ffi;
 
 use super::bus;
@@ -188,30 +189,20 @@ impl Client {
 
     #[cfg(feature = "mock")]
     pub fn mock_set_pending_commands_for_tests(&self, login: Option<i32>, join: Option<i32>) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         auto.pending_login_cmd = login;
         auto.pending_join_cmd = join;
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_pending_commands_for_tests(&self) -> (Option<i32>, Option<i32>) {
-        let auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let auto = self.auto_reconnect.lock();
         (auto.pending_login_cmd, auto.pending_join_cmd)
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_last_channel_password_for_tests(&self) -> Option<String> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .last_channel_password
-            .clone()
+        self.auto_reconnect.lock().last_channel_password.clone()
     }
 
     #[cfg(feature = "mock")]
@@ -230,7 +221,7 @@ impl Client {
 
     /// Sets a human-friendly label for the client instance.
     pub fn with_label(self, label: &str) -> Self {
-        *self.label.lock().unwrap_or_else(|e| e.into_inner()) = Some(label.to_string());
+        *self.label.lock() = Some(label.to_string());
         self
     }
 
@@ -241,18 +232,17 @@ impl Client {
 
     /// Returns the client label, if set.
     pub fn label(&self) -> Option<String> {
-        self.label.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.label.lock().clone()
     }
 
     /// Sets or clears the client label.
     pub fn set_label(&self, label: Option<&str>) {
-        *self.label.lock().unwrap_or_else(|e| e.into_inner()) =
-            label.map(|value| value.to_string());
+        *self.label.lock() = label.map(|value| value.to_string());
     }
 
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
-        *self.state.lock().unwrap_or_else(|e| e.into_inner())
+        *self.state.lock()
     }
 
     /// Creates a subscription for a specific event type.
@@ -267,11 +257,7 @@ impl Client {
 
     /// Removes an event subscription.
     pub fn unsubscribe_event(&self, id: bus::EventSubscriptionId) -> bool {
-        let removed = self
-            .bus
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .unsubscribe(id);
+        let removed = self.bus.lock().unsubscribe(id);
         if removed {
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
         }
@@ -280,7 +266,7 @@ impl Client {
 
     /// Clears all event subscriptions.
     pub fn clear_event_subscriptions(&self) {
-        let mut bus = self.bus.lock().unwrap_or_else(|e| e.into_inner());
+        let mut bus = self.bus.lock();
         if bus.len() > 0 {
             bus.clear();
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
@@ -290,11 +276,7 @@ impl Client {
     /// Removes all subscriptions in the specified group.
     pub fn unsubscribe_event_group(&self, group: impl AsRef<str>) -> usize {
         let group = bus::EventSubscriptionGroup::new(group.as_ref());
-        let removed = self
-            .bus
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .unsubscribe_group(&group);
+        let removed = self.bus.lock().unsubscribe_group(&group);
         if removed > 0 {
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
         }
@@ -303,24 +285,24 @@ impl Client {
 
     /// Returns the number of active event subscriptions.
     pub fn event_subscription_count(&self) -> usize {
-        self.bus.lock().unwrap_or_else(|e| e.into_inner()).len()
+        self.bus.lock().len()
     }
 
     /// Replaces the current hook set.
     pub fn set_hooks(&self, hooks: hooks::ClientHooks) {
-        *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = hooks;
+        *self.hooks.lock() = hooks;
         self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Clears all hooks.
     pub fn clear_hooks(&self) {
-        *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = hooks::ClientHooks::default();
+        *self.hooks.lock() = hooks::ClientHooks::default();
         self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(feature = "scripts")]
     pub fn enable_scripts(&self) {
-        let mut scripts = self.scripts.lock().unwrap_or_else(|e| e.into_inner());
+        let mut scripts = self.scripts.lock();
         if scripts.is_none() {
             *scripts = Some(ScriptManager::new());
         }
@@ -328,12 +310,12 @@ impl Client {
 
     #[cfg(feature = "scripts")]
     pub fn set_script_manager(&self, manager: ScriptManager) {
-        *self.scripts.lock().unwrap_or_else(|e| e.into_inner()) = Some(manager);
+        *self.scripts.lock() = Some(manager);
     }
 
     #[cfg(feature = "scripts")]
     pub fn clear_scripts(&self) {
-        *self.scripts.lock().unwrap_or_else(|e| e.into_inner()) = None;
+        *self.scripts.lock() = None;
     }
 
     #[cfg(feature = "scripts")]
@@ -341,49 +323,40 @@ impl Client {
     where
         F: FnOnce(&mut ScriptManager) -> R,
     {
-        self.scripts
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .as_mut()
-            .map(f)
+        self.scripts.lock().as_mut().map(f)
     }
 
     pub(crate) fn set_connection_state(&self, state: ConnectionState) {
-        *self.state.lock().unwrap_or_else(|e| e.into_inner()) = state;
+        *self.state.lock() = state;
     }
 
     pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
         let revision_before = self.hooks_revision.load(Ordering::Relaxed);
         let mut local_hooks = {
-            let mut hooks = self.hooks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut hooks = self.hooks.lock();
             std::mem::take(&mut *hooks)
         };
         local_hooks.fire(self, event, msg);
         if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
-            *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = local_hooks;
+            *self.hooks.lock() = local_hooks;
         }
     }
 
     pub(crate) fn dispatch_bus(&self, event: crate::events::Event, msg: &Message) {
         let revision_before = self.bus_revision.load(Ordering::Relaxed);
         let mut local_bus = {
-            let mut bus = self.bus.lock().unwrap_or_else(|e| e.into_inner());
+            let mut bus = self.bus.lock();
             std::mem::take(&mut *bus)
         };
         local_bus.dispatch(self, event, msg);
         if self.bus_revision.load(Ordering::Relaxed) == revision_before {
-            *self.bus.lock().unwrap_or_else(|e| e.into_inner()) = local_bus;
+            *self.bus.lock() = local_bus;
         }
     }
 
     #[cfg(feature = "scripts")]
     pub(crate) fn dispatch_scripts(&self, event: crate::events::Event, msg: &Message) {
-        if let Some(manager) = self
-            .scripts
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .as_ref()
-        {
+        if let Some(manager) = self.scripts.lock().as_ref() {
             let _ = manager.handle_event(event, msg);
         }
     }
@@ -391,17 +364,17 @@ impl Client {
     pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {
         let revision_before = self.hooks_revision.load(Ordering::Relaxed);
         let mut local_hooks = {
-            let mut hooks = self.hooks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut hooks = self.hooks.lock();
             std::mem::take(&mut *hooks)
         };
         local_hooks.fire_joined(self, channel_id);
         if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
-            *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = local_hooks;
+            *self.hooks.lock() = local_hooks;
         }
     }
 
     pub(crate) fn handle_auto_reconnect(&self) {
-        match *self.state.lock().unwrap_or_else(|e| e.into_inner()) {
+        match *self.state.lock() {
             ConnectionState::Disconnected => self.handle_connect_recovery(),
             ConnectionState::Connected => self.handle_login_recovery(),
             ConnectionState::LoggedIn => self.handle_join_recovery(),
@@ -416,10 +389,7 @@ impl Client {
 
     fn handle_connect_recovery(&self) {
         let params = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             if !auto.enabled {
                 return;
             }
@@ -443,10 +413,7 @@ impl Client {
                 let msg = Self::empty_message(failed_event);
                 self.invoke_hooks(failed_event, &msg);
 
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 auto.enabled = false;
                 auto.handler = None;
                 auto.login_handler = None;
@@ -463,10 +430,7 @@ impl Client {
         }
 
         let (attempt, delay) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             if !auto.enabled {
                 return;
             }
@@ -498,10 +462,7 @@ impl Client {
 
     fn handle_login_recovery(&self) {
         let (params, attempt, delay, gave_up_now) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             if !auto.enabled || auto.login_gave_up {
                 return;
             }
@@ -548,10 +509,7 @@ impl Client {
             &params.client_name,
         );
         if cmd_id <= 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             auto.pending_login_cmd = None;
             drop(auto);
             self.set_connection_state(ConnectionState::Connected);
@@ -559,20 +517,14 @@ impl Client {
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
         } else {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             auto.pending_login_cmd = Some(cmd_id);
         }
     }
 
     fn handle_join_recovery(&self) {
         let (channel, password, attempt, delay, gave_up_now) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             if !auto.enabled || auto.join_gave_up {
                 return;
             }
@@ -615,10 +567,7 @@ impl Client {
 
         let cmd_id = self.join_channel(channel, password.as_deref().unwrap_or(""));
         if cmd_id <= 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             auto.pending_join_cmd = None;
             drop(auto);
             self.set_connection_state(ConnectionState::LoggedIn);
@@ -626,20 +575,14 @@ impl Client {
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
         } else {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             auto.pending_join_cmd = Some(cmd_id);
         }
     }
 
     fn handle_recovery_completed(&self) {
         let (reconnect_attempts, login_attempts, join_attempts) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
             if !auto.enabled || auto.recovery_completed {
                 return;
             }
@@ -1038,10 +981,7 @@ impl Client {
         match event {
             Event::ConnectSuccess => {
                 self.set_connection_state(ConnectionState::Connected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_connected();
                 }
@@ -1061,10 +1001,7 @@ impl Client {
             }
             Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
                 self.set_connection_state(ConnectionState::Disconnected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_disconnected();
                 }
@@ -1073,10 +1010,7 @@ impl Client {
             }
             Event::MySelfLoggedIn => {
                 self.set_connection_state(ConnectionState::LoggedIn);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 auto.pending_login_cmd = None;
                 if let Some(handler) = auto.login_handler.as_mut() {
                     handler.mark_connected();
@@ -1084,10 +1018,7 @@ impl Client {
             }
             Event::MySelfLoggedOut => {
                 self.set_connection_state(ConnectionState::Connected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 auto.pending_join_cmd = None;
                 if let Some(handler) = auto.join_handler.as_mut() {
                     handler.mark_disconnected();
@@ -1098,10 +1029,7 @@ impl Client {
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::Joined(user.channel_id));
-                    let mut auto = self
-                        .auto_reconnect
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let mut auto = self.auto_reconnect.lock();
                     auto.pending_join_cmd = None;
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_connected();
@@ -1114,10 +1042,7 @@ impl Client {
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::LoggedIn);
-                    let mut auto = self
-                        .auto_reconnect
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let mut auto = self.auto_reconnect.lock();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_disconnected();
                     }
@@ -1126,10 +1051,7 @@ impl Client {
             Event::MySelfKicked => {
                 let next_state = kicked_next_state(msg.source());
                 self.set_connection_state(next_state);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 auto.pending_join_cmd = None;
                 if matches!(next_state, ConnectionState::Connected) {
                     auto.pending_login_cmd = None;
@@ -1146,10 +1068,7 @@ impl Client {
             Event::CmdError => {
                 let source = msg.source();
                 let mut next_state = None;
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 if auto.pending_login_cmd == Some(source) {
                     auto.pending_login_cmd = None;
                     if let Some(handler) = auto.login_handler.as_mut() {
@@ -1170,10 +1089,7 @@ impl Client {
             }
             Event::CmdSuccess => {
                 let source = msg.source();
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
                 if auto.pending_login_cmd == Some(source) {
                     auto.pending_login_cmd = None;
                 }
@@ -1184,10 +1100,7 @@ impl Client {
             _ => {}
         }
 
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
         if auto.enabled && event.is_reconnect_needed_with(&auto.extra_events) {
             auto.force_disconnect = true;
             drop(auto);

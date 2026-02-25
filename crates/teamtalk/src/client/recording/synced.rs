@@ -1,10 +1,11 @@
 use crate::events::{Error, Event, Result};
 use crate::types::{Subscriptions, User, UserId};
+use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
@@ -302,9 +303,8 @@ impl<'a> SyncedUserRecordingBus<'a> {
                 )
             })
             .subscribe(move |ctx| {
-                if let Ok(mut session) = session.lock() {
-                    let _ = session.handle_event(ctx.client(), ctx.event(), ctx.message());
-                }
+                let mut session = session.lock();
+                let _ = session.handle_event(ctx.client(), ctx.event(), ctx.message());
             });
         Self {
             client,
