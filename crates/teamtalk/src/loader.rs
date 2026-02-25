@@ -1,17 +1,51 @@
 //! Runtime loader for TeamTalk SDK binaries.
 use regex::Regex;
 use reqwest::blocking::Client;
-use sevenz_rust2::decompress;
 use std::env;
-use std::fs;
-use std::io::Cursor;
+use std::fs::{self, File, OpenOptions};
 use std::path::{Path, PathBuf};
+
+// For locking
+use fd_lock::RwLock;
 
 const DOCS_DIR_NAME: &str = "Documentation";
 const DOCS_CAPI_DIR_NAME: &str = "C-API";
 const DOCS_MANIFEST_NAME: &str = "TEAMTALK_DOCUMENTATION_MANIFEST.txt";
 const SDK_VERSION_URL_ENV: &str = "TEAMTALK_SDK_VERSION_URL";
 const REMOTE_SDK_VERSION_URL: &str = "https://raw.githubusercontent.com/BlindMaster24/TeamTalkRust/main/crates/teamtalk/SDK_VERSION.txt";
+
+#[derive(Debug, thiserror::Error)]
+pub enum LoaderError {
+    #[error("Unsupported platform: OS '{os}' Architecture '{arch}'")]
+    UnsupportedPlatform { os: String, arch: String },
+
+    #[error("Offline mode enabled but SDK files or documentation are missing")]
+    OfflineMissingFiles,
+
+    #[error("No SDK versions found on the remote server")]
+    NoVersionsFound,
+
+    #[error("Documentation directory missing in SDK archive: {0}")]
+    DocumentationMissing(String),
+
+    #[error("Failed to fetch remote SDK version: {0}")]
+    RemoteVersionFetch(String),
+
+    #[error("Network error: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Extraction error: {0}")]
+    Extraction(#[from] sevenz_rust2::Error),
+
+    #[error("Regex error: {0}")]
+    Regex(#[from] regex::Error),
+
+    #[error("Lock error: {0}")]
+    Lock(String),
+}
 
 enum LoaderLogLevel {
     Info,
@@ -29,20 +63,74 @@ fn loader_log(level: LoaderLogLevel, message: &str) {
     let _ = (level, message);
 }
 
-/// Finds the TeamTalk SDK binaries or downloads them if missing.
-pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let dll_name = if cfg!(windows) {
-        "TeamTalk5.dll"
-    } else {
-        "libTeamTalk5.so"
+struct PlatformConfig {
+    archive_suffix: &'static str,
+    dll_name: &'static str,
+    lib_name: &'static str,
+}
+
+fn get_platform_config() -> Result<PlatformConfig, LoaderError> {
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+
+    let config = match (os, arch) {
+        ("windows", "x86_64") => PlatformConfig {
+            archive_suffix: "win64",
+            dll_name: "TeamTalk5.dll",
+            lib_name: "TeamTalk5.lib",
+        },
+        ("linux", "x86_64") => PlatformConfig {
+            archive_suffix: "ubuntu22_x86_64",
+            dll_name: "libTeamTalk5.so",
+            lib_name: "libTeamTalk5.a",
+        },
+        ("linux", "aarch64") => PlatformConfig {
+            archive_suffix: "raspbian_arm64",
+            dll_name: "libTeamTalk5.so",
+            lib_name: "libTeamTalk5.a",
+        },
+        ("macos", "x86_64" | "aarch64") => PlatformConfig {
+            archive_suffix: "macos_universal",
+            dll_name: "libTeamTalk5.dylib",
+            lib_name: "libTeamTalk5.a",
+        },
+        _ => {
+            return Err(LoaderError::UnsupportedPlatform {
+                os: os.to_string(),
+                arch: arch.to_string(),
+            });
+        }
     };
+    Ok(config)
+}
+
+/// Finds the TeamTalk SDK binaries or downloads them if missing.
+pub fn find_or_download_dll() -> Result<PathBuf, LoaderError> {
+    let platform = get_platform_config()?;
+    let dll_name = platform.dll_name;
+
     let sdk_dir = PathBuf::from("TEAMTALK_DLL");
-    let version_file = sdk_dir.join("TEAMTALK_SDK_VERSION.txt");
-    let dll_path = sdk_dir.join(dll_name);
 
     if !sdk_dir.exists() {
         fs::create_dir_all(&sdk_dir)?;
     }
+
+    // --- LOCKING START ---
+    // We use a file lock to prevent multiple processes from downloading/extracting simultaneously
+    let lock_file_path = sdk_dir.join(".install_lock");
+    let lock_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&lock_file_path)?;
+    let mut lock = RwLock::new(lock_file);
+    let _guard = lock.write().map_err(|e| LoaderError::Lock(e.to_string()))?;
+    // --- LOCK ACQUIRED ---
+
+    // Now re-evaluate state after lock is acquired (another process might have just finished)
+    let version_file = sdk_dir.join("TEAMTALK_SDK_VERSION.txt");
+    let dll_path = sdk_dir.join(dll_name);
 
     let current_version = fs::read_to_string(&version_file)
         .unwrap_or_default()
@@ -60,7 +148,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         if dll_exists && docs_complete {
             return Ok(dll_path);
         }
-        return Err("Offline mode enabled but SDK files or documentation are missing".into());
+        return Err(LoaderError::OfflineMissingFiles);
     }
 
     let requested_version = resolve_requested_version(
@@ -71,13 +159,14 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         docs_complete,
     )?;
 
-    let download_version = |version: &str| -> Result<(), Box<dyn std::error::Error>> {
-        download_and_extract(&sdk_dir, version, dll_name)?;
+    let download_version = |version: &str| -> Result<(), LoaderError> {
+        download_and_extract(&sdk_dir, version, &platform)?;
         fs::write(&version_file, version)?;
         Ok(())
     };
+
     let mut latest_cache: Option<String> = None;
-    let mut latest_version = || -> Result<String, Box<dyn std::error::Error>> {
+    let mut latest_version = || -> Result<String, LoaderError> {
         if let Some(version) = latest_cache.as_ref() {
             return Ok(version.clone());
         }
@@ -168,12 +257,12 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     Ok(dll_path)
 }
 
-fn get_latest_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
+fn get_latest_sdk_version() -> Result<String, LoaderError> {
     let body = Client::new()
         .get("https://bearware.dk/teamtalksdk/")
         .send()?
         .text()?;
-    let re = Regex::new(r#"href="(v(\d+)\.(\d+)([a-z]?))/""#)?;
+    let re = Regex::new(r##"href="(v(\d+)\.(\d+)([a-z]?))/"##)?;
     let mut versions: Vec<(i32, i32, String, String)> = re
         .captures_iter(&body)
         .map(|cap| {
@@ -188,10 +277,10 @@ fn get_latest_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
     versions
         .last()
         .map(|v| v.3.clone())
-        .ok_or("No SDK versions found".into())
+        .ok_or(LoaderError::NoVersionsFound)
 }
 
-fn fetch_remote_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
+fn fetch_remote_sdk_version() -> Result<String, LoaderError> {
     let url = env_sdk_version_url();
     let response = Client::builder()
         .timeout(std::time::Duration::from_secs(10))
@@ -199,17 +288,19 @@ fn fetch_remote_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
         .get(&url)
         .send()?;
     if !response.status().is_success() {
-        return Err(format!(
+        return Err(LoaderError::RemoteVersionFetch(format!(
             "Remote SDK_VERSION request failed from {} with status {}",
             url,
             response.status(),
-        )
-        .into());
+        )));
     }
     let body = response.text()?;
     let version = body.trim();
     if version.is_empty() {
-        return Err(format!("Remote SDK_VERSION.txt is empty at {}", url).into());
+        return Err(LoaderError::RemoteVersionFetch(format!(
+            "Remote SDK_VERSION.txt is empty at {}",
+            url
+        )));
     }
     Ok(version.to_string())
 }
@@ -293,7 +384,7 @@ fn resolve_requested_version(
     file_version: &str,
     dll_exists: bool,
     docs_complete: bool,
-) -> Result<RequestedVersion, Box<dyn std::error::Error>> {
+) -> Result<RequestedVersion, LoaderError> {
     if let Some(version) = env_version {
         return Ok(requested_version(
             Some(version),
@@ -323,11 +414,10 @@ fn resolve_requested_version(
                             force_latest: false,
                         });
                     }
-                    return Err(format!(
+                    return Err(LoaderError::RemoteVersionFetch(format!(
                         "Failed to fetch remote SDK_VERSION.txt and no installed SDK is available: {}",
                         err
-                    )
-                    .into());
+                    )));
                 }
             }
         }
@@ -339,72 +429,87 @@ fn resolve_requested_version(
 fn download_and_extract(
     target_dir: &Path,
     version: &str,
-    dll_name: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let temp_dir = target_dir.join("tmp_ext");
-    if temp_dir.exists() {
-        fs::remove_dir_all(&temp_dir)?;
+    platform: &PlatformConfig,
+) -> Result<(), LoaderError> {
+    // 1. Setup temporary directory for atomic installation
+    let temp_install_dir = target_dir.join(".tmp_install");
+    if temp_install_dir.exists() {
+        fs::remove_dir_all(&temp_install_dir)?;
     }
-    fs::create_dir_all(&temp_dir)?;
-    let url = if cfg!(windows) {
-        format!(
-            "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_win64.7z",
-            version, version
-        )
-    } else {
-        format!(
-            "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_ubuntu22_x86_64.7z",
-            version, version
-        )
-    };
-    let response = Client::builder()
-        .timeout(std::time::Duration::from_secs(300))
-        .build()?
-        .get(url)
-        .send()?;
-    decompress(Cursor::new(response.bytes()?), &temp_dir)?;
+    fs::create_dir_all(&temp_install_dir)?;
 
-    let lib_name = if cfg!(windows) {
-        "TeamTalk5.lib"
-    } else {
-        "libTeamTalk5.a"
-    };
-    let header_name = "TeamTalk.h";
+    let url = format!(
+        "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_{}.7z",
+        version, version, platform.archive_suffix
+    );
 
+    // 2. Stream the archive to a temporary file on disk
+    let archive_path = target_dir.join(format!("tt5sdk_{}.7z", version));
+    {
+        let mut response = Client::builder()
+            .timeout(std::time::Duration::from_secs(300))
+            .build()?
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let _ = fs::remove_dir_all(&temp_install_dir); // Cleanup
+            return Err(LoaderError::Network(
+                response.error_for_status().unwrap_err(),
+            ));
+        }
+
+        let mut out_file = File::create(&archive_path)?;
+        response.copy_to(&mut out_file)?;
+    } // file is closed here
+
+    // 3. Decompress from disk to the temporary install directory
+    let decompress_result = sevenz_rust2::decompress_file(&archive_path, &temp_install_dir);
+
+    // Always remove the downloaded archive regardless of decompression success
+    let _ = fs::remove_file(&archive_path);
+    decompress_result?;
+
+    // 4. Find the necessary files in the extracted directory
     let mut f_dll = None;
     let mut f_lib = None;
     let mut f_h = None;
 
     find_files_recursive(
-        &temp_dir,
-        dll_name,
-        lib_name,
-        header_name,
+        &temp_install_dir,
+        platform.dll_name,
+        platform.lib_name,
+        "TeamTalk.h",
         &mut f_dll,
         &mut f_lib,
         &mut f_h,
     );
 
+    // 5. Move files from their nested locations to the root of the temporary install dir
     if let Some(src) = f_dll {
-        fs::copy(&src, target_dir.join(dll_name))?;
+        fs::rename(&src, temp_install_dir.join(platform.dll_name))?;
     }
     if let Some(src) = f_lib {
-        fs::copy(&src, target_dir.join(lib_name))?;
+        fs::rename(&src, temp_install_dir.join(platform.lib_name))?;
     }
     if let Some(src) = f_h {
-        fs::copy(&src, target_dir.join(header_name))?;
+        fs::rename(&src, temp_install_dir.join("TeamTalk.h"))?;
     }
 
-    let docs_src = find_directory_recursive(&temp_dir, DOCS_DIR_NAME)
-        .ok_or("Documentation directory not found in SDK archive")?;
-    let docs_root_dst = target_dir.join(DOCS_DIR_NAME);
-    if docs_root_dst.exists() {
-        fs::remove_dir_all(&docs_root_dst)?;
-    }
+    // 6. Handle Documentation
+    let docs_src = find_directory_recursive(&temp_install_dir, DOCS_DIR_NAME).ok_or_else(|| {
+        LoaderError::DocumentationMissing("Documentation folder missing".to_string())
+    })?;
+
     let docs_capi_src = docs_src.join(DOCS_CAPI_DIR_NAME);
     if !docs_capi_src.is_dir() {
-        return Err("Documentation/C-API directory not found in SDK archive".into());
+        return Err(LoaderError::DocumentationMissing(format!(
+            "{}/{}",
+            DOCS_DIR_NAME, DOCS_CAPI_DIR_NAME
+        )));
     }
+
+    let docs_root_dst = temp_install_dir.join(DOCS_DIR_NAME);
     let docs_capi_dst = docs_root_dst.join(DOCS_CAPI_DIR_NAME);
     let mut docs_files = copy_directory_recursive(&docs_capi_src, &docs_capi_dst)?;
     docs_files = docs_files
@@ -412,11 +517,49 @@ fn download_and_extract(
         .map(|rel| format!("{DOCS_CAPI_DIR_NAME}/{rel}"))
         .collect();
     if docs_files.is_empty() {
-        return Err("Documentation/C-API directory is empty in SDK archive".into());
+        return Err(LoaderError::DocumentationMissing(
+            "Documentation directory is empty".to_string(),
+        ));
     }
-    write_documentation_manifest(target_dir, &docs_files)?;
 
-    fs::remove_dir_all(&temp_dir)?;
+    // Write manifest to the temporary install directory
+    let manifest = docs_files.join("\n");
+    fs::write(docs_manifest_path(&temp_install_dir), manifest)?;
+
+    // 7. Atomic Install (Rename temp_install_dir contents to target_dir)
+    // We move the necessary files from temp_install_dir directly to target_dir
+    fs::rename(
+        temp_install_dir.join(platform.dll_name),
+        target_dir.join(platform.dll_name),
+    )?;
+
+    // lib file might not be strictly required on all systems if using dylib directly, but we assume it's copied
+    if temp_install_dir.join(platform.lib_name).exists() {
+        fs::rename(
+            temp_install_dir.join(platform.lib_name),
+            target_dir.join(platform.lib_name),
+        )?;
+    }
+
+    fs::rename(
+        temp_install_dir.join("TeamTalk.h"),
+        target_dir.join("TeamTalk.h"),
+    )?;
+    fs::rename(
+        docs_manifest_path(&temp_install_dir),
+        docs_manifest_path(target_dir),
+    )?;
+
+    // Atomic move of documentation folder
+    let final_docs_dir = target_dir.join(DOCS_DIR_NAME);
+    if final_docs_dir.exists() {
+        fs::remove_dir_all(&final_docs_dir)?;
+    }
+    fs::rename(docs_root_dst, final_docs_dir)?;
+
+    // Cleanup temp directory
+    let _ = fs::remove_dir_all(&temp_install_dir);
+
     Ok(())
 }
 
@@ -468,10 +611,7 @@ fn find_directory_recursive(dir: &Path, dir_name: &str) -> Option<PathBuf> {
     None
 }
 
-fn copy_directory_recursive(
-    src_dir: &Path,
-    dst_dir: &Path,
-) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+fn copy_directory_recursive(src_dir: &Path, dst_dir: &Path) -> Result<Vec<String>, std::io::Error> {
     if dst_dir.exists() {
         fs::remove_dir_all(dst_dir)?;
     }
@@ -506,15 +646,6 @@ fn copy_directory_recursive_inner(
 
 fn docs_manifest_path(sdk_dir: &Path) -> PathBuf {
     sdk_dir.join(DOCS_MANIFEST_NAME)
-}
-
-fn write_documentation_manifest(
-    sdk_dir: &Path,
-    docs_files: &[String],
-) -> Result<(), Box<dyn std::error::Error>> {
-    let manifest = docs_files.join("\n");
-    fs::write(docs_manifest_path(sdk_dir), manifest)?;
-    Ok(())
 }
 
 fn documentation_is_complete(sdk_dir: &Path) -> bool {
