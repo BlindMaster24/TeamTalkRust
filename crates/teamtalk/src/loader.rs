@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 use fd_lock::RwLock;
 use human_bytes::human_bytes;
 
+use crate::logging::{info, info_span, warn};
+
 // For backoff retries
 use crate::utils::backoff::ExponentialBackoff;
 use std::time::Duration;
@@ -51,22 +53,6 @@ pub enum LoaderError {
 
     #[error("Lock error: {0}")]
     Lock(String),
-}
-
-enum LoaderLogLevel {
-    Info,
-    Warn,
-}
-
-fn loader_log(level: LoaderLogLevel, message: &str) {
-    #[cfg(feature = "logging")]
-    match level {
-        LoaderLogLevel::Info => tracing::info!("{message}"),
-        LoaderLogLevel::Warn => tracing::warn!("{message}"),
-    }
-
-    #[cfg(not(feature = "logging"))]
-    let _ = (level, message);
 }
 
 struct PlatformConfig {
@@ -166,6 +152,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, LoaderError> {
     )?;
 
     let download_version = |version: &str| -> Result<(), LoaderError> {
+        let _span = info_span!("sdk_install", version = version).entered();
         download_and_extract(&sdk_dir, version, &platform)?;
         fs::write(&version_file, version)?;
         Ok(())
@@ -186,35 +173,27 @@ pub fn find_or_download_dll() -> Result<PathBuf, LoaderError> {
             return Ok(dll_path);
         }
 
-        if let Err(err) = download_version(version) {
-            loader_log(
-                LoaderLogLevel::Warn,
-                &format!(
-                    "Failed to download requested SDK version {}: {}. Falling back to latest.",
-                    version, err
-                ),
+        if let Err(_err) = download_version(version) {
+            warn!(
+                version = version,
+                error = %_err,
+                "Failed to download requested SDK version. Falling back to latest."
             );
         } else {
             return Ok(dll_path);
         }
     } else if requested_version.force_latest {
         let latest = latest_version()?;
-        loader_log(
-            LoaderLogLevel::Info,
-            &format!("Downloading latest SDK: {}", latest),
-        );
+        info!(version = %latest, "Downloading latest SDK");
         download_version(&latest)?;
         return Ok(dll_path);
     }
 
     if dll_exists && !current_version.is_empty() {
         if !docs_complete {
-            loader_log(
-                LoaderLogLevel::Info,
-                &format!(
-                    "Documentation missing or incomplete. Re-downloading SDK: {}",
-                    current_version
-                ),
+            info!(
+                version = %current_version,
+                "Documentation missing or incomplete. Re-downloading SDK"
             );
             download_version(&current_version)?;
             return Ok(dll_path);
@@ -224,9 +203,10 @@ pub fn find_or_download_dll() -> Result<PathBuf, LoaderError> {
         if current_version == latest {
             return Ok(dll_path);
         }
-        loader_log(
-            LoaderLogLevel::Info,
-            &format!("Updating SDK: {} -> {}", current_version, latest),
+        info!(
+            current = %current_version,
+            latest = %latest,
+            "Updating SDK"
         );
         download_version(&latest)?;
         return Ok(dll_path);
@@ -238,26 +218,24 @@ pub fn find_or_download_dll() -> Result<PathBuf, LoaderError> {
         } else {
             current_version.clone()
         };
-        let repair_reason = if !dll_exists && !docs_complete {
-            "SDK binaries or documentation are missing"
+        let _repair_reason = if !dll_exists && !docs_complete {
+            "SDK binaries and documentation missing"
         } else if !dll_exists {
-            "SDK binary is missing"
+            "SDK binary missing"
         } else {
             "Documentation is missing or incomplete"
         };
-        loader_log(
-            LoaderLogLevel::Info,
-            &format!("{}. Downloading SDK: {}", repair_reason, repair_version),
+        info!(
+            version = %repair_version,
+            reason = _repair_reason,
+            "Repairing SDK installation"
         );
         download_version(&repair_version)?;
         return Ok(dll_path);
     }
 
     let latest = latest_version()?;
-    loader_log(
-        LoaderLogLevel::Info,
-        &format!("Fresh SDK setup. Downloading: {}", latest),
-    );
+    info!(version = %latest, "Fresh SDK setup");
     download_version(&latest)?;
 
     Ok(dll_path)
@@ -408,12 +386,10 @@ fn resolve_requested_version(
                 }
                 Err(err) => {
                     if dll_exists && docs_complete && !file_version.trim().is_empty() {
-                        loader_log(
-                            LoaderLogLevel::Warn,
-                            &format!(
-                                "Failed to fetch remote SDK_VERSION.txt: {}. Using installed SDK: {}",
-                                err, file_version
-                            ),
+                        warn!(
+                            error = %err,
+                            version = %file_version,
+                            "Failed to fetch remote SDK_VERSION.txt. Using installed SDK."
                         );
                         return Ok(RequestedVersion {
                             requested: Some(file_version.trim().to_string()),
@@ -466,15 +442,12 @@ fn download_and_extract(
             .unwrap_or(false);
 
     if is_cached {
-        loader_log(
-            LoaderLogLevel::Info,
-            &format!("Using cached SDK archive: {}", archive_path.display()),
+        info!(
+            path = %archive_path.display(),
+            "Using cached SDK archive"
         );
     } else {
-        loader_log(
-            LoaderLogLevel::Info,
-            &format!("Downloading SDK archive from {}", url),
-        );
+        info!(url = %url, "Downloading SDK archive");
 
         let mut backoff =
             ExponentialBackoff::new(Duration::from_secs(1), Duration::from_secs(15), 2.0, 0.1);
@@ -503,15 +476,12 @@ fn download_and_extract(
                         return Err(LoaderError::Network(e));
                     }
                     let delay = backoff.next_delay();
-                    loader_log(
-                        LoaderLogLevel::Warn,
-                        &format!(
-                            "Download failed (attempt {}/{}): {}. Retrying in {:.1}s...",
-                            attempt,
-                            max_attempts,
-                            e,
-                            delay.as_secs_f32()
-                        ),
+                    warn!(
+                        attempt = attempt,
+                        max_attempts = max_attempts,
+                        error = %e,
+                        delay_sec = delay.as_secs_f32(),
+                        "Download failed, retrying"
                     );
                     std::thread::sleep(delay);
                 }
@@ -519,9 +489,9 @@ fn download_and_extract(
         };
 
         // 3. Chunked Download with Progress
-        let total_size = response.content_length().unwrap_or(0);
-        let total_str = if total_size > 0 {
-            human_bytes(total_size as f64)
+        let _total_size = response.content_length().unwrap_or(0);
+        let _total_str = if _total_size > 0 {
+            human_bytes(_total_size as f64)
         } else {
             "Unknown".to_string()
         };
@@ -544,26 +514,23 @@ fn download_and_extract(
             downloaded += n as u64;
 
             if downloaded - last_reported >= report_interval {
-                let percent = if total_size > 0 {
-                    format!(" ({:.0}%)", (downloaded as f64 / total_size as f64) * 100.0)
+                let _percent = if _total_size > 0 {
+                    (downloaded as f64 / _total_size as f64) * 100.0
                 } else {
-                    "".to_string()
+                    0.0
                 };
-                loader_log(
-                    LoaderLogLevel::Info,
-                    &format!(
-                        "Downloading... {} / {}{}",
-                        human_bytes(downloaded as f64),
-                        total_str,
-                        percent
-                    ),
+                info!(
+                    downloaded = %human_bytes(downloaded as f64),
+                    total = %_total_str,
+                    percent = %format!("{:.0}%", _percent),
+                    "Downloading..."
                 );
                 last_reported = downloaded;
             }
         }
 
         // Final progress report
-        loader_log(LoaderLogLevel::Info, "Download complete. Extracting...");
+        info!("Download complete. Extracting...");
 
         // Move fully downloaded file to the actual cache path
         fs::rename(&temp_archive_path, &archive_path)?;

@@ -15,7 +15,6 @@ pub mod utils;
 pub mod async_api;
 #[cfg(feature = "dispatch")]
 pub mod dispatch;
-#[cfg(feature = "logging")]
 pub mod logging;
 #[cfg(feature = "mock")]
 pub mod mock;

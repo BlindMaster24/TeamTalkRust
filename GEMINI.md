@@ -538,7 +538,21 @@
 - Ask before adding new docs pages outside `docs/`.
 - Ask whether to update `AGENTS.md` when the user introduces new permanent requirements.
 - **NEVER use `git add .`**; always stage only the specific files relevant to the current task.
+- **Always use the `replace` tool** for editing existing files. **NEVER use `write_file`** to overwrite existing files unless explicit permission is granted for a full rewrite.
 - Local pre-commit hooks use `lefthook.yml`; Windows overrides can use `lefthook-local.yml` (see `lefthook-local.example.yml`).
+
+## Unified Logging System
+- **Location:** `crates/teamtalk/src/logging.rs`
+- **Standard:** Always use unified macros instead of raw `println!` or custom functions.
+- **Available Macros:** `info!`, `warn!`, `error!`, `debug!`, `trace!`, `info_span!`.
+- **Usage Pattern:**
+  ```rust
+  use crate::logging::{info, warn, info_span};
+  
+  let _span = info_span!("operation_name", field = %value).entered();
+  info!(data = %data, "Processing started");
+  ```
+- **Feature Gating:** The system handles `#[cfg(feature = "logging")]` automatically. Macros expand to nothing when the feature is disabled, ensuring zero overhead.
 
 ## Definition of Done
 - Code changes compile with `cargo check --workspace --all-targets`.
