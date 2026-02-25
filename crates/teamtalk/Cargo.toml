@@ -45,6 +45,7 @@ redis = { version = "1.0.4", optional = true }
 rusqlite = { version = "0.38", optional = true, features = ["bundled"] }
 teamtalk-macros = { workspace = true, optional = true }
 fd-lock = "4.0.4"
+human_bytes = "0.4.3"
 
 [package.metadata.docs.rs]
 all-features = true

@@ -3,10 +3,16 @@ use regex::Regex;
 use reqwest::blocking::Client;
 use std::env;
 use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-// For locking
+// For locking and progress formatting
 use fd_lock::RwLock;
+use human_bytes::human_bytes;
+
+// For backoff retries
+use crate::utils::backoff::ExponentialBackoff;
+use std::time::Duration;
 
 const DOCS_DIR_NAME: &str = "Documentation";
 const DOCS_CAPI_DIR_NAME: &str = "C-API";
@@ -438,39 +444,141 @@ fn download_and_extract(
     }
     fs::create_dir_all(&temp_install_dir)?;
 
+    let archive_name = format!("tt5sdk_{}_{}.7z", version, platform.archive_suffix);
     let url = format!(
-        "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_{}.7z",
-        version, version, platform.archive_suffix
+        "https://bearware.dk/teamtalksdk/{}/{}",
+        version, archive_name
     );
 
-    // 2. Stream the archive to a temporary file on disk
-    let archive_path = target_dir.join(format!("tt5sdk_{}.7z", version));
-    {
-        let mut response = Client::builder()
-            .timeout(std::time::Duration::from_secs(300))
-            .build()?
-            .get(&url)
-            .send()?;
+    // 2. Global Cache Setup
+    let cache_dir = dirs::cache_dir()
+        .unwrap_or_else(env::temp_dir)
+        .join("teamtalk-rs");
+    if !cache_dir.exists() {
+        fs::create_dir_all(&cache_dir)?;
+    }
+    let archive_path = cache_dir.join(&archive_name);
 
-        if !response.status().is_success() {
-            let _ = fs::remove_dir_all(&temp_install_dir); // Cleanup
-            return Err(LoaderError::Network(
-                response.error_for_status().unwrap_err(),
-            ));
+    // Check if valid archive is already in cache (> 1MB)
+    let is_cached = archive_path.exists()
+        && fs::metadata(&archive_path)
+            .map(|m| m.len() > 1024 * 1024)
+            .unwrap_or(false);
+
+    if is_cached {
+        loader_log(
+            LoaderLogLevel::Info,
+            &format!("Using cached SDK archive: {}", archive_path.display()),
+        );
+    } else {
+        loader_log(
+            LoaderLogLevel::Info,
+            &format!("Downloading SDK archive from {}", url),
+        );
+
+        let mut backoff =
+            ExponentialBackoff::new(Duration::from_secs(1), Duration::from_secs(15), 2.0, 0.1);
+        let max_attempts = 5;
+        let mut attempt = 0;
+
+        let mut response = loop {
+            attempt += 1;
+            match Client::builder()
+                .timeout(Duration::from_secs(300))
+                .build()?
+                .get(&url)
+                .send()
+            {
+                Ok(resp) if resp.status().is_success() => break resp,
+                Ok(resp) => {
+                    let err = LoaderError::Network(resp.error_for_status().unwrap_err());
+                    if attempt >= max_attempts {
+                        let _ = fs::remove_dir_all(&temp_install_dir);
+                        return Err(err);
+                    }
+                }
+                Err(e) => {
+                    if attempt >= max_attempts {
+                        let _ = fs::remove_dir_all(&temp_install_dir);
+                        return Err(LoaderError::Network(e));
+                    }
+                    let delay = backoff.next_delay();
+                    loader_log(
+                        LoaderLogLevel::Warn,
+                        &format!(
+                            "Download failed (attempt {}/{}): {}. Retrying in {:.1}s...",
+                            attempt,
+                            max_attempts,
+                            e,
+                            delay.as_secs_f32()
+                        ),
+                    );
+                    std::thread::sleep(delay);
+                }
+            }
+        };
+
+        // 3. Chunked Download with Progress
+        let total_size = response.content_length().unwrap_or(0);
+        let total_str = if total_size > 0 {
+            human_bytes(total_size as f64)
+        } else {
+            "Unknown".to_string()
+        };
+
+        // Download to a temporary file first, to prevent corrupted cache
+        let temp_archive_path = cache_dir.join(format!("{}.part", archive_name));
+        let mut out_file = File::create(&temp_archive_path)?;
+
+        let mut buffer = [0; 8192];
+        let mut downloaded: u64 = 0;
+        let mut last_reported: u64 = 0;
+        let report_interval = 2 * 1024 * 1024; // Report every 2 MB
+
+        loop {
+            let n = response.read(&mut buffer)?;
+            if n == 0 {
+                break; // EOF
+            }
+            out_file.write_all(&buffer[..n])?;
+            downloaded += n as u64;
+
+            if downloaded - last_reported >= report_interval {
+                let percent = if total_size > 0 {
+                    format!(" ({:.0}%)", (downloaded as f64 / total_size as f64) * 100.0)
+                } else {
+                    "".to_string()
+                };
+                loader_log(
+                    LoaderLogLevel::Info,
+                    &format!(
+                        "Downloading... {} / {}{}",
+                        human_bytes(downloaded as f64),
+                        total_str,
+                        percent
+                    ),
+                );
+                last_reported = downloaded;
+            }
         }
 
-        let mut out_file = File::create(&archive_path)?;
-        response.copy_to(&mut out_file)?;
-    } // file is closed here
+        // Final progress report
+        loader_log(LoaderLogLevel::Info, "Download complete. Extracting...");
 
-    // 3. Decompress from disk to the temporary install directory
+        // Move fully downloaded file to the actual cache path
+        fs::rename(&temp_archive_path, &archive_path)?;
+    } // End of download block
+
+    // 4. Decompress from cache to the temporary install directory
     let decompress_result = sevenz_rust2::decompress_file(&archive_path, &temp_install_dir);
 
-    // Always remove the downloaded archive regardless of decompression success
-    let _ = fs::remove_file(&archive_path);
-    decompress_result?;
+    // If decompression fails, the cached file might be corrupted. Remove it so it downloads fresh next time.
+    if decompress_result.is_err() {
+        let _ = fs::remove_file(&archive_path);
+    }
+    decompress_result?; // Bubble up extraction error if any
 
-    // 4. Find the necessary files in the extracted directory
+    // 5. Find the necessary files in the extracted directory
     let mut f_dll = None;
     let mut f_lib = None;
     let mut f_h = None;
