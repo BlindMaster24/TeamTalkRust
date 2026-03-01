@@ -112,8 +112,8 @@
 - These roles are project-local by design. Do not move them to global `~/.codex` unless explicitly requested.
 - Trust requirement (important):
   - Codex loads `.codex/config.toml` only for trusted projects.
-  - On Windows, trust entry should use extended path format in `C:\Users\Sergey\.codex\config.toml`, for example:
-    - `[projects."\\\\?\\D:\\downloads\\repos\\TeamTalkRust"]`
+  - On Windows, trust entry should use extended path format in user config (`~/.codex/config.toml`), for example:
+    - `[projects."\\\\?\\D:\\path\\to\\project"]`
     - `trust_level = "trusted"`
 - Current role intent:
   - `teamtalk_checker`: deep contract checker (`TeamTalk.h` primary source, full docs sweep, wrapper/test/docs mapping, gap analysis with P0/P1/P2).
