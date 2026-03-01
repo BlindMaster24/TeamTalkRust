@@ -104,6 +104,28 @@
     - Fix plan
     - Test coverage status
     - Disposition (fix now/defer with reason)
+## Project-Local Multi-Agent Roles (`.codex/agents`)
+- This repository defines project-scoped multi-agent roles in:
+  - `.codex/config.toml`
+  - `.codex/agents/teamtalk-checker.toml`
+  - `.codex/agents/teamtalk-reviewer.toml`
+- These roles are project-local by design. Do not move them to global `~/.codex` unless explicitly requested.
+- Trust requirement (important):
+  - Codex loads `.codex/config.toml` only for trusted projects.
+  - On Windows, trust entry should use extended path format in `C:\Users\Sergey\.codex\config.toml`, for example:
+    - `[projects."\\\\?\\D:\\downloads\\repos\\TeamTalkRust"]`
+    - `trust_level = "trusted"`
+- Current role intent:
+  - `teamtalk_checker`: deep contract checker (`TeamTalk.h` primary source, full docs sweep, wrapper/test/docs mapping, gap analysis with P0/P1/P2).
+  - `teamtalk_reviewer`: strict engineering review (bugs/regressions/API risks/concurrency/lifecycle/missing tests/docs mismatch), findings-first output.
+- Operating model:
+  - `agents.max_depth = 1` keeps one-level delegation (no nested sub-agents from child agents).
+  - `agents.max_threads = 6` allows bounded parallelism without uncontrolled thread fan-out.
+  - Role configs use max quality settings (`gpt-5.3-codex`, `model_reasoning_effort = "xhigh"`, `model_verbosity = "high"`).
+- Expected usage:
+  - Run both roles in parallel for release-readiness review.
+  - Merge findings into one severity-ordered report with concrete file/symbol evidence.
+  - If role behavior looks like fallback/default, verify project trust and restart Codex CLI before re-running.
 ## Context7 MCP Usage (Default)
 - Always use Context7 MCP by default when the task involves library/API documentation, code generation, setup steps, configuration steps, or framework-specific usage.
 - Do not wait for the user to explicitly request Context7 for these cases.

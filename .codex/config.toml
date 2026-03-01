@@ -1,0 +1,16 @@
+[features]
+multi_agent = true
+
+#:schema https://developers.openai.com/codex/config-schema.json
+
+[agents]
+max_threads = 6
+max_depth = 1
+
+[agents.teamtalk_checker]
+description = "Deep TeamTalk SDK contract checker: TeamTalk.h + C-API docs + Rust wrappers/tests/docs gap analysis."
+config_file = "agents/teamtalk-checker.toml"
+
+[agents.teamtalk_reviewer]
+description = "Strict TeamTalk code reviewer focused on bugs, regressions, API risks, and missing tests."
+config_file = "agents/teamtalk-reviewer.toml"
