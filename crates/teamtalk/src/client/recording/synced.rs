@@ -1,7 +1,7 @@
 use crate::events::{Error, Event, Result};
 use crate::types::{Subscriptions, User, UserId};
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -89,6 +89,7 @@ pub struct SyncedUserRecordingSession {
     start: Instant,
     users: HashMap<UserId, UserTrack>,
     last_tick: Instant,
+    connected: bool,
 }
 
 impl SyncedUserRecordingSession {
@@ -102,6 +103,7 @@ impl SyncedUserRecordingSession {
             start: Instant::now(),
             users: HashMap::new(),
             last_tick: Instant::now(),
+            connected: client.is_connected(),
         };
 
         session.attach_existing_users(client)?;
@@ -118,6 +120,13 @@ impl SyncedUserRecordingSession {
         if matches!(self.options.silence_policy, SilencePolicy::OnlyWhileTalking) {
             return Ok(());
         }
+        if matches!(
+            self.options.silence_policy,
+            SilencePolicy::OnlyWhileConnected
+        ) && !self.connected
+        {
+            return Ok(());
+        }
         let elapsed = self.start.elapsed();
         for track in self.users.values_mut() {
             track.pad_to(elapsed)?;
@@ -129,6 +138,7 @@ impl SyncedUserRecordingSession {
         match event {
             Event::UserJoined => {
                 if let Some(user) = message.user() {
+                    self.connected = true;
                     self.start_user(client, user.id, Some(user))?;
                 }
             }
@@ -144,8 +154,16 @@ impl SyncedUserRecordingSession {
             Event::AudioBlock => {
                 let user_id = UserId(message.source());
                 if user_id.0 > 0 {
+                    self.connected = true;
                     self.on_audio_block(client, user_id)?;
                 }
+            }
+            Event::ConnectSuccess => {
+                self.connected = true;
+            }
+            Event::ConnectionLost | Event::ConnectFailed | Event::ConnectCryptError => {
+                self.connected = false;
+                self.stop_all(client);
             }
             _ => {}
         }
@@ -174,12 +192,6 @@ impl SyncedUserRecordingSession {
             );
         }
 
-        if self.options.subscribe_audio {
-            let _ = client.subscribe(user_id, synced_audio_subscription_mask());
-        }
-
-        client.enable_audio_block_event(user_id, self.options.stream_types, true);
-
         let track = UserTrack::new(
             &self.options.folder,
             &self.options.file_vars,
@@ -190,7 +202,16 @@ impl SyncedUserRecordingSession {
             self.options.default_channels,
         )?;
         self.users.insert(user_id, track);
-        self.drain_pending_blocks(client, user_id)?;
+
+        if self.options.subscribe_audio {
+            let _ = client.subscribe(user_id, synced_audio_subscription_mask());
+        }
+        client.enable_audio_block_event(user_id, self.options.stream_types, true);
+
+        if let Err(err) = self.drain_pending_blocks(client, user_id) {
+            self.stop_user(client, user_id);
+            return Err(err);
+        }
         Ok(())
     }
 
@@ -202,15 +223,20 @@ impl SyncedUserRecordingSession {
         self.users.remove(&user_id);
     }
 
+    pub fn stop_all(&mut self, client: &Client) {
+        let user_ids: Vec<UserId> = self.users.keys().copied().collect();
+        for user_id in user_ids {
+            self.stop_user(client, user_id);
+        }
+    }
+
     fn on_audio_block(&mut self, client: &Client, user_id: UserId) -> Result<()> {
         let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id) else {
             return Ok(());
         };
-        let block = unsafe { &*ptr };
+        let guard = AudioBlockGuard::new(client, ptr);
+        let block = unsafe { &*guard.ptr() };
         let Some(view) = AudioBlockView::from_block(block) else {
-            unsafe {
-                let _ = client.release_user_audio_block(ptr);
-            }
             return Ok(());
         };
 
@@ -224,9 +250,6 @@ impl SyncedUserRecordingSession {
             track.pad_to(elapsed)?;
             track.write_block(&view)?;
         }
-        unsafe {
-            let _ = client.release_user_audio_block(ptr);
-        }
         Ok(())
     }
 
@@ -236,11 +259,9 @@ impl SyncedUserRecordingSession {
             else {
                 break;
             };
-            let block = unsafe { &*ptr };
+            let guard = AudioBlockGuard::new(client, ptr);
+            let block = unsafe { &*guard.ptr() };
             let Some(view) = AudioBlockView::from_block(block) else {
-                unsafe {
-                    let _ = client.release_user_audio_block(ptr);
-                }
                 continue;
             };
 
@@ -249,10 +270,6 @@ impl SyncedUserRecordingSession {
                 track.ensure_format(view.sample_rate, view.channels)?;
                 track.pad_to(elapsed)?;
                 track.write_block(&view)?;
-            }
-
-            unsafe {
-                let _ = client.release_user_audio_block(ptr);
             }
         }
         Ok(())
@@ -277,11 +294,17 @@ impl SyncedUserRecording {
     pub fn handle_event(&mut self, client: &Client, event: Event, message: &Message) -> Result<()> {
         self.session.handle_event(client, event, message)
     }
+
+    pub fn stop_all(&mut self, client: &Client) {
+        self.session.stop_all(client);
+    }
 }
 
 pub struct SyncedUserRecordingBus<'a> {
     client: &'a Client,
     group: String,
+    session: Arc<Mutex<SyncedUserRecordingSession>>,
+    stop_on_drop: bool,
 }
 
 impl<'a> SyncedUserRecordingBus<'a> {
@@ -292,30 +315,61 @@ impl<'a> SyncedUserRecordingBus<'a> {
     ) -> Self {
         let group_name = group.into();
         let group_filter = group_name.clone();
+        let handler_session = Arc::clone(&session);
         let _id = client
             .on_any()
             .group(group_filter)
-            .filter(|ctx| {
-                matches!(
-                    ctx.event(),
-                    Event::UserJoined | Event::UserLeft | Event::AudioBlock
-                )
-            })
+            .filter(|ctx| is_synced_bus_event(ctx.event()))
             .subscribe(move |ctx| {
-                if let Ok(mut session) = session.lock() {
+                if let Ok(mut session) = handler_session.lock() {
                     let _ = session.handle_event(ctx.client(), ctx.event(), ctx.message());
                 }
             });
         Self {
             client,
             group: group_name,
+            session,
+            stop_on_drop: false,
         }
+    }
+
+    pub fn stop_on_drop(mut self, stop: bool) -> Self {
+        self.stop_on_drop = stop;
+        self
     }
 }
 
 impl Drop for SyncedUserRecordingBus<'_> {
     fn drop(&mut self) {
+        if self.stop_on_drop
+            && let Ok(mut session) = self.session.lock()
+        {
+            session.stop_all(self.client);
+        }
         let _ = self.client.unsubscribe_event_group(&self.group);
+    }
+}
+
+struct AudioBlockGuard<'a> {
+    client: &'a Client,
+    ptr: *mut ffi::AudioBlock,
+}
+
+impl<'a> AudioBlockGuard<'a> {
+    fn new(client: &'a Client, ptr: *mut ffi::AudioBlock) -> Self {
+        Self { client, ptr }
+    }
+
+    fn ptr(&self) -> *mut ffi::AudioBlock {
+        self.ptr
+    }
+}
+
+impl Drop for AudioBlockGuard<'_> {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = self.client.release_user_audio_block(self.ptr);
+        }
     }
 }
 
@@ -339,7 +393,7 @@ impl UserTrack {
         let username = user
             .map(|u| u.username)
             .unwrap_or_else(|| "unknown".to_string());
-        let filename = render_vars(file_vars, user_id, &username);
+        let filename = sanitized_filename(render_vars(file_vars, user_id, &username));
         let path = Path::new(folder).join(filename);
         let mut writer = TrackWriter::new(path, format)?;
         let sample_rate = default_sample_rate;
@@ -393,9 +447,14 @@ enum TrackWriter {
 
 impl TrackWriter {
     fn new(path: PathBuf, format: RecordingSampleFormat) -> Result<Self> {
-        let file = File::create(path).map_err(|e| Error::IoError {
-            message: e.to_string(),
-        })?;
+        let path = unique_recording_path(&path);
+        let file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(path)
+            .map_err(|e| Error::IoError {
+                message: e.to_string(),
+            })?;
         Ok(match format {
             RecordingSampleFormat::PcmS16Le => TrackWriter::Pcm(file),
             RecordingSampleFormat::WavS16Le => TrackWriter::Wav(WavWriter::new(file)),
@@ -422,9 +481,15 @@ impl TrackWriter {
     }
 
     fn write_silence(&mut self, samples: u64, channels: u64) -> Result<()> {
-        let count = samples.saturating_mul(channels) as usize;
-        let buf = vec![0i16; count];
-        self.write_pcm(&buf)
+        const SILENCE_CHUNK_SAMPLES: usize = 48_000;
+        let mut remaining = samples.saturating_mul(channels);
+        while remaining > 0 {
+            let chunk = remaining.min(SILENCE_CHUNK_SAMPLES as u64) as usize;
+            let buf = vec![0i16; chunk];
+            self.write_pcm(&buf)?;
+            remaining -= chunk as u64;
+        }
+        Ok(())
     }
 }
 
@@ -492,6 +557,19 @@ fn synced_audio_subscription_mask() -> Subscriptions {
     Subscriptions::all_audio()
 }
 
+fn is_synced_bus_event(event: Event) -> bool {
+    matches!(
+        event,
+        Event::UserJoined
+            | Event::UserLeft
+            | Event::AudioBlock
+            | Event::ConnectSuccess
+            | Event::ConnectionLost
+            | Event::ConnectFailed
+            | Event::ConnectCryptError
+    )
+}
+
 fn should_warn_missing_audio_subscriptions(subscribe_audio: bool, user: Option<&User>) -> bool {
     if subscribe_audio {
         return false;
@@ -509,6 +587,49 @@ fn render_vars(template: &str, user_id: UserId, username: &str) -> String {
     template
         .replace("%user_id%", &user_id.0.to_string())
         .replace("%username%", username)
+}
+
+fn sanitized_filename(raw: String) -> String {
+    const FORBIDDEN: [char; 9] = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+    let mut sanitized = String::with_capacity(raw.len());
+    for ch in raw.chars() {
+        let replacement = if ch.is_control() || FORBIDDEN.contains(&ch) {
+            '_'
+        } else {
+            ch
+        };
+        sanitized.push(replacement);
+    }
+    let trimmed = sanitized.trim_matches([' ', '.']);
+    if trimmed.is_empty() {
+        "user".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn unique_recording_path(path: &Path) -> PathBuf {
+    if !path.exists() {
+        return path.to_path_buf();
+    }
+
+    let stem = path
+        .file_stem()
+        .and_then(|v| v.to_str())
+        .unwrap_or("recording");
+    let ext = path.extension().and_then(|v| v.to_str());
+    for idx in 1.. {
+        let filename = match ext {
+            Some(ext) if !ext.is_empty() => format!("{stem}-{idx}.{ext}"),
+            _ => format!("{stem}-{idx}"),
+        };
+        let candidate = path.with_file_name(filename);
+        if !candidate.exists() {
+            return candidate;
+        }
+    }
+
+    path.to_path_buf()
 }
 
 #[cfg(test)]
@@ -542,5 +663,45 @@ mod tests {
     fn no_warn_when_subscribe_audio_enabled() {
         let user = User::default();
         assert!(!should_warn_missing_audio_subscriptions(true, Some(&user)));
+    }
+
+    #[test]
+    fn sanitize_filename_replaces_path_separators_and_reserved_chars() {
+        assert_eq!(
+            sanitized_filename("..\\evil/name:bad*file?".to_string()),
+            "_evil_name_bad_file_"
+        );
+    }
+
+    #[test]
+    fn unique_recording_path_adds_suffix_for_existing_file() {
+        let base = std::env::temp_dir().join(format!(
+            "teamtalk-synced-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("ts")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&base).expect("mkdir");
+        let path = base.join("voice.wav");
+        std::fs::write(&path, b"x").expect("write");
+
+        let unique = unique_recording_path(&path);
+        assert_ne!(unique, path);
+        assert_eq!(
+            unique.file_name().and_then(|v| v.to_str()),
+            Some("voice-1.wav")
+        );
+
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn synced_bus_filter_includes_connection_events() {
+        assert!(is_synced_bus_event(Event::ConnectSuccess));
+        assert!(is_synced_bus_event(Event::ConnectionLost));
+        assert!(is_synced_bus_event(Event::ConnectFailed));
+        assert!(is_synced_bus_event(Event::ConnectCryptError));
+        assert!(is_synced_bus_event(Event::AudioBlock));
     }
 }

@@ -74,3 +74,19 @@ fn start_current_channel_requires_channel() {
         Ok(_) => panic!("expected error"),
     }
 }
+
+#[test]
+fn recording_session_segment_returns_error_when_pause_fails() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_channel(test_channel(ChannelId(3), AudioCodec::default()));
+    backend.set_my_channel_id(ChannelId(3));
+    let client = Client::with_backend(backend.clone()).expect("client");
+    let options = RecordingOptions::new("seg_{index}.wav", ffi::AudioFileFormat::AFF_WAVE_FORMAT);
+    let mut session =
+        RecordingSession::start_channel(&client, ChannelId(3), options).expect("session");
+
+    backend.set_stop_ok(false);
+    let result = session.segment();
+    assert!(matches!(result, Err(Error::CommandFailed { .. })));
+    assert!(session.is_active());
+}

@@ -160,7 +160,12 @@ impl<'a> RecordingSession<'a> {
 
     /// Forces a new segment without changing the target.
     pub fn segment(&mut self) -> Result<bool> {
-        let _ = self.pause();
+        if !self.pause() {
+            return Err(Error::CommandFailed {
+                code: -1,
+                message: "Recording stop failed during segment rotation".to_string(),
+            });
+        }
         self.resume()
     }
 
