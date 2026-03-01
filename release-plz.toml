@@ -2,6 +2,9 @@
 release = false
 changelog_path = "docs/changelog.md"
 changelog_update = true
+git_release_name = "{{ package }} v{{ version }}"
+git_release_body = "{{ changelog }}"
+pr_name = "chore(release): {% if package and version %}{{ package }} v{{ version }}{% elif version %}workspace v{{ version }}{% else %}workspace release{% endif %}"
 pr_labels = ["release"]
 pr_branch_prefix = "release-plz/"
 release_always = false

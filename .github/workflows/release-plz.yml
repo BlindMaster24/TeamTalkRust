@@ -105,6 +105,80 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token || env.RELEASE_PLZ_GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Build release PR title from released packages
+        if: ${{ steps.release-plz.outputs.prs_created == 'true' }}
+        id: pr-title
+        shell: bash
+        env:
+          PR_JSON: ${{ steps.release-plz.outputs.pr }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+
+          raw = os.environ.get("PR_JSON", "").strip()
+          if not raw or raw == "null":
+              raise SystemExit(0)
+
+          payload = json.loads(raw)
+          if isinstance(payload, list):
+              payload = payload[0] if payload else {}
+
+          if not isinstance(payload, dict):
+              raise SystemExit("unexpected release-plz PR output format")
+
+          releases = payload.get("releases") or []
+          items = []
+          for release in releases:
+              if not isinstance(release, dict):
+                  continue
+              package = release.get("package_name") or release.get("package")
+              version = release.get("version") or release.get("next_version")
+              if package:
+                  items.append((str(package), str(version) if version else ""))
+
+          if not items:
+              title = "chore(release): workspace release"
+          elif len(items) == 1:
+              package, version = items[0]
+              title = f"chore({package}): release v{version}" if version else f"chore({package}): release"
+          else:
+              rendered = [f"{package} v{version}" if version else package for package, version in items]
+              short = ", ".join(rendered[:3])
+              if len(rendered) > 3:
+                  short = f"{short} (+{len(rendered) - 3} more)"
+              title = f"chore(release): {short}"
+
+          if len(title) > 250:
+              title = f"{title[:247]}..."
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a", encoding="utf-8") as out:
+              if payload.get("number") is not None:
+                  out.write(f"pr_number={payload['number']}\n")
+              out.write("pr_title<<EOF\n")
+              out.write(f"{title}\n")
+              out.write("EOF\n")
+          PY
+      - name: Update release PR title
+        if: ${{ steps.release-plz.outputs.prs_created == 'true' && steps.pr-title.outputs.pr_number != '' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || env.RELEASE_PLZ_GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-title.outputs.pr_number }}
+          PR_TITLE: ${{ steps.pr-title.outputs.pr_title }}
+        run: |
+          set -euo pipefail
+
+          curl -fsSL \
+            -X PATCH \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" \
+            -d "$(jq -cn --arg title "${PR_TITLE}" '{title: $title}')"
       - name: Sync docs version references in release PR
         if: ${{ steps.release-plz.outputs.prs_created == 'true' }}
         shell: bash
@@ -113,7 +187,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          pr_branch=$(echo "$PR_JSON" | python -c 'import json,sys; print(json.load(sys.stdin).get("head_branch",""))')
+          pr_branch=$(echo "$PR_JSON" | python -c 'import json,sys; p=json.load(sys.stdin); p=p[0] if isinstance(p,list) and p else p; print((p or {}).get("head_branch",""))')
           if [ -z "$pr_branch" ] || [ "$pr_branch" = "null" ]; then
             echo "No release PR head branch returned. Skipping docs sync."
             exit 0
