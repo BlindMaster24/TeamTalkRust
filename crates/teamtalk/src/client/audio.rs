@@ -542,6 +542,9 @@ pub struct AudioBlockView<'a> {
     pub channels: i32,
     pub stream_types: u32,
     pub samples: i32,
+    /// Monotonic sample offset of this block in the current voice stream.
+    ///
+    /// Downstream struct literal construction must set this field explicitly.
     pub sample_index: u32,
     pub data: &'a [i16],
 }
