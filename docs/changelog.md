@@ -2,10 +2,8 @@
 
 ## [4.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.1.0...teamtalk-v4.0.0) - 2026-03-01
 
-### Breaking
-- *(audio)* `AudioBlockView` gained a new public field `sample_index`. If you construct `AudioBlockView` with struct literals, add `sample_index` explicitly (for example `sample_index: 0` when no offset is tracked).
-
 ### Added
+- *(audio)* expose sample_index in audio block view
 - *(examples)* add voice stream and segment recording samples
 - *(bot)* add command schemas, fn middleware, and scene routing
 - *(loader)* support remote latest pin with URL override
