@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.1.0...teamtalk-v4.0.0) - 2026-03-01
+
+### Added
+- *(audio)* expose sample_index in audio block view
+- *(examples)* add voice stream and segment recording samples
+- *(bot)* add command schemas, fn middleware, and scene routing
+- *(loader)* support remote latest pin with URL override
+
+### Changed
+- *(loader)* unify internal logging helper
+
+### Fixed
+- *(recording)* harden synced audio block capture
+
+## [0.1.1](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-macros-v0.1.0...teamtalk-macros-v0.1.1) - 2026-03-01
+
+### Added
+- *(bot)* add command schemas, fn middleware, and scene routing
+
 ## [3.1.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.0.0...teamtalk-v3.1.0) - 2026-02-21
 
 ### Added
