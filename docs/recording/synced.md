@@ -35,3 +35,5 @@ Notes:
 - Default output is PCM; use `WavS16Le` for a ready-to-use file.
 - Silence policy controls how padding is applied.
 - Call `tick()` regularly to pad silence when users are connected but silent.
+- Timeline is anchored to session start time. Users who start speaking later are padded
+  from the session start, so their track can begin with intentional leading silence.
