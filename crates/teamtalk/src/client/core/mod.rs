@@ -12,6 +12,8 @@ use super::bus;
 use super::cache;
 use super::hooks;
 
+mod init;
+
 static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Copy, Debug)]
@@ -64,12 +66,10 @@ impl std::ops::Deref for ClientCommands {
 }
 
 impl Client {
-    /// Creates a new polling client and loads the SDK.
-    pub fn new() -> Result<Self> {
-        crate::init()?;
-        let backend: Arc<dyn super::backend::TeamTalkBackend> =
-            Arc::new(super::backend::FfiBackend);
-        let ptr = backend.init_poll();
+    pub(crate) fn with_initialized_backend(
+        backend: Arc<dyn super::backend::TeamTalkBackend>,
+        ptr: *mut ffi::TTInstance,
+    ) -> Result<Self> {
         if ptr.is_null() {
             Err(Error::InitFailed)
         } else {
@@ -91,6 +91,11 @@ impl Client {
                 cache: Mutex::new(cache::CacheState::default()),
             })
         }
+    }
+
+    /// Creates a new polling client and loads the SDK.
+    pub fn new() -> Result<Self> {
+        init::new_client()
     }
 
     /// Splits the client into event polling and command execution parts.
@@ -108,31 +113,7 @@ impl Client {
     /// - The caller must ensure the window's message loop stays alive while the
     ///   client is in use.
     pub unsafe fn with_hwnd(hwnd: ffi::HWND, msg: u32) -> Result<Self> {
-        crate::init()?;
-        let backend: Arc<dyn super::backend::TeamTalkBackend> =
-            Arc::new(super::backend::FfiBackend);
-        let ptr = backend.init_hwnd(hwnd, msg);
-        if ptr.is_null() {
-            Err(Error::InitFailed)
-        } else {
-            Ok(Self {
-                name: None,
-                ptr: TTPtr(ptr),
-                id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
-                backend,
-                label: Mutex::new(None),
-                state: Mutex::new(ConnectionState::Idle),
-                hooks: Mutex::new(hooks::ClientHooks::default()),
-                hooks_revision: AtomicU64::new(0),
-                bus: Mutex::new(bus::EventBus::default()),
-                bus_revision: AtomicU64::new(0),
-                #[cfg(feature = "scripts")]
-                scripts: Mutex::new(None),
-                auto_reconnect: Mutex::new(AutoReconnectState::default()),
-                #[cfg(feature = "state")]
-                cache: Mutex::new(cache::CacheState::default()),
-            })
-        }
+        unsafe { init::new_client_with_hwnd(hwnd, msg) }
     }
 
     #[cfg(windows)]
@@ -151,28 +132,7 @@ impl Client {
 
     #[cfg(feature = "mock")]
     pub fn with_backend(backend: Arc<dyn super::backend::TeamTalkBackend>) -> Result<Self> {
-        let ptr = backend.init_poll();
-        if ptr.is_null() {
-            Err(Error::InitFailed)
-        } else {
-            Ok(Self {
-                name: None,
-                ptr: TTPtr(ptr),
-                id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
-                backend,
-                label: Mutex::new(None),
-                state: Mutex::new(ConnectionState::Idle),
-                hooks: Mutex::new(hooks::ClientHooks::default()),
-                hooks_revision: AtomicU64::new(0),
-                bus: Mutex::new(bus::EventBus::default()),
-                bus_revision: AtomicU64::new(0),
-                #[cfg(feature = "scripts")]
-                scripts: Mutex::new(None),
-                auto_reconnect: Mutex::new(AutoReconnectState::default()),
-                #[cfg(feature = "state")]
-                cache: Mutex::new(cache::CacheState::default()),
-            })
-        }
+        init::new_client_with_backend(backend)
     }
 
     #[cfg(feature = "mock")]

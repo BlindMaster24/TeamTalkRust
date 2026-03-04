@@ -2,12 +2,9 @@ use super::{Client, Message};
 use crate::events::Event;
 use crate::types::{ChannelId, TextMessage, User};
 
-type EventHook = Box<dyn FnMut(&Client, Event, &Message) + Send>;
-type ClientHook = Box<dyn FnMut(&Client) + Send>;
-type ChannelHook = Box<dyn FnMut(&Client, ChannelId) + Send>;
-type UserHook = Box<dyn FnMut(&Client, User) + Send>;
-type TextHook = Box<dyn FnMut(&Client, TextMessage) + Send>;
-type MessageHook = Box<dyn FnMut(&Client, &Message) + Send>;
+mod types;
+
+use self::types::{ChannelHook, ClientHook, EventHook, MessageHook, TextHook, UserHook};
 
 /// Event hooks for reacting to client activity.
 #[derive(Default)]
