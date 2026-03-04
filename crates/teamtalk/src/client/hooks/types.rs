@@ -1,4 +1,4 @@
-use super::{Client, Message};
+use crate::client::{Client, Message};
 use crate::events::Event;
 use crate::types::{ChannelId, TextMessage, User};
 
