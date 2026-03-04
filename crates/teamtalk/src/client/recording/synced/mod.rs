@@ -1,5 +1,5 @@
 use crate::events::{Error, Event, Result};
-use crate::types::{Subscriptions, User, UserId};
+use crate::types::{User, UserId};
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
@@ -11,6 +11,11 @@ use teamtalk_sys as ffi;
 use super::super::{Client, Message};
 use super::RecordingSampleFormat;
 use crate::AudioBlockView;
+mod utils;
+use utils::{
+    is_synced_bus_event, render_vars, sanitized_filename, should_warn_missing_audio_subscriptions,
+    synced_audio_subscription_mask, unique_recording_path,
+};
 
 #[derive(Clone, Debug)]
 pub enum SilencePolicy {
@@ -553,88 +558,10 @@ impl Drop for WavWriter {
     }
 }
 
-fn synced_audio_subscription_mask() -> Subscriptions {
-    Subscriptions::all_audio()
-}
-
-fn is_synced_bus_event(event: Event) -> bool {
-    matches!(
-        event,
-        Event::UserJoined
-            | Event::UserLeft
-            | Event::AudioBlock
-            | Event::ConnectSuccess
-            | Event::ConnectionLost
-            | Event::ConnectFailed
-            | Event::ConnectCryptError
-    )
-}
-
-fn should_warn_missing_audio_subscriptions(subscribe_audio: bool, user: Option<&User>) -> bool {
-    if subscribe_audio {
-        return false;
-    }
-    let Some(current_user) = user else {
-        return false;
-    };
-    !current_user.local_subscriptions.has(Subscriptions::VOICE)
-        && !current_user
-            .local_subscriptions
-            .has(Subscriptions::MEDIAFILE)
-}
-
-fn render_vars(template: &str, user_id: UserId, username: &str) -> String {
-    template
-        .replace("%user_id%", &user_id.0.to_string())
-        .replace("%username%", username)
-}
-
-fn sanitized_filename(raw: String) -> String {
-    const FORBIDDEN: [char; 9] = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
-    let mut sanitized = String::with_capacity(raw.len());
-    for ch in raw.chars() {
-        let replacement = if ch.is_control() || FORBIDDEN.contains(&ch) {
-            '_'
-        } else {
-            ch
-        };
-        sanitized.push(replacement);
-    }
-    let trimmed = sanitized.trim_matches([' ', '.']);
-    if trimmed.is_empty() {
-        "user".to_string()
-    } else {
-        trimmed.to_string()
-    }
-}
-
-fn unique_recording_path(path: &Path) -> PathBuf {
-    if !path.exists() {
-        return path.to_path_buf();
-    }
-
-    let stem = path
-        .file_stem()
-        .and_then(|v| v.to_str())
-        .unwrap_or("recording");
-    let ext = path.extension().and_then(|v| v.to_str());
-    for idx in 1.. {
-        let filename = match ext {
-            Some(ext) if !ext.is_empty() => format!("{stem}-{idx}.{ext}"),
-            _ => format!("{stem}-{idx}"),
-        };
-        let candidate = path.with_file_name(filename);
-        if !candidate.exists() {
-            return candidate;
-        }
-    }
-
-    path.to_path_buf()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::Subscriptions;
 
     #[test]
     fn synced_mask_is_audio_only() {
