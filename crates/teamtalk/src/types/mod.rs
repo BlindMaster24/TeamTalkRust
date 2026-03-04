@@ -1,6 +1,12 @@
 //! Core data structures and constants used by the SDK.
 use teamtalk_sys as ffi;
 
+pub mod audio;
+pub mod ids;
+pub mod messaging;
+pub mod server;
+pub mod users_channels;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 /// Strongly typed user id.
 pub struct UserId(pub i32);
