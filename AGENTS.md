@@ -1,20 +1,53 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `crates/teamtalk/` is the high-level Rust SDK; core modules live under `src/client/`, `src/events.rs`, `src/types.rs`, and `src/utils/`.
+- `crates/teamtalk/` is the high-level Rust SDK; core modules live under `src/client/`, `src/events.rs`, `src/types/`, `src/dispatch/`, `src/loader/`, and `src/utils/`.
 - `crates/teamtalk/tests/` holds integration tests; `crates/teamtalk/examples/` holds runnable examples.
 - `crates/teamtalk-sys/` contains bindgen-based FFI and loads `TeamTalk.h`.
 - `TEAMTALK_DLL/` stores downloaded SDK runtime files, import/static libs, `TeamTalk.h`, and `Documentation/` (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
 - `docs/` contains user guides; `README.md` links to docs and entry points.
+
+## Current Module Baseline (post-decomposition)
+- `client` is directory-first:
+  - `src/client/core/` for runtime lifecycle, polling, reconnect state/recovery, and debug internals.
+  - `src/client/connection/` for connect/reconnect/auto-reconnect/keep-alive concerns.
+  - `src/client/audio/` for device operations and audio-block streaming APIs.
+  - `src/client/hooks/` for registration, dispatch pipeline, and hook types.
+  - `src/client/recording/synced/` for synced recording session/writer/helpers.
+  - `src/client/users/` for account/auth plus moderation/text/subscription APIs.
+- `types` is directory-first:
+  - `src/types/entities/` for high-level domain entities and conversion surfaces.
+  - focused modules (`audio.rs`, `channels.rs`, `users.rs`, `server.rs`, etc.) for cohesive type groups.
+- `dispatch` is split into `src/dispatch/{mod,types,source,dispatcher}.rs`.
+- `loader` is split into `src/loader/{mod,versions,download}.rs`.
+- `bot/router` is split into `src/bot/router/{mod,builder,dispatch,help,helpers}.rs`.
+
 ## Module Structure Guidelines (for this repo)
-- Prefer small, focused modules; split files when a module grows beyond ~400–600 lines or mixes multiple responsibilities.
+- Prefer small, focused modules; split files when a module grows beyond ~400-600 lines or mixes multiple responsibilities.
 - Keep public API surface shallow: expose through `lib.rs` and module `mod.rs`, hide internals in submodules with `pub(crate)`.
 - Group by domain (client, events, types, utils) over technical layers; new features should follow existing domain boundaries.
-- If a type group grows, split into a folder with `mod.rs` and separate files (e.g., `types/voice.rs`, `types/channels.rs`).
+- If a domain grows, split into a folder with `mod.rs` and focused files (for example `client/connection/*`, `client/audio/*`, `types/entities/*`).
 - Avoid circular dependencies between modules; if needed, extract shared types into `types` or shared helpers into `utils`.
 - Keep FFI wrappers in `teamtalk-sys`; keep safe abstractions in `teamtalk` (no unsafe in high-level modules).
 - Examples live in `crates/teamtalk/examples/`; integration tests in `crates/teamtalk/tests/`.
 - Prefer `*_ex` variants for high-level APIs to expose full parameters, as per project rules.
+- Prefer one public `impl Client` surface per domain module and move internal helpers into sibling private files.
+- Keep cross-file access narrow: default private, then `pub(super)`, then `pub(crate)` only when required.
+- Do not move public items between modules without preserving re-export paths from the parent `mod.rs`.
+- For structural refactors, enforce behavior parity with existing tests before and after file moves.
+
+## Refactor Practices (required)
+- Structural refactor means no API/semantic changes unless explicitly requested.
+- Preserve public type/function paths through parent module re-exports where needed.
+- Split by behavior boundaries, not by arbitrary line count:
+  - lifecycle/state
+  - command dispatch/ffi calls
+  - conversion/mapping helpers
+  - event pipeline/filters
+- Keep unsafe and FFI boundary logic localized and documented in the narrowest module possible.
+- During decomposition, update imports first, then move code, then run `fmt`, `clippy`, `test`.
+- If a split causes temporary compile failures, fix module wiring before any behavior changes.
+
 ## Library Architecture & API Design (Rust)
 - Keep crates layered: `teamtalk-sys` = raw FFI, `teamtalk` = safe, ergonomic SDK.
 - Public API should be minimal, stable, and documented; everything else stays `pub(crate)`.
