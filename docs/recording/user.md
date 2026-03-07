@@ -17,5 +17,5 @@ let _session = UserRecordingSession::start(&client, user_id, options);
 ```
 
 Notes:
-- Per-user recording is controlled by `TT_SetUserMediaStorageDir(Ex)` under the hood.
+- Per-user recording is controlled by the TeamTalk per-user media storage APIs under the hood.
 - Stop by dropping `UserRecordingSession` or calling `stop()`.

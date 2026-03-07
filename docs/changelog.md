@@ -124,7 +124,7 @@
 - Auto-join remembers channel passwords set via `join_channel`.
 - `clear_last_channel` now clears both remembered channel id and channel password.
 - `dispatch_reconnect` example now logs in via stored params and guards repeated joins.
-- Manual and auto reconnect paths now enforce a disconnect barrier before retrying `TT_Connect`, matching TeamTalk C-API reconnect requirements.
+- Manual and auto reconnect paths now enforce a disconnect barrier before retrying reconnect operations, matching the TeamTalk C-API reconnect requirements around `TT_Connect`.
 - Manual `connect`, `connect_ex`, and `connect_sys_id` now apply a disconnect barrier when called from `Disconnected` state, matching TeamTalk C-API reconnect guidance.
 - Logged-in command wrappers now fail fast with `0` when the client is not authorized yet (`Connected`/`Idle`), instead of forwarding and waiting for `CMDERR_NOT_LOGGEDIN` (`change_nickname`, `set_status*`, text, file, subscribe, channel-admin/user-admin commands).
 - Server admin command wrappers now also fail fast with `0` before login (`ban_ip`, `list_bans`, `update_server`, `save_server_config`, `query_server_stats`), matching C-API `CMDERR_NOT_LOGGEDIN` preconditions.
