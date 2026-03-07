@@ -263,4 +263,4 @@ tools-install:
 
 # Run TeamTalk header+docs audit pass.
 audit-pass:
-    python .codex/skills/teamtalk-h-doc-audit/scripts/run_audit_pass.py --root .
+    python scripts/audit_teamtalk_coverage.py --root .

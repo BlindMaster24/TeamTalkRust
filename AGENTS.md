@@ -111,6 +111,10 @@
 - If header and documentation disagree, follow `TeamTalk.h` and note the mismatch explicitly in docs/changelog when it affects users.
 ## TeamTalk.h Coverage Audit
 - There is currently no project-local audit skill under `.codex/skills/`; `.codex/skills/` is effectively empty except for `.gitkeep`.
+- The canonical audit entry point is `python scripts/audit_teamtalk_coverage.py --root .`.
+- The script writes:
+  - `target/teamtalk-coverage-audit.json`
+  - `docs/teamtalk-coverage.md`
 - When asked to audit SDK coverage, run the audit manually against:
   - `TEAMTALK_DLL/TeamTalk.h`
   - `TEAMTALK_DLL/Documentation/C-API/`
@@ -133,6 +137,11 @@
   - `symbol in bindings, missing from src` = candidate high-level wrapper gap.
   - `symbol in src, missing from tests` = likely test gap for user-facing behavior.
   - `symbol in src, missing from docs` = likely docs gap when behavior is user-visible.
+- Wrapper-needed rules:
+  - Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
+  - Keep constants/macros as intentional omissions unless a typed Rust surface is missing.
+  - Keep platform-specific symbols as intentional omissions on unsupported targets unless the repository explicitly adds target support.
+  - Keep specialized low-level utilities omitted until there is a concrete user-facing use case.
 - High-risk-first execution order for fixes/tests:
   1. Connection lifecycle and reconnect barriers.
   2. Login/join/channel state transitions.

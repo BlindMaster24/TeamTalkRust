@@ -78,6 +78,32 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-targets
 ```
 
+## TeamTalk Coverage Audit
+
+Run the TeamTalk header coverage audit with:
+
+```bash
+python scripts/audit_teamtalk_coverage.py --root .
+```
+
+The script generates:
+
+- `target/teamtalk-coverage-audit.json`
+- [docs/teamtalk-coverage.md](teamtalk-coverage.md)
+
+Use the report to distinguish:
+
+- missing bindings
+- missing high-level wrappers
+- missing tests
+- missing docs
+- intentional omissions
+
+Wrapper policy:
+
+- Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
+- Leave constants/macros, unsupported platform-specific APIs, and specialized low-level utilities as intentional omissions unless a concrete use case appears.
+
 ## Task Runner (`just`)
 
 The repository includes a [`justfile`](../justfile) with shortcuts for checks,

@@ -14,6 +14,7 @@ Start here:
 - Extensions: [extensions.md](extensions.md)
 - Changelog: [changelog.md](changelog.md)
 - Developer Notes: [dev.md](dev.md)
+- TeamTalk Coverage Audit: [teamtalk-coverage.md](teamtalk-coverage.md)
 - Examples: [crates/teamtalk/examples](../crates/teamtalk/examples/)
 
 API reference:
