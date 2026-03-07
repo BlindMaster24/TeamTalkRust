@@ -4,11 +4,11 @@ use std::sync::Arc;
 use teamtalk::client::backend::MockBackend;
 use teamtalk::events::Event;
 use teamtalk::mock::MockMessage;
-use teamtalk::types::{ChannelId, UserId};
+use teamtalk::types::{ChannelId, UserId, UserRights};
 use teamtalk::{
-    Client, HandlerResult, MemoryStateStore, RequireChannelMessage, RequireCommand,
-    RequireCommandPrefix, RequirePrivateMessage, RequireUserIds, RequireUserType, Router,
-    StateStore,
+    Client, HandlerResult, MemoryStateStore, RequireChannelMessage, RequireClientRightsAll,
+    RequireClientRightsAny, RequireCommand, RequireCommandPrefix, RequirePrivateMessage,
+    RequireUserIds, RequireUserType, Router, StateStore,
 };
 use teamtalk_sys::{TextMsgType, User};
 
@@ -167,4 +167,48 @@ fn require_user_type_matches_sender_type() {
         .dispatch(&client, Event::TextMessage, &message, &mut store)
         .expect("dispatch");
     assert_eq!(store.get("u:7:ran"), Some("yes".to_owned()));
+}
+
+#[test]
+fn require_client_rights_any_matches_current_account() {
+    let (client, backend) = mock_client_with_backend();
+    backend.set_my_user_rights((UserRights::BAN_USERS | UserRights::MOVE_USERS).raw());
+
+    let mut store = MemoryStateStore::new();
+    let mut router = Router::new()
+        .use_middleware(RequireClientRightsAny::new(
+            UserRights::KICK_USERS | UserRights::BAN_USERS,
+        ))
+        .on_any(|ctx| {
+            ctx.user_state_set("ran", "yes");
+            Ok(HandlerResult::Continue)
+        });
+
+    let message = text_message(TextMsgType::MSGTYPE_USER, "/ping", ChannelId(0));
+    router
+        .dispatch(&client, Event::TextMessage, &message, &mut store)
+        .expect("dispatch");
+    assert_eq!(store.get("u:7:ran"), Some("yes".to_owned()));
+}
+
+#[test]
+fn require_client_rights_all_blocks_when_any_right_is_missing() {
+    let (client, backend) = mock_client_with_backend();
+    backend.set_my_user_rights(UserRights::KICK_USERS.raw());
+
+    let mut store = MemoryStateStore::new();
+    let mut router = Router::new()
+        .use_middleware(RequireClientRightsAll::new(
+            UserRights::KICK_USERS | UserRights::BAN_USERS,
+        ))
+        .on_any(|ctx| {
+            ctx.user_state_set("ran", "yes");
+            Ok(HandlerResult::Continue)
+        });
+
+    let message = text_message(TextMsgType::MSGTYPE_USER, "/ping", ChannelId(0));
+    router
+        .dispatch(&client, Event::TextMessage, &message, &mut store)
+        .expect("dispatch");
+    assert_eq!(store.get("u:7:ran"), None);
 }

@@ -52,6 +52,7 @@ pub trait TeamTalkBackend: Send + Sync {
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn get_my_user_rights(&self, ptr: *mut ffi::TTInstance) -> u32;
     fn get_user(&self, ptr: *mut ffi::TTInstance, user_id: i32, user: &mut ffi::User) -> bool;
     fn get_my_channel_id(&self, ptr: *mut ffi::TTInstance) -> ChannelId;
     fn connect(
@@ -134,6 +135,7 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn get_my_user_rights(&self, ptr: *mut ffi::TTInstance) -> u32;
     fn get_user(&self, ptr: *mut ffi::TTInstance, user_id: i32, user: &mut ffi::User) -> bool;
     fn get_my_channel_id(&self, ptr: *mut ffi::TTInstance) -> ChannelId;
     fn connect(
@@ -295,6 +297,10 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32 {
         unsafe { ffi::api().TT_GetMyUserID(ptr) }
+    }
+
+    fn get_my_user_rights(&self, ptr: *mut ffi::TTInstance) -> u32 {
+        unsafe { ffi::api().TT_GetMyUserRights(ptr) }
     }
 
     fn get_user(&self, ptr: *mut ffi::TTInstance, user_id: i32, user: &mut ffi::User) -> bool {

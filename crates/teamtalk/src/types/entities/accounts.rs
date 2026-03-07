@@ -1,4 +1,4 @@
-use crate::types::{AbusePrevention, ChannelId};
+use crate::types::{AbusePrevention, ChannelId, UserRights};
 use teamtalk_sys as ffi;
 
 /// User account definition.
@@ -20,6 +20,11 @@ impl UserAccount {
     /// Creates a user account builder.
     pub fn builder(username: &str) -> UserAccountBuilder {
         UserAccountBuilder::new(username)
+    }
+
+    /// Returns the account rights as a typed bitmask wrapper.
+    pub fn rights(&self) -> UserRights {
+        UserRights::from_raw(self.user_rights)
     }
 }
 
@@ -62,6 +67,12 @@ impl UserAccountBuilder {
     /// Sets the user rights.
     pub fn rights(mut self, r: u32) -> Self {
         self.inner.user_rights = r;
+        self
+    }
+
+    /// Sets the user rights using the typed bitmask wrapper.
+    pub fn rights_typed(mut self, rights: UserRights) -> Self {
+        self.inner.user_rights = rights.raw();
         self
     }
 

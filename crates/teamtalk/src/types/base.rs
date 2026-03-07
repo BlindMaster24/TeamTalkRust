@@ -273,3 +273,66 @@ impl UserStatus {
         bits
     }
 }
+
+/// User rights bitmask from TeamTalk's account/server model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct UserRights(pub(crate) u32);
+
+impl UserRights {
+    pub const NONE: Self = Self(0x00000000);
+    pub const MULTI_LOGIN: Self = Self(0x00000001);
+    pub const VIEW_ALL_USERS: Self = Self(0x00000002);
+    pub const CREATE_TEMPORARY_CHANNEL: Self = Self(0x00000004);
+    pub const MODIFY_CHANNELS: Self = Self(0x00000008);
+    pub const TEXTMESSAGE_BROADCAST: Self = Self(0x00000010);
+    pub const KICK_USERS: Self = Self(0x00000020);
+    pub const BAN_USERS: Self = Self(0x00000040);
+    pub const MOVE_USERS: Self = Self(0x00000080);
+    pub const OPERATOR_ENABLE: Self = Self(0x00000100);
+    pub const UPLOAD_FILES: Self = Self(0x00000200);
+    pub const DOWNLOAD_FILES: Self = Self(0x00000400);
+    pub const UPDATE_SERVERPROPERTIES: Self = Self(0x00000800);
+    pub const TRANSMIT_VOICE: Self = Self(0x00001000);
+    pub const TRANSMIT_VIDEOCAPTURE: Self = Self(0x00002000);
+    pub const TRANSMIT_DESKTOP: Self = Self(0x00004000);
+    pub const TRANSMIT_DESKTOPINPUT: Self = Self(0x00008000);
+    pub const TRANSMIT_MEDIAFILE_AUDIO: Self = Self(0x00010000);
+    pub const TRANSMIT_MEDIAFILE_VIDEO: Self = Self(0x00020000);
+    pub const TRANSMIT_MEDIAFILE: Self = Self(0x00010000 | 0x00020000);
+    pub const LOCKED_NICKNAME: Self = Self(0x00040000);
+    pub const LOCKED_STATUS: Self = Self(0x00080000);
+    pub const RECORD_VOICE: Self = Self(0x00100000);
+    pub const VIEW_HIDDEN_CHANNELS: Self = Self(0x00200000);
+    pub const TEXTMESSAGE_USER: Self = Self(0x00400000);
+    pub const TEXTMESSAGE_CHANNEL: Self = Self(0x00800000);
+
+    pub fn from_raw(raw: u32) -> Self {
+        Self(raw)
+    }
+
+    pub fn raw(self) -> u32 {
+        self.0
+    }
+
+    pub fn has_any(self, rights: Self) -> bool {
+        (self.0 & rights.0) != 0
+    }
+
+    pub fn has_all(self, rights: Self) -> bool {
+        (self.0 & rights.0) == rights.0
+    }
+}
+
+impl std::ops::BitOr for UserRights {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitOrAssign for UserRights {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}

@@ -36,10 +36,15 @@ Useful built-in middleware:
 - `RequireChannelMessage`
 - `RequireCommand`
 - `RequireCommandPrefix`
+- `RequireClientRightsAny`
+- `RequireClientRightsAll`
 - `RequireUserIds`
 - `RequireUserType`
 
 For guard patterns and rate limiting, see [guards.md](guards.md).
+
+For common moderation/admin presets, use `Permissions::moderator()` and
+`Permissions::admin()`.
 
 Recommended layering:
 

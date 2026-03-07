@@ -6,6 +6,7 @@ mod command;
 mod context;
 mod fsm;
 mod middleware;
+mod permissions;
 mod router;
 mod runtime;
 mod scheduler;
@@ -21,8 +22,10 @@ pub use context::Context;
 pub use fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy};
 pub use middleware::{
     CommandOnly, FnMiddleware, Middleware, RateLimitBySource, RequireChannelMessage,
-    RequireCommand, RequireCommandPrefix, RequirePrivateMessage, RequireUserIds, RequireUserType,
+    RequireClientRightsAll, RequireClientRightsAny, RequireCommand, RequireCommandPrefix,
+    RequirePrivateMessage, RequireUserIds, RequireUserType,
 };
+pub use permissions::Permissions;
 pub use router::{HandlerResult, RouteMatcher, Router, UnknownCommandPolicy};
 pub use runtime::{Bot, BotBuilder, BotConfig};
 pub use scheduler::{JobErrorPolicy, Scheduler};

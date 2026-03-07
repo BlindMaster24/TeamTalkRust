@@ -12,6 +12,7 @@ struct MockBackendState {
     channels: std::collections::HashMap<i32, Channel>,
     my_channel_id: ChannelId,
     my_user_id: i32,
+    my_user_rights: u32,
     user: Option<ffi::User>,
     start_ok: bool,
     stop_ok: bool,
@@ -61,6 +62,11 @@ impl MockBackend {
     pub fn set_my_user_id(&self, user_id: i32) {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.my_user_id = user_id;
+    }
+
+    pub fn set_my_user_rights(&self, rights: u32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.my_user_rights = rights;
     }
 
     pub fn set_user(&self, user: ffi::User) {
@@ -291,6 +297,13 @@ impl TeamTalkBackend for MockBackend {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .my_user_id
+    }
+
+    fn get_my_user_rights(&self, _ptr: *mut ffi::TTInstance) -> u32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .my_user_rights
     }
 
     fn get_user(&self, _ptr: *mut ffi::TTInstance, _user_id: i32, user: &mut ffi::User) -> bool {

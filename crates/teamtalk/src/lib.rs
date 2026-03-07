@@ -31,9 +31,10 @@ pub use bot::{
     Args, Bot, BotApp, BotBuilder, BotConfig, Command, CommandArgPattern, CommandOnly,
     CommandPattern, CommandPatternError, Context, DialogFlow, DialogMachine, DialogState,
     DialogStatus, DialogTimeoutPolicy, FnMiddleware, HandlerResult, JobErrorPolicy,
-    MemoryStateStore, Middleware, RateLimitBySource, RequireChannelMessage, RequireCommand,
-    RequireCommandPrefix, RequirePrivateMessage, RequireUserIds, RequireUserType, RouteMatcher,
-    Router, Scheduler, StateStore, UnknownCommandPolicy, parse_command,
+    MemoryStateStore, Middleware, Permissions, RateLimitBySource, RequireChannelMessage,
+    RequireClientRightsAll, RequireClientRightsAny, RequireCommand, RequireCommandPrefix,
+    RequirePrivateMessage, RequireUserIds, RequireUserType, RouteMatcher, Router, Scheduler,
+    StateStore, UnknownCommandPolicy, parse_command,
 };
 #[cfg(all(feature = "bot", feature = "async"))]
 pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
@@ -66,7 +67,7 @@ pub use mock::{MockClient, MockMessage, MockUserBuilder};
 pub use teamtalk_macros::{
     teamtalk_command, teamtalk_command_help, teamtalk_event, teamtalk_middleware,
 };
-pub use types::{ClientId, MessageBuilder};
+pub use types::{ClientId, MessageBuilder, UserRights};
 
 /// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {

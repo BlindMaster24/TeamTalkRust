@@ -1,6 +1,6 @@
 use super::router::HandlerResult;
 use crate::events::Result;
-use crate::types::UserId;
+use crate::types::{UserId, UserRights};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -187,6 +187,46 @@ impl Middleware for RequireUserType {
             return Ok(HandlerResult::Stop);
         }
         Ok(if self.allowed.contains(&raw.uUserType) {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireClientRightsAny {
+    rights: UserRights,
+}
+
+impl RequireClientRightsAny {
+    pub fn new(rights: UserRights) -> Self {
+        Self { rights }
+    }
+}
+
+impl Middleware for RequireClientRightsAny {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if ctx.client.my_user_rights().has_any(self.rights) {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireClientRightsAll {
+    rights: UserRights,
+}
+
+impl RequireClientRightsAll {
+    pub fn new(rights: UserRights) -> Self {
+        Self { rights }
+    }
+}
+
+impl Middleware for RequireClientRightsAll {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if ctx.client.my_user_rights().has_all(self.rights) {
             HandlerResult::Continue
         } else {
             HandlerResult::Stop

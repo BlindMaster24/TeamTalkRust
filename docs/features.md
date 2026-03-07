@@ -80,8 +80,11 @@ cargo build --no-default-features --features tls-rustls
   `with_auto_help_command`, `with_help_header`, `with_help_footer`, and
   `without_auto_help`.
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
-- Guard middleware: `RequirePrivateMessage`, `RequireChannelMessage`, and
-  `RequireCommand`, `RequireCommandPrefix`, `RequireUserIds`, `RequireUserType`.
+- Guard middleware: `RequirePrivateMessage`, `RequireChannelMessage`,
+  `RequireClientRightsAny`, `RequireClientRightsAll`, `RequireCommand`,
+  `RequireCommandPrefix`, `RequireUserIds`, `RequireUserType`.
+- Typed TeamTalk account rights: `UserRights` plus `Permissions::moderator()`
+  and `Permissions::admin()` presets.
 - Function middleware adapters: `FnMiddleware`, `Router::use_middleware_fn`, and
   `Router::use_middleware_hooks`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).

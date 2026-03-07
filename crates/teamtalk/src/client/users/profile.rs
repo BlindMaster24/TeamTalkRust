@@ -1,4 +1,5 @@
 use super::*;
+use crate::types::UserRights;
 
 impl Client {
     /// Returns the current user id.
@@ -23,7 +24,12 @@ impl Client {
 
     /// Returns the user rights of the current user.
     pub fn get_my_user_rights(&self) -> u32 {
-        unsafe { ffi::api().TT_GetMyUserRights(self.ptr.0) }
+        self.backend().get_my_user_rights(self.ptr.0)
+    }
+
+    /// Returns the user rights of the current user as a typed bitmask wrapper.
+    pub fn my_user_rights(&self) -> UserRights {
+        UserRights::from_raw(self.get_my_user_rights())
     }
 
     /// Requests user data for the current user.
