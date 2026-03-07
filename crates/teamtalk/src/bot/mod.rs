@@ -21,7 +21,7 @@ pub use context::Context;
 pub use fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy};
 pub use middleware::{
     CommandOnly, FnMiddleware, Middleware, RateLimitBySource, RequireChannelMessage,
-    RequireCommand, RequirePrivateMessage,
+    RequireCommand, RequireCommandPrefix, RequirePrivateMessage, RequireUserIds, RequireUserType,
 };
 pub use router::{HandlerResult, RouteMatcher, Router, UnknownCommandPolicy};
 pub use runtime::{Bot, BotBuilder, BotConfig};

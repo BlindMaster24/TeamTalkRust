@@ -1,5 +1,6 @@
 use super::router::HandlerResult;
 use crate::events::Result;
+use crate::types::UserId;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -108,6 +109,84 @@ impl RequireCommand {
 impl Middleware for RequireCommand {
     fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
         Ok(if ctx.is_command(&self.command) {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireCommandPrefix {
+    prefix: char,
+}
+
+impl RequireCommandPrefix {
+    pub fn new(prefix: char) -> Self {
+        Self { prefix }
+    }
+}
+
+impl Middleware for RequireCommandPrefix {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(
+            if ctx
+                .command
+                .as_ref()
+                .is_some_and(|command| command.prefix == self.prefix)
+            {
+                HandlerResult::Continue
+            } else {
+                HandlerResult::Stop
+            },
+        )
+    }
+}
+
+pub struct RequireUserIds {
+    allowed: Vec<UserId>,
+}
+
+impl RequireUserIds {
+    pub fn new(allowed: impl Into<Vec<UserId>>) -> Self {
+        Self {
+            allowed: allowed.into(),
+        }
+    }
+}
+
+impl Middleware for RequireUserIds {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if self.allowed.contains(&ctx.sender_id()) {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireUserType {
+    allowed: Vec<u32>,
+}
+
+impl RequireUserType {
+    pub fn new(allowed: impl Into<Vec<u32>>) -> Self {
+        Self {
+            allowed: allowed.into(),
+        }
+    }
+}
+
+impl Middleware for RequireUserType {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        let mut raw = unsafe { std::mem::zeroed::<teamtalk_sys::User>() };
+        if !ctx
+            .client
+            .backend()
+            .get_user(ctx.client.ptr.0, ctx.sender_id().0, &mut raw)
+        {
+            return Ok(HandlerResult::Stop);
+        }
+        Ok(if self.allowed.contains(&raw.uUserType) {
             HandlerResult::Continue
         } else {
             HandlerResult::Stop

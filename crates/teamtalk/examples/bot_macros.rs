@@ -1,17 +1,18 @@
 #[cfg(all(feature = "bot", feature = "bot-macros"))]
 use teamtalk::{
-    BotApp, HandlerResult, Result, Router, teamtalk_command, teamtalk_event, teamtalk_middleware,
+    BotApp, HandlerResult, Result, Router, teamtalk_command, teamtalk_command_help, teamtalk_event,
+    teamtalk_middleware,
 };
 
 #[cfg(all(feature = "bot", feature = "bot-macros"))]
-#[teamtalk_command("help")]
+#[teamtalk_command_help("help", "Show available commands", "h")]
 fn help_handler(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
     let _ = ctx.reply_private("Commands: /help /ping");
     Ok(HandlerResult::Continue)
 }
 
 #[cfg(all(feature = "bot", feature = "bot-macros"))]
-#[teamtalk_command("ping")]
+#[teamtalk_command("ping", "p")]
 fn ping_handler(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
     let _ = ctx.reply_private("pong");
     Ok(HandlerResult::Continue)

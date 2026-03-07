@@ -64,6 +64,7 @@ struct AutoHelpConfig {
 struct SuggestionConfig {
     enabled: bool,
     limit: usize,
+    max_distance: usize,
 }
 
 impl Default for SuggestionConfig {
@@ -71,6 +72,7 @@ impl Default for SuggestionConfig {
         Self {
             enabled: false,
             limit: 3,
+            max_distance: 3,
         }
     }
 }
@@ -115,6 +117,15 @@ impl<'a> RouteGroup<'a> {
         let summary = summary.into();
         self.router.push_command_route(full.clone(), None, handler);
         self.router.register_help(full, Some(summary));
+        self
+    }
+
+    pub fn alias_command(self, alias: impl Into<String>, target: impl Into<String>) -> Self {
+        let alias = join_command_path(&self.namespace, &normalize_command_name(alias.into()));
+        let target = join_command_path(&self.namespace, &normalize_command_name(target.into()));
+        if !alias.is_empty() && !target.is_empty() {
+            self.router.command_aliases.insert(alias, target);
+        }
         self
     }
 }
@@ -211,6 +222,21 @@ mod tests {
     }
 
     #[test]
+    fn canonicalize_command_uses_subcommand_alias() {
+        let router = Router::new().alias_command("admin b", "admin ban");
+        let command = Command {
+            prefix: '/',
+            name: "admin".to_owned(),
+            args: vec!["b".to_owned(), "alice".to_owned()],
+            raw: "admin b alice".to_owned(),
+        };
+
+        let canonical = router.canonicalize_command(&command);
+        assert_eq!(canonical.name, "admin");
+        assert_eq!(canonical.args, vec!["ban".to_owned(), "alice".to_owned()]);
+    }
+
+    #[test]
     fn suggest_commands_prefers_close_matches() {
         let router = Router::new()
             .on_command("ping", |_ctx| Ok(HandlerResult::Continue))
@@ -219,5 +245,16 @@ mod tests {
 
         let suggestions = router.suggest_commands("pnig");
         assert!(suggestions.iter().any(|item| item == "ping"));
+    }
+
+    #[test]
+    fn suggest_commands_respects_max_distance() {
+        let router = Router::new()
+            .on_command("ping", |_ctx| Ok(HandlerResult::Continue))
+            .with_unknown_command_suggestions(2)
+            .with_unknown_command_suggestion_distance(1);
+
+        let suggestions = router.suggest_commands("pnig");
+        assert!(suggestions.is_empty());
     }
 }

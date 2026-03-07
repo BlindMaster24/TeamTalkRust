@@ -141,6 +141,22 @@ impl<'a> Context<'a> {
     }
 
     #[cfg(feature = "bot-serde")]
+    fn json_or_default<T>(value: Result<Option<T>>) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Ok(value?.unwrap_or_default())
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn state_get_json_or_default<T>(&self, key: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Self::json_or_default(self.state_get_json(key))
+    }
+
+    #[cfg(feature = "bot-serde")]
     pub fn state_set_json<T>(&mut self, key: impl Into<String>, value: &T) -> Result<()>
     where
         T: serde::Serialize,
@@ -202,6 +218,14 @@ impl<'a> Context<'a> {
     }
 
     #[cfg(feature = "bot-serde")]
+    pub fn user_state_get_json_or_default<T>(&self, key: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Self::json_or_default(self.user_state_get_json(key))
+    }
+
+    #[cfg(feature = "bot-serde")]
     pub fn user_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<()>
     where
         T: serde::Serialize,
@@ -256,6 +280,14 @@ impl<'a> Context<'a> {
     }
 
     #[cfg(feature = "bot-serde")]
+    pub fn channel_state_get_json_or_default<T>(&self, key: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Self::json_or_default(self.channel_state_get_json(key))
+    }
+
+    #[cfg(feature = "bot-serde")]
     pub fn channel_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<bool>
     where
         T: serde::Serialize,
@@ -300,6 +332,14 @@ impl<'a> Context<'a> {
         self.global_state_get(key)
             .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
             .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn global_state_get_json_or_default<T>(&self, key: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Self::json_or_default(self.global_state_get_json(key))
     }
 
     #[cfg(feature = "bot-serde")]
@@ -365,6 +405,14 @@ impl<'a> Context<'a> {
         self.dialog_state_get(key)
             .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
             .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn dialog_state_get_json_or_default<T>(&mut self, key: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned + Default,
+    {
+        Self::json_or_default(self.dialog_state_get_json(key))
     }
 
     #[cfg(feature = "bot-serde")]

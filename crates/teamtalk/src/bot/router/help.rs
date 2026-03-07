@@ -41,11 +41,38 @@ impl Router {
     }
 
     pub(super) fn canonicalize_command(&self, command: &Command) -> Command {
-        let mut canonical = command.clone();
-        if let Some(target) = self.command_aliases.get(&canonical.name) {
-            canonical.name = target.clone();
+        let tokens = command.tokens();
+        if tokens.is_empty() {
+            return command.clone();
         }
-        canonical
+        let normalized = tokens
+            .iter()
+            .map(|token| token.to_ascii_lowercase())
+            .collect::<Vec<_>>();
+
+        for prefix_len in (1..=tokens.len()).rev() {
+            let alias = normalized[..prefix_len].join(" ");
+            let Some(target) = self.command_aliases.get(&alias) else {
+                continue;
+            };
+            let mut new_tokens = target
+                .split_whitespace()
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            new_tokens.extend(tokens[prefix_len..].iter().map(|token| (*token).to_owned()));
+            if new_tokens.is_empty() {
+                return command.clone();
+            }
+            let name = new_tokens.remove(0);
+            return Command {
+                prefix: command.prefix,
+                name,
+                args: new_tokens,
+                raw: command.raw.clone(),
+            };
+        }
+
+        command.clone()
     }
 
     pub(super) fn suggest_commands(&self, query: &str) -> Vec<String> {
@@ -71,6 +98,7 @@ impl Router {
         commands.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
 
         let lower = query.to_ascii_lowercase();
+        let max_distance = self.suggestions.max_distance.max(1);
         let mut ranked = commands
             .into_iter()
             .map(|candidate| {
@@ -80,7 +108,7 @@ impl Router {
                 (distance, !starts, candidate)
             })
             .filter(|(distance, _, candidate)| {
-                *distance <= 3 || candidate.to_ascii_lowercase().contains(&lower)
+                *distance <= max_distance || candidate.to_ascii_lowercase().contains(&lower)
             })
             .collect::<Vec<_>>();
         ranked.sort();

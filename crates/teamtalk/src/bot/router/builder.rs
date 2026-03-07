@@ -200,6 +200,12 @@ impl Router {
         self
     }
 
+    pub fn with_unknown_command_suggestion_distance(mut self, max_distance: usize) -> Self {
+        self.suggestions.enabled = true;
+        self.suggestions.max_distance = max_distance.max(1);
+        self
+    }
+
     pub fn without_unknown_command_suggestions(mut self) -> Self {
         self.suggestions.enabled = false;
         self
