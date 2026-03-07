@@ -8,7 +8,7 @@ use teamtalk::types::{ChannelId, UserId};
 use teamtalk::{Client, Context, MemoryStateStore};
 use teamtalk_sys::TextMsgType;
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct JsonState {
     name: String,
     count: u32,
@@ -67,9 +67,19 @@ fn context_json_helpers_roundtrip_across_scopes() {
         Some(state.clone())
     );
     assert_eq!(
+        ctx.state_get_json_or_default::<JsonState>("missing")
+            .expect("plain json default"),
+        JsonState::default()
+    );
+    assert_eq!(
         ctx.user_state_get_json::<JsonState>("profile")
             .expect("user json read"),
         Some(state.clone())
+    );
+    assert_eq!(
+        ctx.user_state_get_json_or_default::<JsonState>("missing")
+            .expect("user json default"),
+        JsonState::default()
     );
     assert_eq!(
         ctx.global_state_get_json::<JsonState>("config")
@@ -77,8 +87,18 @@ fn context_json_helpers_roundtrip_across_scopes() {
         Some(state.clone())
     );
     assert_eq!(
+        ctx.global_state_get_json_or_default::<JsonState>("missing")
+            .expect("global json default"),
+        JsonState::default()
+    );
+    assert_eq!(
         ctx.dialog_state_get_json::<JsonState>("payload")
             .expect("dialog json read"),
         Some(state)
+    );
+    assert_eq!(
+        ctx.dialog_state_get_json_or_default::<JsonState>("missing")
+            .expect("dialog json default"),
+        JsonState::default()
     );
 }
