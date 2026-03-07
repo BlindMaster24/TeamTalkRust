@@ -86,6 +86,10 @@ cargo build --no-default-features --features tls-rustls
   and metadata helpers (`dialog_pause`, `dialog_resume`, `dialog_set_timeout`,
   `dialog_metadata`, `dialog_set_metadata`).
 - Dialog flow helper: `DialogFlow` for reusable dialog definitions.
+- Flow-aware scene helpers: `DialogFlow::next_step`, `previous_step`,
+  `is_start_step`, `is_terminal_step`, and `Context::dialog_advance_next`.
+- Dialog-scoped store helpers: `dialog_state_key`, `dialog_state_get`,
+  `dialog_state_set`, and `dialog_state_remove`.
 - Scene-style dialog routing: `Router::on_dialog_step`, `Router::on_dialog`,
   and checked transitions via `Context::dialog_start_checked` and
   `Context::dialog_advance_checked`.

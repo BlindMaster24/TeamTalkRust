@@ -167,6 +167,29 @@ impl<'a> Context<'a> {
         self.state_remove(&self.global_state_key(key))
     }
 
+    pub fn dialog_state_key(&mut self, key: &str) -> Option<String> {
+        let state = self.dialog_current_live()?;
+        Some(format!("d:{}:{}:{key}", self.sender_id().0, state.dialog))
+    }
+
+    pub fn dialog_state_get(&mut self, key: &str) -> Option<String> {
+        let full = self.dialog_state_key(key)?;
+        self.state_get(&full)
+    }
+
+    pub fn dialog_state_set(&mut self, key: &str, value: impl Into<String>) -> bool {
+        let Some(full) = self.dialog_state_key(key) else {
+            return false;
+        };
+        self.state_set(full, value);
+        true
+    }
+
+    pub fn dialog_state_remove(&mut self, key: &str) -> Option<String> {
+        let full = self.dialog_state_key(key)?;
+        self.state_remove(&full)
+    }
+
     pub fn dialog(&mut self) -> DialogMachine<'_> {
         DialogMachine::new(self.state)
     }
@@ -218,6 +241,27 @@ impl<'a> Context<'a> {
             return Err(Error::InvalidParam);
         }
         Ok(self.dialog_advance(step))
+    }
+
+    pub fn dialog_restart_flow(&mut self, flow: &DialogFlow) -> Result<DialogState> {
+        if flow.name().is_empty() || flow.start_step().is_empty() {
+            return Err(Error::InvalidParam);
+        }
+        let source = self.message.source();
+        Ok(self.dialog().restart_flow(source, flow))
+    }
+
+    pub fn dialog_advance_next(&mut self, flow: &DialogFlow) -> Result<Option<DialogState>> {
+        let source = self.message.source();
+        if let Some(current) = self.dialog().current_live(source) {
+            if !current.dialog.eq_ignore_ascii_case(flow.name()) {
+                return Err(Error::InvalidParam);
+            }
+            if !flow.contains_step(&current.step) {
+                return Err(Error::InvalidParam);
+            }
+        }
+        Ok(self.dialog().advance_flow(source, flow))
     }
 
     pub fn dialog_stop(&mut self) -> Option<DialogState> {
@@ -272,5 +316,13 @@ impl<'a> Context<'a> {
     pub fn dialog_is(&mut self, dialog: &str, step: &str) -> bool {
         let source = self.message.source();
         self.dialog().is_in(source, dialog, step)
+    }
+
+    pub fn dialog_name(&mut self) -> Option<String> {
+        self.dialog_current_live().map(|state| state.dialog)
+    }
+
+    pub fn dialog_step(&mut self) -> Option<String> {
+        self.dialog_current_live().map(|state| state.step)
     }
 }

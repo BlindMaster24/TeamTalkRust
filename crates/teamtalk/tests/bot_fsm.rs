@@ -31,6 +31,13 @@ fn dialog_flow_contains_start_and_steps() {
     assert!(flow.contains_step("ask_name"));
     assert!(flow.contains_step("ask_email"));
     assert!(!flow.contains_step("missing"));
+    assert_eq!(flow.next_step("ask_name"), Some("ask_email"));
+    assert_eq!(flow.next_step("ask_email"), Some("done"));
+    assert_eq!(flow.next_step("done"), None);
+    assert_eq!(flow.previous_step("ask_email"), Some("ask_name"));
+    assert_eq!(flow.previous_step("done"), Some("ask_email"));
+    assert!(flow.is_start_step("ask_name"));
+    assert!(flow.is_terminal_step("done"));
 }
 
 #[test]
@@ -96,4 +103,25 @@ fn dialog_machine_removes_expired_state_from_live_queries() {
 
     assert!(fsm.current_live(11).is_none());
     assert!(fsm.current(11).is_none());
+}
+
+#[test]
+fn dialog_machine_advances_flow_in_order() {
+    let mut store = MemoryStateStore::new();
+    let mut fsm = DialogMachine::new(&mut store);
+    let flow = DialogFlow::new("wizard", "ask_name")
+        .step("ask_email")
+        .step("done");
+
+    let restarted = fsm.restart_flow(21, &flow);
+    assert_eq!(restarted.dialog, "wizard");
+    assert_eq!(restarted.step, "ask_name");
+
+    let next = fsm.advance_flow(21, &flow).expect("advance to ask_email");
+    assert_eq!(next.step, "ask_email");
+
+    let next = fsm.advance_flow(21, &flow).expect("advance to done");
+    assert_eq!(next.step, "done");
+
+    assert!(fsm.advance_flow(21, &flow).is_none());
 }

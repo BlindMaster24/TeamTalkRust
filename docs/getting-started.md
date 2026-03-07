@@ -176,6 +176,7 @@ let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
 let ban_pattern = CommandPattern::parse("ban <user_id> [reason...]")?;
 let onboarding_start = onboarding.clone();
 let onboarding_name = onboarding.clone();
+let onboarding_email = onboarding.clone();
 
 let router = Router::new()
     .with_auto_help_command("commands")
@@ -213,11 +214,12 @@ let router = Router::new()
         };
         ctx.user_state_set("name", name);
         let _ = ctx.dialog_set_metadata("name", name);
-        ctx.dialog_advance_checked(&onboarding_name, "ask_email")?;
+        let _ = ctx.dialog_state_set("started", "true");
+        ctx.dialog_advance_next(&onboarding_name)?;
         let _ = ctx.reply_private("Now send your email:");
         Ok(HandlerResult::Continue)
     })
-    .on_dialog_step("onboarding", "ask_email", |ctx| {
+    .on_dialog_step("onboarding", "ask_email", move |ctx| {
         let Some(email) = ctx.text() else {
             return Ok(HandlerResult::Continue);
         };
@@ -225,8 +227,12 @@ let router = Router::new()
         let locale = ctx
             .dialog_metadata("locale")
             .unwrap_or_else(|| "en".to_owned());
+        let _ = ctx.dialog_advance_next(&onboarding_email)?;
+        let started = ctx
+            .dialog_state_get("started")
+            .unwrap_or_else(|| "false".to_owned());
         let _ = ctx.reply_private("Onboarding complete.");
-        let _ = ctx.reply_private(&format!("Stored locale: {locale}"));
+        let _ = ctx.reply_private(&format!("Stored locale: {locale}; started: {started}"));
         let _ = ctx.dialog_stop();
         Ok(HandlerResult::Continue)
     });
@@ -235,7 +241,10 @@ let router = Router::new()
 `dialog_current()` returns only active, non-expired dialog state. Use
 `dialog_current_live()` when you also need paused dialogs, and use
 `dialog_pause`, `dialog_resume`, `dialog_set_timeout`, and dialog metadata
-helpers to build multi-step scenes with explicit lifecycle control.
+helpers to build multi-step scenes with explicit lifecycle control. Use
+`dialog_advance_next(&flow)` when the next step should follow the declared
+`DialogFlow` order, and `dialog_state_*` helpers when you want dialog-scoped
+scratch data without manually building state keys.
 
 You can wire bot runtime components through `BotApp`:
 

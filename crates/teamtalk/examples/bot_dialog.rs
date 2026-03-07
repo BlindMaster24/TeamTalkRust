@@ -11,6 +11,7 @@ fn main() -> Result<()> {
         .step("done");
     let onboarding_start = onboarding.clone();
     let onboarding_name = onboarding.clone();
+    let onboarding_email = onboarding.clone();
 
     let router = Router::new()
         .on_command("start", move |ctx| {
@@ -27,11 +28,12 @@ fn main() -> Result<()> {
             };
             ctx.user_state_set("name", &name);
             let _ = ctx.dialog_set_metadata("name", name);
-            ctx.dialog_advance_checked(&onboarding_name, "ask_email")?;
+            let _ = ctx.dialog_state_set("started", "true");
+            ctx.dialog_advance_next(&onboarding_name)?;
             let _ = ctx.reply_private("Thanks. Now send your e-mail:");
             Ok(HandlerResult::Continue)
         })
-        .on_dialog_step("onboarding", "ask_email", |ctx| {
+        .on_dialog_step("onboarding", "ask_email", move |ctx| {
             let Some(email) = ctx.text() else {
                 return Ok(HandlerResult::Continue);
             };
@@ -39,8 +41,13 @@ fn main() -> Result<()> {
             let locale = ctx
                 .dialog_metadata("locale")
                 .unwrap_or_else(|| "en".to_owned());
+            let _ = ctx.dialog_advance_next(&onboarding_email)?;
+            let _ = ctx.dialog_step();
+            let started = ctx
+                .dialog_state_get("started")
+                .unwrap_or_else(|| "false".to_owned());
             let _ = ctx.reply_private("Onboarding complete.");
-            let _ = ctx.reply_private(&format!("Stored locale: {locale}"));
+            let _ = ctx.reply_private(&format!("Stored locale: {locale}; started: {started}"));
             let _ = ctx.dialog_stop();
             Ok(HandlerResult::Continue)
         });

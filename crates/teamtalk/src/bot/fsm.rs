@@ -238,6 +238,36 @@ impl DialogFlow {
     pub fn contains_step(&self, step: &str) -> bool {
         step == self.start_step || self.steps.iter().any(|item| item == step)
     }
+
+    pub fn next_step(&self, step: &str) -> Option<&str> {
+        if step == self.start_step {
+            return self.steps.first().map(String::as_str);
+        }
+
+        self.steps
+            .windows(2)
+            .find_map(|window| (window[0] == step).then_some(window[1].as_str()))
+    }
+
+    pub fn previous_step(&self, step: &str) -> Option<&str> {
+        if let Some(first) = self.steps.first()
+            && first == step
+        {
+            return Some(&self.start_step);
+        }
+
+        self.steps
+            .windows(2)
+            .find_map(|window| (window[1] == step).then_some(window[0].as_str()))
+    }
+
+    pub fn is_start_step(&self, step: &str) -> bool {
+        step == self.start_step
+    }
+
+    pub fn is_terminal_step(&self, step: &str) -> bool {
+        self.steps.last().is_some_and(|last| last == step)
+    }
 }
 
 impl<'a> DialogMachine<'a> {
@@ -354,6 +384,21 @@ impl<'a> DialogMachine<'a> {
         self.store
             .remove(&self.key(source_id))
             .and_then(|raw| DialogState::decode(&raw))
+    }
+
+    pub fn restart_flow(&mut self, source_id: i32, flow: &DialogFlow) -> DialogState {
+        let state = DialogState::new(flow.name(), flow.start_step());
+        self.start_state(source_id, state.clone());
+        state
+    }
+
+    pub fn advance_flow(&mut self, source_id: i32, flow: &DialogFlow) -> Option<DialogState> {
+        let current = self.current_live(source_id)?;
+        if !current.dialog.eq_ignore_ascii_case(flow.name()) {
+            return None;
+        }
+        let next = flow.next_step(&current.step)?;
+        self.advance(source_id, next)
     }
 
     fn update<F>(&mut self, source_id: i32, mut update: F) -> Option<DialogState>
