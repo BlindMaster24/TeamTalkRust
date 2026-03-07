@@ -109,42 +109,36 @@
   - "Gap/Risk" (if any).
   - "Fix plan" (code/test/docs updates).
 - If header and documentation disagree, follow `TeamTalk.h` and note the mismatch explicitly in docs/changelog when it affects users.
-## Local Skill: `teamtalk-h-doc-audit`
-- Skill location: `.codex/skills/teamtalk-h-doc-audit/SKILL.md`.
-- Purpose: run full-coverage audits against all `TT_*` APIs from `TEAMTALK_DLL/TeamTalk.h` and the full `TEAMTALK_DLL/Documentation/C-API/` tree, then keep `plan.md` and `plan_requirements_scan.md` synchronized.
-- Use this skill by default when the user asks to "read all comments/docs", "continue audit", or "find what is missing" in wrapper/test/docs coverage.
-- Primary command (preferred):
-  - `python .codex/skills/teamtalk-h-doc-audit/scripts/run_audit_pass.py --root .`
-- What `run_audit_pass.py` does automatically:
-  1. Updates `plan.md` timestamp.
-  2. Runs full symbol scan and writes `plan_requirements_scan.md`.
-  3. Syncs auto-findings from scan into `plan.md`.
-  4. Updates `plan.md` timestamp again after sync.
-- Supporting scripts:
-  - `plan_sync.py`: create/update `plan.md` and always refresh `Last updated`.
-  - `scan_requirements.py`: extract `TT_*` symbols from header code (comments stripped), then map hits across docs/sys/src/tests/docs.
-  - `sync_plan_findings.py`: inject/replace auto findings block in `plan.md` between:
-    - `<!-- AUTO-FINDINGS:START -->`
-    - `<!-- AUTO-FINDINGS:END -->`
+## TeamTalk.h Coverage Audit
+- There is currently no project-local audit skill under `.codex/skills/`; `.codex/skills/` is effectively empty except for `.gitkeep`.
+- When asked to audit SDK coverage, run the audit manually against:
+  - `TEAMTALK_DLL/TeamTalk.h`
+  - `TEAMTALK_DLL/Documentation/C-API/`
+  - `crates/teamtalk-sys/`
+  - `crates/teamtalk/src/`
+  - `crates/teamtalk/tests/`
+  - `docs/`
+- Manual audit workflow:
+  1. Extract the target `TT_*` symbols or API group from `TEAMTALK_DLL/TeamTalk.h`.
+  2. Verify symbol exposure in `crates/teamtalk-sys/` or generated bindings under `target/debug/build/teamtalk-sys-*/out/bindings.rs`.
+  3. Verify whether a safe/high-level wrapper exists in `crates/teamtalk/src/`.
+  4. Verify whether integration coverage exists in `crates/teamtalk/tests/`.
+  5. Verify whether user-facing docs mention the behavior in `docs/` or `README.md`.
+- Preferred shell commands for manual audits:
+  - `rg -n "<TT_FunctionName|keyword>" TEAMTALK_DLL/TeamTalk.h`
+  - `rg -n "<keyword>" TEAMTALK_DLL/Documentation/C-API`
+  - `rg -n "<TT_FunctionName|method|event>" crates/teamtalk-sys crates/teamtalk/src crates/teamtalk/tests docs`
 - Coverage interpretation rules:
-  - `Symbols without wrapper/sys mapping` should be treated as P0; triage as alias/intentional omission/missing binding/missing safe wrapper.
-  - `Symbols without direct tests reference` should be treated as risk indicator (not absolute truth), then prioritized by high-risk API groups.
+  - `symbol in header, missing from bindings` = target/bindgen/export gap.
+  - `symbol in bindings, missing from src` = candidate high-level wrapper gap.
+  - `symbol in src, missing from tests` = likely test gap for user-facing behavior.
+  - `symbol in src, missing from docs` = likely docs gap when behavior is user-visible.
 - High-risk-first execution order for fixes/tests:
   1. Connection lifecycle and reconnect barriers.
   2. Login/join/channel state transitions.
   3. Kick/ban/moderation and event ordering.
-  4. File transfer and media.
-  5. Lower-risk utility/config APIs.
-- Required outputs after each audit pass:
-  - Updated `plan.md` with current timestamp and auto findings.
-  - Updated `plan_requirements_scan.md`.
-  - New manual findings in `plan.md` with:
-    - Source requirement
-    - Current behavior
-    - Gap/Risk
-    - Fix plan
-    - Test coverage status
-    - Disposition (fix now/defer with reason)
+  4. File transfer, media, desktop, and hotkeys.
+  5. Lower-risk utility/config APIs and constants.
 ## Project-Local Multi-Agent Roles (`.codex/agents`)
 - This repository defines project-scoped multi-agent roles in:
   - `.codex/config.toml`
@@ -369,7 +363,6 @@
   - Workspace:
     - `just clean`
     - `just rebuild`
-    - `just audit-pass`
 - For unknown/new commands, run `just --list` and then execute the matching recipe.
 - Use direct commands as fallback when `just` is unavailable.
 ### Detailed `just` Usage and Fallback Matrix
@@ -449,7 +442,7 @@
 - In PowerShell, use `;` as the command separator (not `&&`).
 - Prefer one logical check per command for readable logs (for example: `cargo fmt`, then `cargo check`, then `cargo test`).
 - For long workflows, record the exact command order in commit/PR notes so reruns are reproducible.
-- For skill invocations in chat, call one skill per line (for example: `$teamtalk-h-doc-audit`) and wait for completion before triggering the next step.
+- For skill invocations in chat, call one skill per line and wait for completion before triggering the next step.
 - If a step is destructive (force-push, branch delete, reset), require explicit user confirmation before running.
 ## Cargo Help & Command Discovery
 - `cargo --list` lists all installed Cargo subcommands (including third-party ones like `clippy`, `fmt`, `llvm-cov`, `sqlx`).

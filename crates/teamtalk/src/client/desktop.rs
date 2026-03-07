@@ -198,6 +198,19 @@ impl Client {
         }
     }
 
+    /// Acquires a desktop window update bitmap converted to a specific bitmap format.
+    pub fn acquire_user_desktop_window_ex(
+        &self,
+        user_id: UserId,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> Option<*mut ffi::DesktopWindow> {
+        unsafe {
+            let ptr =
+                ffi::api().TT_AcquireUserDesktopWindowEx(self.ptr.0, user_id.0, bitmap_format);
+            if ptr.is_null() { None } else { Some(ptr) }
+        }
+    }
+
     #[allow(clippy::missing_safety_doc)]
     /// Releases a previously acquired desktop window.
     ///

@@ -128,6 +128,9 @@ cargo build --no-default-features --features tls-rustls
 - Desktop helper APIs: batched `send_desktop_inputs`, desktop input translate /
   execute helpers, direct desktop window send APIs, Win32 desktop window
   discovery helpers, and native paint helpers for desktop/video rendering.
+- Desktop capture helpers now include `acquire_user_desktop_window_ex()` for
+  bitmap-format conversion and `get_palette_color()` for `BMP_RGB8_PALETTE`
+  color-table access.
 - Windows mixer coverage now includes enum-control selection and volume helpers
   (`set_mixer_input_selected`, `get_mixer_input_selected`,
   `set_mixer_input_volume`, `get_mixer_input_volume`).

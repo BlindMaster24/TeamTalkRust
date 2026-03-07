@@ -32,6 +32,20 @@ impl Client {
         }
     }
 
+    /// Returns a palette entry for 8-bit desktop bitmaps.
+    pub fn get_palette_color(
+        &self,
+        bitmap_format: ffi::BitmapFormat,
+        index: i32,
+    ) -> Option<[u8; 3]> {
+        let ptr = unsafe { ffi::api().TT_Palette_GetColorTable(bitmap_format, index) };
+        if ptr.is_null() {
+            return None;
+        }
+        let bytes = unsafe { std::slice::from_raw_parts(ptr, 3) };
+        Some([bytes[0], bytes[1], bytes[2]])
+    }
+
     /// Starts streaming a media file to the channel.
     pub fn start_streaming_media_file_to_channel(
         &self,
