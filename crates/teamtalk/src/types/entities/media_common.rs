@@ -297,6 +297,38 @@ impl From<ffi::AudioInputProgress> for AudioInputProgress {
     }
 }
 
+/// Desktop input packet.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DesktopInput {
+    pub mouse_pos_x: u16,
+    pub mouse_pos_y: u16,
+    pub key_code: u32,
+    pub key_state: ffi::DesktopKeyStates,
+}
+
+impl From<ffi::DesktopInput> for DesktopInput {
+    fn from(input: ffi::DesktopInput) -> Self {
+        Self {
+            mouse_pos_x: input.uMousePosX,
+            mouse_pos_y: input.uMousePosY,
+            key_code: input.uKeyCode,
+            key_state: input.uKeyState,
+        }
+    }
+}
+
+impl DesktopInput {
+    /// Converts to the raw TeamTalk struct.
+    pub fn to_ffi(&self) -> ffi::DesktopInput {
+        ffi::DesktopInput {
+            uMousePosX: self.mouse_pos_x,
+            uMousePosY: self.mouse_pos_y,
+            uKeyCode: self.key_code,
+            uKeyState: self.key_state,
+        }
+    }
+}
+
 /// SDK error message payload.
 #[derive(Debug, Clone, Default)]
 pub struct ErrorMessage {

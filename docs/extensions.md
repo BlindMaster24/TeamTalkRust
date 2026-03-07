@@ -80,6 +80,11 @@ Event handlers receive a table with fields:
 - `user`: table when a user payload exists.
 - `channel`: table when a channel payload exists.
 - `file_transfer`: table when a file transfer payload exists.
+- `remote_file`: table for `FileNew` / `FileRemove`.
+- `banned_user`: table for `BannedUser`.
+- `desktop_input`: table for `DesktopInput`.
+- `media_file_info`: table for `StreamMediaFile` / `LocalMediaFile`.
+- `audio_input_progress`: table for `AudioInput`.
 - `server_properties`: table when server properties exist.
 - `server_statistics`: table when server statistics exist.
 - `account`: table when a user account payload exists.

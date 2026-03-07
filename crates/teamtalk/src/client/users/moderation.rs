@@ -1,6 +1,15 @@
 use super::*;
 
 impl Client {
+    pub fn channel_op(&self, user_id: UserId, channel_id: ChannelId, make_op: bool) -> i32 {
+        if !can_issue_logged_in_command(self.connection_state()) {
+            return 0;
+        }
+        unsafe {
+            ffi::api().TT_DoChannelOp(self.ptr.0, user_id.0, channel_id.0, i32::from(make_op))
+        }
+    }
+
     pub fn kick_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
@@ -75,7 +84,7 @@ impl Client {
         channel_id: ChannelId,
         make_op: bool,
     ) -> i32 {
-        self.channel_op_ex(user_id, channel_id, "", make_op)
+        self.channel_op(user_id, channel_id, make_op)
     }
 
     pub fn set_user_operator(&self, user_id: UserId, channel_id: ChannelId, make_op: bool) -> i32 {

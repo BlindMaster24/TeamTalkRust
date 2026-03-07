@@ -68,6 +68,10 @@ cargo build --no-default-features --features tls-rustls
 - State store facade: `enable_state_store`, `store_snapshot`, `store_user`, `store_channel`.
 - Message builder: `MessageBuilder` for outgoing text messages.
 - Typed event payload facade: `Message::data` and `try_as_*` helpers.
+- Extended typed event payloads for file/media/desktop/admin flows:
+  `Message::remote_file`, `banned_user`, `desktop_input`, `media_file_info`,
+  `audio_input_progress`, plus matching `try_as_*` helpers and `EventData`
+  variants.
 - Async typed waits: `AsyncClient::wait_for_data` and
   `AsyncClient::wait_for_data_timeout` (`async-tokio`).
 - Bot primitives: `Bot`, `BotBuilder`, `Router`, `Context`, `Middleware`, `Scheduler`,
@@ -119,6 +123,10 @@ cargo build --no-default-features --features tls-rustls
   `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
+- Media preflight helper: `Client::get_media_file_info` before playback or
+  streaming.
+- Desktop helper APIs: batched `send_desktop_inputs`, desktop input translate /
+  execute helpers, and direct desktop window send APIs.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Auto phase hooks/events: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).

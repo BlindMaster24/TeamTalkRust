@@ -22,6 +22,16 @@ impl MediaFilePlayback {
 }
 
 impl Client {
+    /// Queries media-file metadata before playback or streaming.
+    pub fn get_media_file_info(&self, file_path: &str) -> Option<crate::types::MediaFileInfo> {
+        let mut info = ffi::MediaFileInfo::default();
+        let path = file_path.tt();
+        unsafe {
+            (ffi::api().TT_GetMediaFileInfo(path.as_ptr(), &mut info) == 1)
+                .then(|| crate::types::MediaFileInfo::from(info))
+        }
+    }
+
     /// Starts streaming a media file to the channel.
     pub fn start_streaming_media_file_to_channel(
         &self,

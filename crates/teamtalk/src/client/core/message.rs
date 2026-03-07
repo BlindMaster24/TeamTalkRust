@@ -13,8 +13,13 @@ pub enum EventData {
     ServerProperties(crate::types::ServerProperties),
     ServerStatistics(crate::types::ServerStatistics),
     FileTransfer(crate::types::FileTransfer),
+    RemoteFile(crate::types::RemoteFile),
     User(crate::types::User),
+    BannedUser(crate::types::BannedUser),
     UserAccount(crate::types::UserAccount),
+    DesktopInput(crate::types::DesktopInput),
+    MediaFileInfo(crate::types::MediaFileInfo),
+    AudioInputProgress(crate::types::AudioInputProgress),
     ErrorMessage(crate::types::ErrorMessage),
 }
 
@@ -117,6 +122,23 @@ impl Message {
         }
     }
 
+    /// Returns the remote file payload if present.
+    pub fn remote_file(&self) -> Option<crate::types::RemoteFile> {
+        if matches!(
+            self.event,
+            crate::events::Event::FileNew | crate::events::Event::FileRemove
+        ) && self.has_tt_type(ffi::TTType::__REMOTEFILE)
+        {
+            unsafe {
+                Some(crate::types::RemoteFile::from(
+                    self.raw.__bindgen_anon_1.remotefile,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
     /// Returns the user payload if present.
     pub fn user(&self) -> Option<crate::types::User> {
         if matches!(
@@ -156,6 +178,68 @@ impl Message {
         }
     }
 
+    /// Returns the banned-user payload if present.
+    pub fn banned_user(&self) -> Option<crate::types::BannedUser> {
+        if matches!(self.event, crate::events::Event::BannedUser)
+            && self.has_tt_type(ffi::TTType::__BANNEDUSER)
+        {
+            unsafe {
+                Some(crate::types::BannedUser::from(
+                    self.raw.__bindgen_anon_1.banneduser,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns the desktop input payload if present.
+    pub fn desktop_input(&self) -> Option<crate::types::DesktopInput> {
+        if matches!(self.event, crate::events::Event::DesktopInput)
+            && self.has_tt_type(ffi::TTType::__DESKTOPINPUT)
+        {
+            unsafe {
+                Some(crate::types::DesktopInput::from(
+                    self.raw.__bindgen_anon_1.desktopinput,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns the media-file payload if present.
+    pub fn media_file_info(&self) -> Option<crate::types::MediaFileInfo> {
+        if matches!(
+            self.event,
+            crate::events::Event::StreamMediaFile | crate::events::Event::LocalMediaFile
+        ) && self.has_tt_type(ffi::TTType::__MEDIAFILEINFO)
+        {
+            unsafe {
+                Some(crate::types::MediaFileInfo::from(
+                    self.raw.__bindgen_anon_1.mediafileinfo,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns the audio-input progress payload if present.
+    pub fn audio_input_progress(&self) -> Option<crate::types::AudioInputProgress> {
+        if matches!(self.event, crate::events::Event::AudioInput)
+            && self.has_tt_type(ffi::TTType::__AUDIOINPUTPROGRESS)
+        {
+            unsafe {
+                Some(crate::types::AudioInputProgress::from(
+                    self.raw.__bindgen_anon_1.audioinputprogress,
+                ))
+            }
+        } else {
+            None
+        }
+    }
+
     /// Returns the SDK error payload if present.
     pub fn error_message(&self) -> Option<crate::types::ErrorMessage> {
         if matches!(
@@ -188,8 +272,16 @@ impl Message {
             .or_else(|| self.server_properties().map(EventData::ServerProperties))
             .or_else(|| self.server_statistics().map(EventData::ServerStatistics))
             .or_else(|| self.file_transfer().map(EventData::FileTransfer))
+            .or_else(|| self.remote_file().map(EventData::RemoteFile))
             .or_else(|| self.user().map(EventData::User))
+            .or_else(|| self.banned_user().map(EventData::BannedUser))
             .or_else(|| self.account().map(EventData::UserAccount))
+            .or_else(|| self.desktop_input().map(EventData::DesktopInput))
+            .or_else(|| self.media_file_info().map(EventData::MediaFileInfo))
+            .or_else(|| {
+                self.audio_input_progress()
+                    .map(EventData::AudioInputProgress)
+            })
             .or_else(|| self.error_message().map(EventData::ErrorMessage))
     }
 
@@ -206,5 +298,30 @@ impl Message {
     /// Returns the channel payload when this message carries it.
     pub fn try_as_channel(&self) -> Option<crate::types::Channel> {
         self.channel()
+    }
+
+    /// Returns the remote-file payload when this message carries it.
+    pub fn try_as_remote_file(&self) -> Option<crate::types::RemoteFile> {
+        self.remote_file()
+    }
+
+    /// Returns the banned-user payload when this message carries it.
+    pub fn try_as_banned_user(&self) -> Option<crate::types::BannedUser> {
+        self.banned_user()
+    }
+
+    /// Returns the desktop-input payload when this message carries it.
+    pub fn try_as_desktop_input(&self) -> Option<crate::types::DesktopInput> {
+        self.desktop_input()
+    }
+
+    /// Returns the media-file payload when this message carries it.
+    pub fn try_as_media_file_info(&self) -> Option<crate::types::MediaFileInfo> {
+        self.media_file_info()
+    }
+
+    /// Returns the audio-input progress payload when this message carries it.
+    pub fn try_as_audio_input_progress(&self) -> Option<crate::types::AudioInputProgress> {
+        self.audio_input_progress()
     }
 }

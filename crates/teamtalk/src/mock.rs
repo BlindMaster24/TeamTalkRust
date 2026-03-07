@@ -100,6 +100,49 @@ impl MockMessage {
         write_tt(&mut msg.szMessage, text);
         message_from_text(msg, from_id.0)
     }
+
+    /// Builds a remote-file message instance.
+    pub fn remote_file(event: Event, remote_file: ffi::RemoteFile) -> Message {
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.ttType = ffi::TTType::__REMOTEFILE;
+        msg.nSource = remote_file.nChannelID;
+        msg.__bindgen_anon_1.remotefile = remote_file;
+        Message::from_raw(event, msg)
+    }
+
+    /// Builds a banned-user message instance.
+    pub fn banned_user(entry: ffi::BannedUser) -> Message {
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.ttType = ffi::TTType::__BANNEDUSER;
+        msg.__bindgen_anon_1.banneduser = entry;
+        Message::from_raw(Event::BannedUser, msg)
+    }
+
+    /// Builds a desktop-input message instance.
+    pub fn desktop_input(input: ffi::DesktopInput, source: i32) -> Message {
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.ttType = ffi::TTType::__DESKTOPINPUT;
+        msg.nSource = source;
+        msg.__bindgen_anon_1.desktopinput = input;
+        Message::from_raw(Event::DesktopInput, msg)
+    }
+
+    /// Builds a media-file-info message instance.
+    pub fn media_file_info(event: Event, info: ffi::MediaFileInfo) -> Message {
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.ttType = ffi::TTType::__MEDIAFILEINFO;
+        msg.__bindgen_anon_1.mediafileinfo = info;
+        Message::from_raw(event, msg)
+    }
+
+    /// Builds an audio-input-progress message instance.
+    pub fn audio_input_progress(progress: ffi::AudioInputProgress, source: i32) -> Message {
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.ttType = ffi::TTType::__AUDIOINPUTPROGRESS;
+        msg.nSource = source;
+        msg.__bindgen_anon_1.audioinputprogress = progress;
+        Message::from_raw(Event::AudioInput, msg)
+    }
 }
 
 /// Builder for mock user messages.

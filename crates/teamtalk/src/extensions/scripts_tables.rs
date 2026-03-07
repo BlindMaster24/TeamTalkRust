@@ -1,4 +1,5 @@
 use super::*;
+use crate::types::{AudioInputProgress, BannedUser, DesktopInput, MediaFileInfo, RemoteFile};
 
 impl ScriptManager {
     pub(super) fn event_table(&self, event: Event, message: &Message) -> mlua::Result<Table> {
@@ -42,9 +43,40 @@ impl ScriptManager {
                     table.set("file_transfer", self.file_transfer_table(&file_transfer)?)?;
                 }
             }
+            Event::FileNew | Event::FileRemove => {
+                if let Some(remote_file) = message.remote_file() {
+                    table.set("remote_file", self.remote_file_table(&remote_file)?)?;
+                }
+            }
+            Event::BannedUser => {
+                if let Some(banned_user) = message.banned_user() {
+                    table.set("banned_user", self.banned_user_table(&banned_user)?)?;
+                }
+            }
             Event::UserAccount | Event::UserAccountCreated | Event::UserAccountRemoved => {
                 if let Some(account) = message.account() {
                     table.set("account", self.account_table(&account)?)?;
+                }
+            }
+            Event::DesktopInput => {
+                if let Some(desktop_input) = message.desktop_input() {
+                    table.set("desktop_input", self.desktop_input_table(&desktop_input)?)?;
+                }
+            }
+            Event::StreamMediaFile | Event::LocalMediaFile => {
+                if let Some(media_file_info) = message.media_file_info() {
+                    table.set(
+                        "media_file_info",
+                        self.media_file_info_table(&media_file_info)?,
+                    )?;
+                }
+            }
+            Event::AudioInput => {
+                if let Some(audio_input) = message.audio_input_progress() {
+                    table.set(
+                        "audio_input_progress",
+                        self.audio_input_progress_table(&audio_input)?,
+                    )?;
                 }
             }
             Event::None
@@ -59,14 +91,10 @@ impl ScriptManager {
             | Event::MySelfLoggedIn
             | Event::MySelfLoggedOut
             | Event::MySelfKicked
-            | Event::FileNew
-            | Event::FileRemove
-            | Event::BannedUser
             | Event::VideoCaptureFrame
             | Event::MediaFileVideo
             | Event::DesktopWindow
             | Event::DesktopCursor
-            | Event::DesktopInput
             | Event::UserRecordMediaFile
             | Event::AudioBlock
             | Event::InternalError
@@ -74,9 +102,6 @@ impl ScriptManager {
             | Event::Hotkey
             | Event::HotkeyTest
             | Event::DesktopWindowTransfer
-            | Event::StreamMediaFile
-            | Event::LocalMediaFile
-            | Event::AudioInput
             | Event::SoundDeviceAdded
             | Event::SoundDeviceRemoved
             | Event::SoundDeviceUnplugged
@@ -193,6 +218,17 @@ impl ScriptManager {
         Ok(table)
     }
 
+    pub(super) fn remote_file_table(&self, file: &RemoteFile) -> mlua::Result<Table> {
+        let table = self.lua.create_table()?;
+        table.set("channel_id", file.channel_id.0)?;
+        table.set("id", file.id.0)?;
+        table.set("name", file.name.clone())?;
+        table.set("size", file.size)?;
+        table.set("owner", file.owner.clone())?;
+        table.set("upload_time", file.upload_time.clone())?;
+        Ok(table)
+    }
+
     pub(super) fn server_properties_table(&self, props: &ServerProperties) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
         table.set("name", props.name.clone())?;
@@ -256,6 +292,59 @@ impl ScriptManager {
                 .collect::<Vec<_>>(),
         )?;
         table.set("audio_codec_bps_limit", account.audio_codec_bps_limit)?;
+        Ok(table)
+    }
+
+    pub(super) fn banned_user_table(&self, banned_user: &BannedUser) -> mlua::Result<Table> {
+        let table = self.lua.create_table()?;
+        table.set("ip", banned_user.ip.clone())?;
+        table.set("channel_path", banned_user.channel_path.clone())?;
+        table.set("nickname", banned_user.nickname.clone())?;
+        table.set("username", banned_user.username.clone())?;
+        table.set("ban_time", banned_user.ban_time.clone())?;
+        table.set("ban_types", banned_user.ban_types as i64)?;
+        table.set("owner", banned_user.owner.clone())?;
+        Ok(table)
+    }
+
+    pub(super) fn desktop_input_table(&self, input: &DesktopInput) -> mlua::Result<Table> {
+        let table = self.lua.create_table()?;
+        table.set("mouse_pos_x", input.mouse_pos_x)?;
+        table.set("mouse_pos_y", input.mouse_pos_y)?;
+        table.set("key_code", input.key_code as i64)?;
+        table.set("key_state", input.key_state as i64)?;
+        Ok(table)
+    }
+
+    pub(super) fn media_file_info_table(&self, info: &MediaFileInfo) -> mlua::Result<Table> {
+        let table = self.lua.create_table()?;
+        table.set("status", info.status as i64)?;
+        table.set("name", info.name.clone())?;
+        table.set("duration_ms", info.duration_ms)?;
+        table.set("elapsed_ms", info.elapsed_ms)?;
+        let audio_fmt = self.lua.create_table()?;
+        audio_fmt.set("format", info.audio_fmt.nAudioFmt as i64)?;
+        audio_fmt.set("sample_rate", info.audio_fmt.nSampleRate)?;
+        audio_fmt.set("channels", info.audio_fmt.nChannels)?;
+        table.set("audio_format", audio_fmt)?;
+        let video_fmt = self.lua.create_table()?;
+        video_fmt.set("width", info.video_fmt.nWidth)?;
+        video_fmt.set("height", info.video_fmt.nHeight)?;
+        video_fmt.set("fps_numerator", info.video_fmt.nFPS_Numerator)?;
+        video_fmt.set("fps_denominator", info.video_fmt.nFPS_Denominator)?;
+        video_fmt.set("fourcc", info.video_fmt.picFourCC as i64)?;
+        table.set("video_format", video_fmt)?;
+        Ok(table)
+    }
+
+    pub(super) fn audio_input_progress_table(
+        &self,
+        progress: &AudioInputProgress,
+    ) -> mlua::Result<Table> {
+        let table = self.lua.create_table()?;
+        table.set("stream_id", progress.stream_id)?;
+        table.set("queue_ms", progress.queue_ms)?;
+        table.set("elapsed_ms", progress.elapsed_ms)?;
         Ok(table)
     }
 }
