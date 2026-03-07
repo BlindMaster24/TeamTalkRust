@@ -21,6 +21,11 @@
 - `dispatch` is split into `src/dispatch/{mod,types,source,dispatcher}.rs`.
 - `loader` is split into `src/loader/{mod,versions,download}.rs`.
 - `bot/router` is split into `src/bot/router/{mod,builder,dispatch,help,helpers}.rs`.
+- `bot` currently includes:
+  - `src/bot/fsm.rs` for dialog/session state, timeout policy, metadata, and flow helpers.
+  - `src/bot/middleware.rs` for function middleware, guards, and rate limiting.
+  - `src/bot/permissions.rs` for rights-based permission presets on top of TeamTalk account rights.
+  - `src/bot/storage.rs` plus Redis/SQLite adapters for bot state backends.
 
 ## Module Structure Guidelines (for this repo)
 - Prefer small, focused modules; split files when a module grows beyond ~400-600 lines or mixes multiple responsibilities.
@@ -35,6 +40,9 @@
 - Keep cross-file access narrow: default private, then `pub(super)`, then `pub(crate)` only when required.
 - Do not move public items between modules without preserving re-export paths from the parent `mod.rs`.
 - For structural refactors, enforce behavior parity with existing tests before and after file moves.
+- Keep bot authorization logic aligned with TeamTalk account rights:
+  - prefer `UserRights`, `Client::my_user_rights()`, and rights-based guards for authorization;
+  - treat `RequireUserType` as a cache-based classification helper, not the default authorization path.
 
 ## Refactor Practices (required)
 - Structural refactor means no API/semantic changes unless explicitly requested.
@@ -558,6 +566,9 @@
 - User docs should explain both "what" and "why" in short, practical terms.
 - When introducing new high-level APIs, document both the default and `*_ex` variants.
 - Document all auto-features with explicit opt-in instructions and default state.
+- For bot authorization docs:
+  - present rights-based guards (`RequireClientRightsAny`, `RequireClientRightsAll`, `Permissions::*`) before `RequireUserType`;
+  - explain that `RequireUserType` depends on local sender cache state and is secondary to account-rights checks.
 
 ## Documentation Updates from a Specific Commit
 - When asked to update docs from a baseline commit, diff from that commit to `HEAD`.
@@ -639,6 +650,15 @@
 - Name tests by behavior, for example `recording_start_on_command`.
 - Add at least one usage example for every new high-level API, even if no tests are added.
 - When adding or expanding tests, run the full test matrix and (if requested) coverage commands above.
+- Bot/scenes/permissions changes since `ff082e8` are covered by:
+  - `crates/teamtalk/tests/bot_fsm.rs`
+  - `crates/teamtalk/tests/bot_scene_integration.rs`
+  - `crates/teamtalk/tests/bot_middleware_guards.rs`
+  - `crates/teamtalk/tests/bot_state_json.rs`
+- Matching examples for this surface include:
+  - `crates/teamtalk/examples/bot_dialog.rs`
+  - `crates/teamtalk/examples/bot_macros.rs`
+  - `crates/teamtalk/examples/bot_permissions.rs`
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`.

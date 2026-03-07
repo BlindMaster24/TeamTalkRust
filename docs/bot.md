@@ -30,16 +30,17 @@ handlers, can stop dispatch early, and can run post-handler cleanup through
 
 Useful built-in middleware:
 
+- preferred for authorization:
+  - `RequireClientRightsAny`
+  - `RequireClientRightsAll`
 - `CommandOnly`
 - `RateLimitBySource`
 - `RequirePrivateMessage`
 - `RequireChannelMessage`
 - `RequireCommand`
 - `RequireCommandPrefix`
-- `RequireClientRightsAny`
-- `RequireClientRightsAll`
 - `RequireUserIds`
-- `RequireUserType`
+- `RequireUserType` (sender-cache-based, use only when cached `user_type` is the signal you want)
 
 For guard patterns and rate limiting, see [guards.md](guards.md).
 
