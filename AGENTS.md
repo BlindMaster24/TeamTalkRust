@@ -116,7 +116,7 @@
   - `target/teamtalk-coverage-audit.json`
   - `target/teamtalk-coverage-audit.md`
   - `target/teamtalk-coverage-audit.txt`
-- Select outputs with `--format`; accepted values are `json`, `md`, `txt`, `all`, or comma-separated combinations such as `md,txt` or `json,md`.
+- Select outputs with `--format`; accepted values are `json`, `md`, `txt`, `all`, or combinations separated by commas, spaces, or both such as `md,txt`, `md txt`, or `json, md`.
 - When asked to audit SDK coverage, run the audit manually against:
   - `TEAMTALK_DLL/TeamTalk.h`
   - `TEAMTALK_DLL/Documentation/C-API/`

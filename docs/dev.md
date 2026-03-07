@@ -85,6 +85,7 @@ Run the TeamTalk header coverage audit with:
 ```bash
 python scripts/audit_teamtalk_coverage.py --root .
 python scripts/audit_teamtalk_coverage.py --root . --format md,txt
+python scripts/audit_teamtalk_coverage.py --root . --format md txt
 ```
 
 The script generates:

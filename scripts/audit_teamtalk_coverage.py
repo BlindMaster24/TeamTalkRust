@@ -63,7 +63,7 @@ def extract_symbols(text: str) -> list[str]:
 
 
 def parse_output_formats(value: str) -> tuple[str, ...]:
-    requested = [item.strip().lower() for item in value.split(',') if item.strip()]
+    requested = [item.strip().lower() for item in re.split(r'[\s,]+', value) if item.strip()]
     if not requested:
         raise SystemExit('--format requires at least one value')
     if 'all' in requested:
