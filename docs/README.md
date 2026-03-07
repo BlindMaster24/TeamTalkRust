@@ -3,6 +3,7 @@
 Start here:
 - Getting Started: [getting-started.md](getting-started.md)
 - Bot Framework: [bot.md](bot.md)
+- Guards and Rate Limits: [guards.md](guards.md)
 - Scenes and Dialogs: [scenes.md](scenes.md)
 - Configuration: [configuration.md](configuration.md)
 - Feature Flags: [features.md](features.md)

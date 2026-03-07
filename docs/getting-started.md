@@ -185,6 +185,7 @@ let router = Router::new()
     .with_auto_help_command("commands")
     .alias_command("begin", "start")
     .with_unknown_command_suggestions(3)
+    .with_unknown_command_suggestion_distance(2)
     .use_middleware(RequirePrivateMessage)
     .use_middleware_fn(|ctx| {
         Ok(if ctx.command.is_some() {

@@ -35,6 +35,11 @@ Useful built-in middleware:
 - `RequirePrivateMessage`
 - `RequireChannelMessage`
 - `RequireCommand`
+- `RequireCommandPrefix`
+- `RequireUserIds`
+- `RequireUserType`
+
+For guard patterns and rate limiting, see [guards.md](guards.md).
 
 Recommended layering:
 
@@ -72,10 +77,15 @@ adding serialization dependencies.
 If you enable `bot-serde`, you also get JSON-backed helpers:
 
 - `state_get_json`, `state_set_json`
+- `state_get_json_or_default`
 - `user_state_get_json`, `user_state_set_json`
+- `user_state_get_json_or_default`
 - `channel_state_get_json`, `channel_state_set_json`
+- `channel_state_get_json_or_default`
 - `global_state_get_json`, `global_state_set_json`
+- `global_state_get_json_or_default`
 - `dialog_state_get_json`, `dialog_state_set_json`
+- `dialog_state_get_json_or_default`
 
 That is the preferred option when scene/user state is a structured payload.
 
@@ -94,5 +104,24 @@ The router also supports:
 
 - command aliases through `alias_command`
 - unknown-command suggestions through `with_unknown_command_suggestions`
+
+The bot macros crate provides `#[teamtalk_command]`, `#[teamtalk_command_help]`,
+`#[teamtalk_event]`, and `#[teamtalk_middleware]` to keep handler registration
+compact.
+
+Macros support aliases:
+
+```rust
+#[teamtalk_command("ping", "p")]
+fn ping_handler(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
+    let _ = ctx.reply_private("pong");
+    Ok(HandlerResult::Continue)
+}
+
+#[teamtalk_command_help("help", "Show help", "h")]
+fn help_handler(ctx: &mut teamtalk::Context<'_>) -> teamtalk::Result<HandlerResult> {
+    Ok(HandlerResult::Continue)
+}
+```
 
 See [scenes.md](scenes.md) for the full scene model.
