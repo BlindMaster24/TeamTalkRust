@@ -139,6 +139,10 @@
   - `symbol in bindings, missing from src` = candidate high-level wrapper gap.
   - `symbol in src, missing from tests` = likely test gap for user-facing behavior.
   - `symbol in src, missing from docs` = likely docs gap when behavior is user-visible.
+  - `wrapped_symbols` = direct `TT_*` hit in `crates/teamtalk/src` for a runtime candidate.
+  - `direct_test_hits_for_wrapped_symbols` = direct `TT_*` hit in `crates/teamtalk/tests` for a wrapped runtime candidate.
+  - `fully_covered_symbols` = direct `TT_*` hit in source, tests, and docs for a wrapped runtime candidate.
+  - `missing_tests` is intentionally stricter than runtime-behavior coverage; treat it as audit triage, not automatic proof of broken functionality.
 - Wrapper-needed rules:
   - Treat non-macro, non-platform-specific `TT_*` symbols as runtime API candidates in the audit output.
   - Then triage them manually before adding wrappers; the scanner should over-report candidates rather than silently hide them.

@@ -96,11 +96,16 @@ The script generates:
 
 Use the report to distinguish:
 
+- `wrapped_symbols`: runtime candidates with a direct `TT_*` hit in the high-level source tree
+- `direct_test_hits_for_wrapped_symbols`: wrapped runtime candidates with a direct `TT_*` hit in the integration test tree
+- `fully_covered_symbols`: wrapped runtime candidates with direct `TT_*` hits in source, tests, and docs
 - missing bindings
 - missing high-level wrappers
 - missing tests
 - missing docs
 - intentional omissions
+
+The `missing_tests` count is intentionally strict. It reports missing direct symbol hits in tests, not proof that runtime behavior is broken.
 
 Wrapper policy:
 
