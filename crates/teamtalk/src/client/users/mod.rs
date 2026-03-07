@@ -172,5 +172,9 @@ impl LoginParams {
     }
 }
 
-mod account_and_auth;
-mod moderation_and_text;
+mod auth;
+mod directory;
+mod messaging;
+mod moderation;
+mod profile;
+mod subscriptions;
