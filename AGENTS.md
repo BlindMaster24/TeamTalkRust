@@ -114,7 +114,8 @@
 - The canonical audit entry point is `python scripts/audit_teamtalk_coverage.py --root .`.
 - The script writes:
   - `target/teamtalk-coverage-audit.json`
-  - `docs/teamtalk-coverage.md`
+  - `target/teamtalk-coverage-audit.md`
+  - `target/teamtalk-coverage-audit.txt`
 - When asked to audit SDK coverage, run the audit manually against:
   - `TEAMTALK_DLL/TeamTalk.h`
   - `TEAMTALK_DLL/Documentation/C-API/`
@@ -138,6 +139,8 @@
   - `symbol in src, missing from tests` = likely test gap for user-facing behavior.
   - `symbol in src, missing from docs` = likely docs gap when behavior is user-visible.
 - Wrapper-needed rules:
+  - Treat non-constant, non-platform-specific `TT_*` symbols as runtime API candidates in the audit output.
+  - Then triage them manually before adding wrappers; the scanner should over-report candidates rather than silently hide them.
   - Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
   - Keep constants/macros as intentional omissions unless a typed Rust surface is missing.
   - Keep platform-specific symbols as intentional omissions on unsupported targets unless the repository explicitly adds target support.

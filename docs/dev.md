@@ -89,7 +89,8 @@ python scripts/audit_teamtalk_coverage.py --root .
 The script generates:
 
 - `target/teamtalk-coverage-audit.json`
-- [docs/teamtalk-coverage.md](teamtalk-coverage.md)
+- `target/teamtalk-coverage-audit.md`
+- `target/teamtalk-coverage-audit.txt`
 
 Use the report to distinguish:
 
@@ -101,6 +102,8 @@ Use the report to distinguish:
 
 Wrapper policy:
 
+- The scanner treats non-constant, non-platform-specific `TT_*` symbols as runtime API candidates.
+- Triage those candidates manually before adding wrappers.
 - Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
 - Leave constants/macros, unsupported platform-specific APIs, and specialized low-level utilities as intentional omissions unless a concrete use case appears.
 
