@@ -4,7 +4,13 @@ use teamtalk_sys as ffi;
 
 impl Client {
     /// Registers a global hotkey.
+    ///
+    /// Returns `false` when the client was created with `Client::new()` instead of
+    /// `Client::with_hwnd()`.
     pub fn register_hotkey(&self, id: i32, vk_codes: &[i32]) -> bool {
+        if !self.is_hwnd_client() {
+            return false;
+        }
         unsafe {
             ffi::api().TT_HotKey_Register(self.ptr.0, id, vk_codes.as_ptr(), vk_codes.len() as i32)
                 == 1
@@ -12,12 +18,22 @@ impl Client {
     }
 
     /// Unregisters a global hotkey.
+    ///
+    /// Returns `false` when the client is not HWND-backed.
     pub fn unregister_hotkey(&self, id: i32) -> bool {
+        if !self.is_hwnd_client() {
+            return false;
+        }
         unsafe { ffi::api().TT_HotKey_Unregister(self.ptr.0, id) == 1 }
     }
 
     /// Checks if a hotkey is active.
+    ///
+    /// Returns `false` when the client is not HWND-backed.
     pub fn is_hotkey_active(&self, id: i32) -> bool {
+        if !self.is_hwnd_client() {
+            return false;
+        }
         unsafe { ffi::api().TT_HotKey_IsActive(self.ptr.0, id) == 1 }
     }
 
@@ -29,11 +45,19 @@ impl Client {
     /// - The window's message loop must remain alive while the hook is installed.
     #[cfg(windows)]
     pub unsafe fn install_hotkey_test_hook(&self, hwnd: ffi::HWND, msg: u32) -> bool {
+        if !self.is_hwnd_client() {
+            return false;
+        }
         unsafe { ffi::api().TT_HotKey_InstallTestHook(self.ptr.0, hwnd, msg) == 1 }
     }
 
     /// Removes the hotkey test hook.
+    ///
+    /// Returns `false` when the client is not HWND-backed.
     pub fn remove_hotkey_test_hook(&self) -> bool {
+        if !self.is_hwnd_client() {
+            return false;
+        }
         unsafe { ffi::api().TT_HotKey_RemoveTestHook(self.ptr.0) == 1 }
     }
 

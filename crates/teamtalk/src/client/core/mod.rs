@@ -40,6 +40,8 @@ pub struct Client {
     pub(crate) auto_reconnect: Mutex<AutoReconnectState>,
     #[cfg(feature = "state")]
     pub(crate) cache: Mutex<cache::CacheState>,
+    #[cfg(windows)]
+    pub(crate) init_mode: ClientInitMode,
 }
 
 unsafe impl Send for Client {}
@@ -70,6 +72,7 @@ impl Client {
     pub(crate) fn with_initialized_backend(
         backend: Arc<dyn super::backend::TeamTalkBackend>,
         ptr: *mut ffi::TTInstance,
+        #[cfg(windows)] init_mode: ClientInitMode,
     ) -> Result<Self> {
         if ptr.is_null() {
             Err(Error::InitFailed)
@@ -90,6 +93,8 @@ impl Client {
                 auto_reconnect: Mutex::new(AutoReconnectState::default()),
                 #[cfg(feature = "state")]
                 cache: Mutex::new(cache::CacheState::default()),
+                #[cfg(windows)]
+                init_mode,
             })
         }
     }
@@ -129,6 +134,11 @@ impl Client {
 
     pub(crate) fn backend(&self) -> &dyn super::backend::TeamTalkBackend {
         self.backend.as_ref()
+    }
+
+    #[cfg(windows)]
+    pub(crate) fn is_hwnd_client(&self) -> bool {
+        matches!(self.init_mode, ClientInitMode::Hwnd)
     }
 
     #[cfg(feature = "mock")]
@@ -373,3 +383,10 @@ mod recovery;
 
 pub use message::{EventData, Message};
 pub(crate) use reconnect_state::AutoReconnectState;
+
+#[cfg(windows)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum ClientInitMode {
+    Poll,
+    Hwnd,
+}

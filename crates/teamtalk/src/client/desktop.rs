@@ -80,6 +80,37 @@ impl Client {
     }
 
     #[cfg(windows)]
+    /// Returns the active desktop window handle.
+    pub fn get_desktop_active_hwnd(&self) -> ffi::HWND {
+        unsafe { ffi::api().TT_Windows_GetDesktopActiveHWND() }
+    }
+
+    #[cfg(windows)]
+    /// Returns the desktop root window handle.
+    pub fn get_desktop_hwnd(&self) -> ffi::HWND {
+        unsafe { ffi::api().TT_Windows_GetDesktopHWND() }
+    }
+
+    #[cfg(windows)]
+    /// Returns a desktop window handle by index.
+    pub fn get_desktop_window_hwnd(&self, index: i32) -> Option<ffi::HWND> {
+        let mut hwnd = std::ptr::null_mut();
+        let ok = unsafe { ffi::api().TT_Windows_GetDesktopWindowHWND(index, &mut hwnd) == 1 };
+        if ok { Some(hwnd) } else { None }
+    }
+
+    #[cfg(windows)]
+    /// Returns shareable window metadata for a window handle.
+    ///
+    /// # Safety
+    /// `hwnd` must be a valid live window handle.
+    pub unsafe fn get_share_window(&self, hwnd: ffi::HWND) -> Option<ffi::ShareWindow> {
+        let mut window = ffi::ShareWindow::default();
+        let ok = unsafe { ffi::api().TT_Windows_GetWindow(hwnd, &mut window) == 1 };
+        if ok { Some(window) } else { None }
+    }
+
+    #[cfg(windows)]
     /// Sends a desktop window directly from a Win32 window handle.
     ///
     /// # Safety
@@ -93,6 +124,69 @@ impl Client {
     ) -> i32 {
         unsafe {
             ffi::api().TT_SendDesktopWindowFromHWND(self.ptr.0, hwnd, bitmap_format, protocol)
+        }
+    }
+
+    #[cfg(windows)]
+    /// Paints the current desktop frame for a user to a Win32 device context.
+    ///
+    /// # Safety
+    /// `hdc` must be a valid device context for the full duration of the call.
+    pub unsafe fn paint_desktop_window(
+        &self,
+        user_id: UserId,
+        hdc: ffi::HDC,
+        x_dest: i32,
+        y_dest: i32,
+        dest_width: i32,
+        dest_height: i32,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_PaintDesktopWindow(
+                self.ptr.0,
+                user_id.0,
+                hdc,
+                x_dest,
+                y_dest,
+                dest_width,
+                dest_height,
+            ) == 1
+        }
+    }
+
+    #[cfg(windows)]
+    /// Paints a cropped desktop frame for a user to a Win32 device context.
+    ///
+    /// # Safety
+    /// `hdc` must be a valid device context for the full duration of the call.
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn paint_desktop_window_ex(
+        &self,
+        user_id: UserId,
+        hdc: ffi::HDC,
+        x_dest: i32,
+        y_dest: i32,
+        dest_width: i32,
+        dest_height: i32,
+        x_src: i32,
+        y_src: i32,
+        src_width: i32,
+        src_height: i32,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_PaintDesktopWindowEx(
+                self.ptr.0,
+                user_id.0,
+                hdc,
+                x_dest,
+                y_dest,
+                dest_width,
+                dest_height,
+                x_src,
+                y_src,
+                src_width,
+                src_height,
+            ) == 1
         }
     }
 

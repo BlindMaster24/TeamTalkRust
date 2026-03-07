@@ -126,7 +126,13 @@ cargo build --no-default-features --features tls-rustls
 - Media preflight helper: `Client::get_media_file_info` before playback or
   streaming.
 - Desktop helper APIs: batched `send_desktop_inputs`, desktop input translate /
-  execute helpers, and direct desktop window send APIs.
+  execute helpers, direct desktop window send APIs, Win32 desktop window
+  discovery helpers, and native paint helpers for desktop/video rendering.
+- Windows mixer coverage now includes enum-control selection and volume helpers
+  (`set_mixer_input_selected`, `get_mixer_input_selected`,
+  `set_mixer_input_volume`, `get_mixer_input_volume`).
+- Windows hotkey APIs now fail fast on polling clients; use `Client::with_hwnd`
+  when registering or testing hotkeys.
 - Reconnect hooks: `BeforeReconnect`, `AfterReconnect`, `ReconnectFailed`.
 - Auto phase hooks/events: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 - Hybrid extensions: Lua scripts (`scripts`) and native plugins (`plugins`). See [docs/extensions.md](extensions.md).

@@ -83,4 +83,60 @@ impl Client {
         }
         unsafe { ffi::api().TT_ReleaseUserVideoCaptureFrame(self.ptr.0, frame) == 1 }
     }
+
+    #[cfg(windows)]
+    /// Paints a video frame to a Win32 device context.
+    ///
+    /// # Safety
+    /// - `hdc` must be a valid device context for the full duration of the call.
+    /// - `frame` must be a valid pointer returned by the SDK and remain alive for the call.
+    pub unsafe fn paint_video_frame(
+        &self,
+        hdc: ffi::HDC,
+        x_dest: i32,
+        y_dest: i32,
+        dest_width: i32,
+        dest_height: i32,
+        frame: *mut ffi::VideoFrame,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_PaintVideoFrame(hdc, x_dest, y_dest, dest_width, dest_height, frame) == 1
+        }
+    }
+
+    #[cfg(windows)]
+    /// Paints a cropped video frame to a Win32 device context.
+    ///
+    /// # Safety
+    /// - `hdc` must be a valid device context for the full duration of the call.
+    /// - `frame` must be a valid pointer returned by the SDK and remain alive for the call.
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn paint_video_frame_ex(
+        &self,
+        hdc: ffi::HDC,
+        x_dest: i32,
+        y_dest: i32,
+        dest_width: i32,
+        dest_height: i32,
+        x_src: i32,
+        y_src: i32,
+        src_width: i32,
+        src_height: i32,
+        frame: *mut ffi::VideoFrame,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_PaintVideoFrameEx(
+                hdc,
+                x_dest,
+                y_dest,
+                dest_width,
+                dest_height,
+                x_src,
+                y_src,
+                src_width,
+                src_height,
+                frame,
+            ) == 1
+        }
+    }
 }

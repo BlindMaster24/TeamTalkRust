@@ -117,4 +117,24 @@ impl Client {
     pub fn get_mixer_input_control_selected(&self, wave_id: i32, index: i32) -> bool {
         unsafe { ffi::api().TT_Mixer_GetWaveInControlSelected(wave_id, index) == 1 }
     }
+
+    /// Selects a mixer input enum control.
+    pub fn set_mixer_input_selected(&self, wave_id: i32, control: ffi::MixerControl) -> bool {
+        unsafe { ffi::api().TT_Mixer_SetWaveInSelected(wave_id, control) == 1 }
+    }
+
+    /// Returns the state of a mixer input enum control.
+    pub fn get_mixer_input_selected(&self, wave_id: i32, control: ffi::MixerControl) -> i32 {
+        unsafe { ffi::api().TT_Mixer_GetWaveInSelected(wave_id, control) }
+    }
+
+    /// Sets the volume of a mixer input enum control.
+    pub fn set_mixer_input_volume(&self, wave_id: i32, control: ffi::MixerControl, vol: i32) -> bool {
+        unsafe { ffi::api().TT_Mixer_SetWaveInVolume(wave_id, control, vol) == 1 }
+    }
+
+    /// Returns the volume of a mixer input enum control.
+    pub fn get_mixer_input_volume(&self, wave_id: i32, control: ffi::MixerControl) -> i32 {
+        unsafe { ffi::api().TT_Mixer_GetWaveInVolume(wave_id, control) }
+    }
 }
