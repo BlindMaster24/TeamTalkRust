@@ -169,7 +169,8 @@ With the `bot` feature, handlers can use context helpers instead of manual
 message plumbing:
 
 ```rust
-use teamtalk::{CommandPattern, DialogFlow, HandlerResult, Router};
+use std::time::Duration;
+use teamtalk::{CommandPattern, DialogFlow, DialogState, HandlerResult, Router};
 
 let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
 let ban_pattern = CommandPattern::parse("ban <user_id> [reason...]")?;
@@ -199,7 +200,10 @@ let router = Router::new()
         },
     )
     .on_command("start", move |ctx| {
-        ctx.dialog_start_checked(&onboarding_start)?;
+        let state = DialogState::new(onboarding_start.name(), onboarding_start.start_step())
+            .with_timeout(Duration::from_secs(300))
+            .with_metadata([("locale", "en"), ("mode", "guided")]);
+        ctx.dialog_start_state(state);
         let _ = ctx.reply_private("What is your name?");
         Ok(HandlerResult::Continue)
     })
@@ -208,6 +212,7 @@ let router = Router::new()
             return Ok(HandlerResult::Continue);
         };
         ctx.user_state_set("name", name);
+        let _ = ctx.dialog_set_metadata("name", name);
         ctx.dialog_advance_checked(&onboarding_name, "ask_email")?;
         let _ = ctx.reply_private("Now send your email:");
         Ok(HandlerResult::Continue)
@@ -217,11 +222,20 @@ let router = Router::new()
             return Ok(HandlerResult::Continue);
         };
         ctx.user_state_set("email", email);
+        let locale = ctx
+            .dialog_metadata("locale")
+            .unwrap_or_else(|| "en".to_owned());
         let _ = ctx.reply_private("Onboarding complete.");
+        let _ = ctx.reply_private(&format!("Stored locale: {locale}"));
         let _ = ctx.dialog_stop();
         Ok(HandlerResult::Continue)
     });
 ```
+
+`dialog_current()` returns only active, non-expired dialog state. Use
+`dialog_current_live()` when you also need paused dialogs, and use
+`dialog_pause`, `dialog_resume`, `dialog_set_timeout`, and dialog metadata
+helpers to build multi-step scenes with explicit lifecycle control.
 
 You can wire bot runtime components through `BotApp`:
 

@@ -1,6 +1,6 @@
 use super::args::Args;
 use super::command::Command;
-use super::fsm::{DialogFlow, DialogMachine, DialogState};
+use super::fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus};
 use super::storage::StateStore;
 use crate::client::{Client, Message};
 use crate::events::{Error, Event, Result};
@@ -176,6 +176,11 @@ impl<'a> Context<'a> {
         self.dialog().start(source, dialog, step);
     }
 
+    pub fn dialog_start_state(&mut self, state: DialogState) {
+        let source = self.message.source();
+        self.dialog().start_state(source, state);
+    }
+
     pub fn dialog_start_flow(&mut self, flow: &DialogFlow) {
         self.dialog_start(flow.name(), flow.start_step());
     }
@@ -190,7 +195,12 @@ impl<'a> Context<'a> {
 
     pub fn dialog_current(&mut self) -> Option<DialogState> {
         let source = self.message.source();
-        self.dialog().current(source)
+        self.dialog().current_active(source)
+    }
+
+    pub fn dialog_current_live(&mut self) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().current_live(source)
     }
 
     pub fn dialog_advance(&mut self, step: impl Into<String>) -> Option<DialogState> {
@@ -213,6 +223,50 @@ impl<'a> Context<'a> {
     pub fn dialog_stop(&mut self) -> Option<DialogState> {
         let source = self.message.source();
         self.dialog().stop(source)
+    }
+
+    pub fn dialog_pause(&mut self) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().pause(source)
+    }
+
+    pub fn dialog_resume(&mut self) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().resume(source)
+    }
+
+    pub fn dialog_set_timeout(&mut self, timeout: Duration) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().set_timeout(source, timeout)
+    }
+
+    pub fn dialog_clear_timeout(&mut self) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().clear_timeout(source)
+    }
+
+    pub fn dialog_metadata(&mut self, key: &str) -> Option<String> {
+        let source = self.message.source();
+        self.dialog().metadata(source, key)
+    }
+
+    pub fn dialog_set_metadata(
+        &mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().set_metadata(source, key, value)
+    }
+
+    pub fn dialog_remove_metadata(&mut self, key: &str) -> Option<(DialogState, Option<String>)> {
+        let source = self.message.source();
+        self.dialog().remove_metadata(source, key)
+    }
+
+    pub fn dialog_is_paused(&mut self) -> bool {
+        self.dialog_current_live()
+            .is_some_and(|state| state.status == DialogStatus::Paused)
     }
 
     pub fn dialog_is(&mut self, dialog: &str, step: &str) -> bool {

@@ -82,6 +82,9 @@ cargo build --no-default-features --features tls-rustls
   `Router::use_middleware_hooks`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
 - Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
+- Dialog state controls: pause/resume, per-dialog timeout, live-vs-active lookup,
+  and metadata helpers (`dialog_pause`, `dialog_resume`, `dialog_set_timeout`,
+  `dialog_metadata`, `dialog_set_metadata`).
 - Dialog flow helper: `DialogFlow` for reusable dialog definitions.
 - Scene-style dialog routing: `Router::on_dialog_step`, `Router::on_dialog`,
   and checked transitions via `Context::dialog_start_checked` and
