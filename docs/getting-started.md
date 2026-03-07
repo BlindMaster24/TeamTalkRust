@@ -170,7 +170,9 @@ message plumbing:
 
 ```rust
 use std::time::Duration;
-use teamtalk::{CommandPattern, DialogFlow, DialogState, HandlerResult, Router};
+use teamtalk::{
+    CommandPattern, DialogFlow, DialogState, DialogTimeoutPolicy, HandlerResult, Router,
+};
 
 let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
 let ban_pattern = CommandPattern::parse("ban <user_id> [reason...]")?;
@@ -203,6 +205,7 @@ let router = Router::new()
     .on_command("start", move |ctx| {
         let state = DialogState::new(onboarding_start.name(), onboarding_start.start_step())
             .with_timeout(Duration::from_secs(300))
+            .with_timeout_policy(DialogTimeoutPolicy::Pause)
             .with_metadata([("locale", "en"), ("mode", "guided")]);
         ctx.dialog_start_state(state);
         let _ = ctx.reply_private("What is your name?");
@@ -214,7 +217,7 @@ let router = Router::new()
         };
         ctx.user_state_set("name", name);
         let _ = ctx.dialog_set_metadata("name", name);
-        let _ = ctx.dialog_state_set("started", "true");
+        let _ = ctx.dialog_state_set_typed("started", true);
         ctx.dialog_advance_next(&onboarding_name)?;
         let _ = ctx.reply_private("Now send your email:");
         Ok(HandlerResult::Continue)
@@ -223,28 +226,38 @@ let router = Router::new()
         let Some(email) = ctx.text() else {
             return Ok(HandlerResult::Continue);
         };
-        ctx.user_state_set("email", email);
+        ctx.user_state_set("email", &email);
+        ctx.user_state_set_typed("completed_steps", 2_u32);
         let locale = ctx
             .dialog_metadata("locale")
             .unwrap_or_else(|| "en".to_owned());
         let _ = ctx.dialog_advance_next(&onboarding_email)?;
         let started = ctx
-            .dialog_state_get("started")
-            .unwrap_or_else(|| "false".to_owned());
+            .dialog_state_parse::<bool>("started")?
+            .unwrap_or(false);
+        let current_step = ctx.dialog_step().unwrap_or_else(|| "unknown".to_owned());
+        let completed_steps = ctx
+            .user_state_parse::<u32>("completed_steps")?
+            .unwrap_or(0);
         let _ = ctx.reply_private("Onboarding complete.");
-        let _ = ctx.reply_private(&format!("Stored locale: {locale}; started: {started}"));
-        let _ = ctx.dialog_stop();
+        let _ = ctx.reply_private(&format!(
+            "Stored locale: {locale}; started: {started}; step: {current_step}; completed: {completed_steps}"
+        ));
+        let _ = ctx.dialog_finish();
         Ok(HandlerResult::Continue)
     });
 ```
 
 `dialog_current()` returns only active, non-expired dialog state. Use
 `dialog_current_live()` when you also need paused dialogs, and use
-`dialog_pause`, `dialog_resume`, `dialog_set_timeout`, and dialog metadata
-helpers to build multi-step scenes with explicit lifecycle control. Use
+`dialog_pause`, `dialog_resume`, `dialog_set_timeout`, and
+`dialog_set_timeout_policy` for explicit lifecycle control. Use
 `dialog_advance_next(&flow)` when the next step should follow the declared
-`DialogFlow` order, and `dialog_state_*` helpers when you want dialog-scoped
-scratch data without manually building state keys.
+`DialogFlow` order, and `dialog_state_*` / `*_parse` helpers when you want
+typed scene-local scratch data without manually building state keys.
+
+For the full bot framework surface, see [bot.md](bot.md). For scene lifecycle,
+timeouts, metadata, and session-scoped state, see [scenes.md](scenes.md).
 
 You can wire bot runtime components through `BotApp`:
 

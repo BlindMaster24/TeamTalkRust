@@ -1,7 +1,9 @@
 #![cfg(feature = "bot")]
 
 use std::time::Duration;
-use teamtalk::{DialogFlow, DialogMachine, DialogState, DialogStatus, MemoryStateStore};
+use teamtalk::{
+    DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy, MemoryStateStore,
+};
 
 #[test]
 fn dialog_machine_roundtrip() {
@@ -64,6 +66,7 @@ fn dialog_machine_preserves_metadata_and_timeout_state() {
     assert_eq!(cur.metadata("locale"), Some("ru"));
     assert_eq!(cur.metadata("mode"), Some("guided"));
     assert!(cur.deadline_unix_ms.is_some());
+    assert!(cur.session_id().is_some());
 
     let updated = fsm
         .set_metadata(7, "locale", "en")
@@ -106,6 +109,23 @@ fn dialog_machine_removes_expired_state_from_live_queries() {
 }
 
 #[test]
+fn dialog_machine_pauses_when_timeout_policy_requests_pause() {
+    let mut store = MemoryStateStore::new();
+    let mut fsm = DialogMachine::new(&mut store);
+
+    let state = DialogState::new("wizard", "step1")
+        .with_deadline_unix_ms(1)
+        .with_timeout_policy(DialogTimeoutPolicy::Pause);
+    fsm.start_state(12, state);
+
+    let paused = fsm.current_live(12).expect("paused state kept");
+    assert_eq!(paused.status, DialogStatus::Paused);
+    assert_eq!(paused.timeout_policy(), DialogTimeoutPolicy::Pause);
+    assert_eq!(paused.deadline_unix_ms, None);
+    assert!(fsm.current_active(12).is_none());
+}
+
+#[test]
 fn dialog_machine_advances_flow_in_order() {
     let mut store = MemoryStateStore::new();
     let mut fsm = DialogMachine::new(&mut store);
@@ -124,4 +144,24 @@ fn dialog_machine_advances_flow_in_order() {
     assert_eq!(next.step, "done");
 
     assert!(fsm.advance_flow(21, &flow).is_none());
+}
+
+#[test]
+fn dialog_machine_restart_flow_rotates_session_id() {
+    let mut store = MemoryStateStore::new();
+    let mut fsm = DialogMachine::new(&mut store);
+    let flow = DialogFlow::new("wizard", "ask_name").step("done");
+
+    fsm.start_state(30, DialogState::new("wizard", "ask_name"));
+    let first = fsm
+        .current(30)
+        .and_then(|state| state.session_id().map(str::to_owned));
+
+    let restarted = fsm.restart_flow(30, &flow);
+    assert_eq!(restarted.step, "ask_name");
+    let second = restarted.session_id().map(str::to_owned);
+
+    assert!(first.is_some());
+    assert!(second.is_some());
+    assert_ne!(first, second);
 }

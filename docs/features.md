@@ -90,6 +90,10 @@ cargo build --no-default-features --features tls-rustls
   `is_start_step`, `is_terminal_step`, and `Context::dialog_advance_next`.
 - Dialog-scoped store helpers: `dialog_state_key`, `dialog_state_get`,
   `dialog_state_set`, and `dialog_state_remove`.
+- Typed bot state helpers: parse/set wrappers for global, user, channel, and
+  dialog scopes plus parsed dialog metadata.
+- Timeout policy control: `DialogTimeoutPolicy`, `DialogState::with_timeout_policy`,
+  and `Context::dialog_set_timeout_policy`.
 - Scene-style dialog routing: `Router::on_dialog_step`, `Router::on_dialog`,
   and checked transitions via `Context::dialog_start_checked` and
   `Context::dialog_advance_checked`.

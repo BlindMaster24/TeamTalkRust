@@ -30,9 +30,9 @@ pub use bot::SqliteStateStore;
 pub use bot::{
     Args, Bot, BotApp, BotBuilder, BotConfig, Command, CommandArgPattern, CommandOnly,
     CommandPattern, CommandPatternError, Context, DialogFlow, DialogMachine, DialogState,
-    DialogStatus, FnMiddleware, HandlerResult, JobErrorPolicy, MemoryStateStore, Middleware,
-    RateLimitBySource, RouteMatcher, Router, Scheduler, StateStore, UnknownCommandPolicy,
-    parse_command,
+    DialogStatus, DialogTimeoutPolicy, FnMiddleware, HandlerResult, JobErrorPolicy,
+    MemoryStateStore, Middleware, RateLimitBySource, RouteMatcher, Router, Scheduler, StateStore,
+    UnknownCommandPolicy, parse_command,
 };
 #[cfg(all(feature = "bot", feature = "async"))]
 pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};

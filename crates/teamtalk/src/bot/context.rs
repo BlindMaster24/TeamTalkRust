@@ -1,10 +1,12 @@
 use super::args::Args;
 use super::command::Command;
-use super::fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus};
+use super::fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy};
 use super::storage::StateStore;
 use crate::client::{Client, Message};
 use crate::events::{Error, Event, Result};
 use crate::types::{ChannelId, UserId};
+use std::fmt::Display;
+use std::str::FromStr;
 use std::time::Duration;
 
 pub struct Context<'a> {
@@ -112,6 +114,22 @@ impl<'a> Context<'a> {
         self.state.remove(key)
     }
 
+    pub fn state_parse<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.state_get(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    pub fn state_set_typed<T>(&mut self, key: impl Into<String>, value: T)
+    where
+        T: Display,
+    {
+        self.state_set(key, value.to_string());
+    }
+
     pub fn user_state_key(&self, key: &str) -> String {
         format!("u:{}:{key}", self.sender_id().0)
     }
@@ -137,6 +155,22 @@ impl<'a> Context<'a> {
         self.state_remove(&self.user_state_key(key))
     }
 
+    pub fn user_state_parse<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.user_state_get(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    pub fn user_state_set_typed<T>(&mut self, key: &str, value: T)
+    where
+        T: Display,
+    {
+        self.user_state_set(key, value.to_string());
+    }
+
     pub fn channel_state_get(&self, key: &str) -> Option<String> {
         let full = self.channel_state_key(key)?;
         self.state_get(&full)
@@ -155,6 +189,22 @@ impl<'a> Context<'a> {
         self.state_remove(&full)
     }
 
+    pub fn channel_state_parse<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.channel_state_get(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    pub fn channel_state_set_typed<T>(&mut self, key: &str, value: T) -> bool
+    where
+        T: Display,
+    {
+        self.channel_state_set(key, value.to_string())
+    }
+
     pub fn global_state_get(&self, key: &str) -> Option<String> {
         self.state_get(&self.global_state_key(key))
     }
@@ -167,9 +217,31 @@ impl<'a> Context<'a> {
         self.state_remove(&self.global_state_key(key))
     }
 
+    pub fn global_state_parse<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.global_state_get(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    pub fn global_state_set_typed<T>(&mut self, key: &str, value: T)
+    where
+        T: Display,
+    {
+        self.global_state_set(key, value.to_string());
+    }
+
     pub fn dialog_state_key(&mut self, key: &str) -> Option<String> {
         let state = self.dialog_current_live()?;
-        Some(format!("d:{}:{}:{key}", self.sender_id().0, state.dialog))
+        let session = state.session_id().unwrap_or("0");
+        Some(format!(
+            "d:{}:{}:{}:{key}",
+            self.sender_id().0,
+            state.dialog,
+            session
+        ))
     }
 
     pub fn dialog_state_get(&mut self, key: &str) -> Option<String> {
@@ -188,6 +260,22 @@ impl<'a> Context<'a> {
     pub fn dialog_state_remove(&mut self, key: &str) -> Option<String> {
         let full = self.dialog_state_key(key)?;
         self.state_remove(&full)
+    }
+
+    pub fn dialog_state_parse<T>(&mut self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.dialog_state_get(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    pub fn dialog_state_set_typed<T>(&mut self, key: &str, value: T) -> bool
+    where
+        T: Display,
+    {
+        self.dialog_state_set(key, value.to_string())
     }
 
     pub fn dialog(&mut self) -> DialogMachine<'_> {
@@ -269,6 +357,14 @@ impl<'a> Context<'a> {
         self.dialog().stop(source)
     }
 
+    pub fn dialog_cancel(&mut self) -> Option<DialogState> {
+        self.dialog_stop()
+    }
+
+    pub fn dialog_finish(&mut self) -> Option<DialogState> {
+        self.dialog_stop()
+    }
+
     pub fn dialog_pause(&mut self) -> Option<DialogState> {
         let source = self.message.source();
         self.dialog().pause(source)
@@ -289,6 +385,19 @@ impl<'a> Context<'a> {
         self.dialog().clear_timeout(source)
     }
 
+    pub fn dialog_set_timeout_policy(
+        &mut self,
+        policy: DialogTimeoutPolicy,
+    ) -> Option<DialogState> {
+        let source = self.message.source();
+        self.dialog().set_timeout_policy(source, policy)
+    }
+
+    pub fn dialog_timeout_policy(&mut self) -> Option<DialogTimeoutPolicy> {
+        let source = self.message.source();
+        self.dialog().timeout_policy(source)
+    }
+
     pub fn dialog_metadata(&mut self, key: &str) -> Option<String> {
         let source = self.message.source();
         self.dialog().metadata(source, key)
@@ -306,6 +415,15 @@ impl<'a> Context<'a> {
     pub fn dialog_remove_metadata(&mut self, key: &str) -> Option<(DialogState, Option<String>)> {
         let source = self.message.source();
         self.dialog().remove_metadata(source, key)
+    }
+
+    pub fn dialog_metadata_parse<T>(&mut self, key: &str) -> Result<Option<T>>
+    where
+        T: FromStr,
+    {
+        self.dialog_metadata(key)
+            .map(|value| value.parse::<T>().map_err(|_| Error::InvalidParam))
+            .transpose()
     }
 
     pub fn dialog_is_paused(&mut self) -> bool {

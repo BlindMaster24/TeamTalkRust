@@ -41,6 +41,10 @@ impl Router {
         for route in &mut self.routes {
             ctx.command = parsed_command.clone();
 
+            if has_command && matched_command && route.dialog_filter.is_some() {
+                continue;
+            }
+
             let mut should_run = match &route.matcher {
                 RouteMatcher::Any => true,
                 RouteMatcher::Event(expected) => expected == &ctx.event,

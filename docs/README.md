@@ -2,6 +2,8 @@
 
 Start here:
 - Getting Started: [getting-started.md](getting-started.md)
+- Bot Framework: [bot.md](bot.md)
+- Scenes and Dialogs: [scenes.md](scenes.md)
 - Configuration: [configuration.md](configuration.md)
 - Feature Flags: [features.md](features.md)
 - TLS: [tls.md](tls.md)

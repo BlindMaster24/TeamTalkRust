@@ -1,12 +1,39 @@
 use super::storage::StateStore;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const DIALOG_ENCODING_VERSION: &str = "v2";
+const INTERNAL_SESSION_KEY: &str = "__session";
+const INTERNAL_TIMEOUT_POLICY_KEY: &str = "__timeout_policy";
+static NEXT_DIALOG_SESSION: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DialogStatus {
     Active,
     Paused,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DialogTimeoutPolicy {
+    Clear,
+    Pause,
+}
+
+impl DialogTimeoutPolicy {
+    fn encode(self) -> &'static str {
+        match self {
+            Self::Clear => "clear",
+            Self::Pause => "pause",
+        }
+    }
+
+    fn decode(raw: &str) -> Option<Self> {
+        match raw {
+            "clear" => Some(Self::Clear),
+            "pause" => Some(Self::Pause),
+            _ => None,
+        }
+    }
 }
 
 impl DialogStatus {
@@ -61,6 +88,11 @@ impl DialogState {
         self
     }
 
+    pub fn with_timeout_policy(mut self, policy: DialogTimeoutPolicy) -> Self {
+        self.set_metadata(INTERNAL_TIMEOUT_POLICY_KEY, policy.encode());
+        self
+    }
+
     pub fn with_metadata(
         mut self,
         metadata: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
@@ -93,6 +125,16 @@ impl DialogState {
         self.metadata
             .iter()
             .find_map(|(existing, value)| (existing == key).then_some(value.as_str()))
+    }
+
+    pub fn session_id(&self) -> Option<&str> {
+        self.metadata(INTERNAL_SESSION_KEY)
+    }
+
+    pub fn timeout_policy(&self) -> DialogTimeoutPolicy {
+        self.metadata(INTERNAL_TIMEOUT_POLICY_KEY)
+            .and_then(DialogTimeoutPolicy::decode)
+            .unwrap_or(DialogTimeoutPolicy::Clear)
     }
 
     pub fn set_metadata(&mut self, key: impl Into<String>, value: impl Into<String>) {
@@ -294,7 +336,8 @@ impl<'a> DialogMachine<'a> {
     }
 
     pub fn start_state(&mut self, source_id: i32, state: DialogState) {
-        self.store.set(self.key(source_id), state.encode());
+        self.store
+            .set(self.key(source_id), self.prepare_state(state).encode());
     }
 
     pub fn current(&self, source_id: i32) -> Option<DialogState> {
@@ -304,10 +347,19 @@ impl<'a> DialogMachine<'a> {
     }
 
     pub fn current_live(&mut self, source_id: i32) -> Option<DialogState> {
-        let state = self.current(source_id)?;
+        let mut state = self.current(source_id)?;
         if state.is_expired() {
-            let _ = self.stop(source_id);
-            return None;
+            match state.timeout_policy() {
+                DialogTimeoutPolicy::Clear => {
+                    let _ = self.stop(source_id);
+                    return None;
+                }
+                DialogTimeoutPolicy::Pause => {
+                    state.deadline_unix_ms = None;
+                    state.status = DialogStatus::Paused;
+                    self.store.set(self.key(source_id), state.encode());
+                }
+            }
         }
         Some(state)
     }
@@ -347,6 +399,20 @@ impl<'a> DialogMachine<'a> {
 
     pub fn clear_timeout(&mut self, source_id: i32) -> Option<DialogState> {
         self.update(source_id, |state| state.deadline_unix_ms = None)
+    }
+
+    pub fn set_timeout_policy(
+        &mut self,
+        source_id: i32,
+        policy: DialogTimeoutPolicy,
+    ) -> Option<DialogState> {
+        self.update(source_id, |state| {
+            state.set_metadata(INTERNAL_TIMEOUT_POLICY_KEY, policy.encode())
+        })
+    }
+
+    pub fn timeout_policy(&mut self, source_id: i32) -> Option<DialogTimeoutPolicy> {
+        self.current(source_id).map(|state| state.timeout_policy())
     }
 
     pub fn metadata(&mut self, source_id: i32, key: &str) -> Option<String> {
@@ -389,7 +455,7 @@ impl<'a> DialogMachine<'a> {
     pub fn restart_flow(&mut self, source_id: i32, flow: &DialogFlow) -> DialogState {
         let state = DialogState::new(flow.name(), flow.start_step());
         self.start_state(source_id, state.clone());
-        state
+        self.current(source_id).unwrap_or(state)
     }
 
     pub fn advance_flow(&mut self, source_id: i32, flow: &DialogFlow) -> Option<DialogState> {
@@ -409,6 +475,13 @@ impl<'a> DialogMachine<'a> {
         update(&mut state);
         self.store.set(self.key(source_id), state.encode());
         Some(state)
+    }
+
+    fn prepare_state(&self, mut state: DialogState) -> DialogState {
+        if state.session_id().is_none() {
+            state.set_metadata(INTERNAL_SESSION_KEY, generate_session_id());
+        }
+        state
     }
 }
 
@@ -441,4 +514,12 @@ fn now_unix_ms() -> u64 {
 
 fn duration_to_millis(duration: Duration) -> u64 {
     duration.as_millis().try_into().unwrap_or(u64::MAX)
+}
+
+fn generate_session_id() -> String {
+    format!(
+        "{}-{}",
+        now_unix_ms(),
+        NEXT_DIALOG_SESSION.fetch_add(1, Ordering::Relaxed)
+    )
 }
