@@ -19,7 +19,10 @@ pub use args::Args;
 pub use command::{Command, CommandArgPattern, CommandPattern, CommandPatternError, parse_command};
 pub use context::Context;
 pub use fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy};
-pub use middleware::{CommandOnly, FnMiddleware, Middleware, RateLimitBySource};
+pub use middleware::{
+    CommandOnly, FnMiddleware, Middleware, RateLimitBySource, RequireChannelMessage,
+    RequireCommand, RequirePrivateMessage,
+};
 pub use router::{HandlerResult, RouteMatcher, Router, UnknownCommandPolicy};
 pub use runtime::{Bot, BotBuilder, BotConfig};
 pub use scheduler::{JobErrorPolicy, Scheduler};

@@ -171,7 +171,8 @@ message plumbing:
 ```rust
 use std::time::Duration;
 use teamtalk::{
-    CommandPattern, DialogFlow, DialogState, DialogTimeoutPolicy, HandlerResult, Router,
+    CommandPattern, DialogFlow, DialogState, DialogTimeoutPolicy, HandlerResult,
+    RequirePrivateMessage, Router,
 };
 
 let onboarding = DialogFlow::new("onboarding", "ask_name").step("ask_email");
@@ -182,6 +183,9 @@ let onboarding_email = onboarding.clone();
 
 let router = Router::new()
     .with_auto_help_command("commands")
+    .alias_command("begin", "start")
+    .with_unknown_command_suggestions(3)
+    .use_middleware(RequirePrivateMessage)
     .use_middleware_fn(|ctx| {
         Ok(if ctx.command.is_some() {
             HandlerResult::Continue

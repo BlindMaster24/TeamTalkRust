@@ -23,6 +23,7 @@ teamtalk = { version = "4.0.0", features = ["dispatch", "async"] }
 - `plugins`: native plugin loading for extensions.
 - `state`: in-memory state store helpers (`store_snapshot`, `store_user`, `store_channel`).
 - `bot`: high-level bot framework (router, commands, middleware, scheduler, state store).
+- `bot-serde`: JSON-backed typed bot state helpers for global, user, channel, and dialog scopes.
 - `bot-macros`: attribute macros for bot handlers
   (`#[teamtalk_command]`, `#[teamtalk_event]`, `#[teamtalk_middleware]`).
 - `bot-redis`: Redis-backed bot state store adapter (`RedisStateStore`).
@@ -78,9 +79,13 @@ cargo build --no-default-features --features tls-rustls
   `with_auto_help_command`, `with_help_header`, `with_help_footer`, and
   `without_auto_help`.
 - Built-in bot middleware: `CommandOnly` and `RateLimitBySource`.
+- Guard middleware: `RequirePrivateMessage`, `RequireChannelMessage`, and
+  `RequireCommand`.
 - Function middleware adapters: `FnMiddleware`, `Router::use_middleware_fn`, and
   `Router::use_middleware_hooks`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).
+- Command aliases and unknown-command suggestions:
+  `alias_command`, `with_unknown_command_suggestions`.
 - Dialog/FSM helpers: `DialogMachine`, `DialogState`, and `Context::dialog_*` helpers.
 - Dialog state controls: pause/resume, per-dialog timeout, live-vs-active lookup,
   and metadata helpers (`dialog_pause`, `dialog_resume`, `dialog_set_timeout`,
@@ -92,6 +97,8 @@ cargo build --no-default-features --features tls-rustls
   `dialog_state_set`, and `dialog_state_remove`.
 - Typed bot state helpers: parse/set wrappers for global, user, channel, and
   dialog scopes plus parsed dialog metadata.
+- Optional JSON bot state helpers (`bot-serde`): `*_get_json` and `*_set_json`
+  for richer typed payloads backed by `serde`.
 - Timeout policy control: `DialogTimeoutPolicy`, `DialogState::with_timeout_policy`,
   and `Context::dialog_set_timeout_policy`.
 - Scene-style dialog routing: `Router::on_dialog_step`, `Router::on_dialog`,

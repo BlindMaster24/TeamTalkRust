@@ -130,6 +130,26 @@ impl<'a> Context<'a> {
         self.state_set(key, value.to_string());
     }
 
+    #[cfg(feature = "bot-serde")]
+    pub fn state_get_json<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.state_get(key)
+            .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn state_set_json<T>(&mut self, key: impl Into<String>, value: &T) -> Result<()>
+    where
+        T: serde::Serialize,
+    {
+        let value = serde_json::to_string(value).map_err(|_| Error::InvalidParam)?;
+        self.state_set(key, value);
+        Ok(())
+    }
+
     pub fn user_state_key(&self, key: &str) -> String {
         format!("u:{}:{key}", self.sender_id().0)
     }
@@ -171,6 +191,26 @@ impl<'a> Context<'a> {
         self.user_state_set(key, value.to_string());
     }
 
+    #[cfg(feature = "bot-serde")]
+    pub fn user_state_get_json<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.user_state_get(key)
+            .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn user_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<()>
+    where
+        T: serde::Serialize,
+    {
+        let value = serde_json::to_string(value).map_err(|_| Error::InvalidParam)?;
+        self.user_state_set(key, value);
+        Ok(())
+    }
+
     pub fn channel_state_get(&self, key: &str) -> Option<String> {
         let full = self.channel_state_key(key)?;
         self.state_get(&full)
@@ -205,6 +245,25 @@ impl<'a> Context<'a> {
         self.channel_state_set(key, value.to_string())
     }
 
+    #[cfg(feature = "bot-serde")]
+    pub fn channel_state_get_json<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.channel_state_get(key)
+            .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn channel_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<bool>
+    where
+        T: serde::Serialize,
+    {
+        let value = serde_json::to_string(value).map_err(|_| Error::InvalidParam)?;
+        Ok(self.channel_state_set(key, value))
+    }
+
     pub fn global_state_get(&self, key: &str) -> Option<String> {
         self.state_get(&self.global_state_key(key))
     }
@@ -231,6 +290,26 @@ impl<'a> Context<'a> {
         T: Display,
     {
         self.global_state_set(key, value.to_string());
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn global_state_get_json<T>(&self, key: &str) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.global_state_get(key)
+            .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn global_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<()>
+    where
+        T: serde::Serialize,
+    {
+        let value = serde_json::to_string(value).map_err(|_| Error::InvalidParam)?;
+        self.global_state_set(key, value);
+        Ok(())
     }
 
     pub fn dialog_state_key(&mut self, key: &str) -> Option<String> {
@@ -276,6 +355,25 @@ impl<'a> Context<'a> {
         T: Display,
     {
         self.dialog_state_set(key, value.to_string())
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn dialog_state_get_json<T>(&mut self, key: &str) -> Result<Option<T>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.dialog_state_get(key)
+            .map(|value| serde_json::from_str(&value).map_err(|_| Error::InvalidParam))
+            .transpose()
+    }
+
+    #[cfg(feature = "bot-serde")]
+    pub fn dialog_state_set_json<T>(&mut self, key: &str, value: &T) -> Result<bool>
+    where
+        T: serde::Serialize,
+    {
+        let value = serde_json::to_string(value).map_err(|_| Error::InvalidParam)?;
+        Ok(self.dialog_state_set(key, value))
     }
 
     pub fn dialog(&mut self) -> DialogMachine<'_> {

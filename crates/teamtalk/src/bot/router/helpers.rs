@@ -55,3 +55,21 @@ pub(super) fn pattern_error(err: CommandPatternError) -> Error {
         message: err.to_string(),
     }
 }
+
+pub(super) fn edit_distance(left: &str, right: &str) -> usize {
+    let left = left.as_bytes();
+    let right = right.as_bytes();
+    let mut prev = (0..=right.len()).collect::<Vec<_>>();
+    let mut curr = vec![0; right.len() + 1];
+
+    for (i, &lhs) in left.iter().enumerate() {
+        curr[0] = i + 1;
+        for (j, &rhs) in right.iter().enumerate() {
+            let cost = usize::from(lhs != rhs);
+            curr[j + 1] = (prev[j + 1] + 1).min(curr[j] + 1).min(prev[j] + cost);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+
+    prev[right.len()]
+}

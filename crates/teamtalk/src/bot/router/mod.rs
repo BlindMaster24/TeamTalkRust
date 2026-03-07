@@ -3,11 +3,14 @@ use super::context::Context;
 use super::middleware::Middleware;
 use crate::client::{Client, Message};
 use crate::events::{Error, Event, Result};
+use std::collections::HashMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 mod helpers;
 
-use helpers::{join_command_path, match_command_route, normalize_command_name, pattern_error};
+use helpers::{
+    edit_distance, join_command_path, match_command_route, normalize_command_name, pattern_error,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HandlerResult {
@@ -55,6 +58,21 @@ struct AutoHelpConfig {
     command: String,
     header: Option<String>,
     footer: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SuggestionConfig {
+    enabled: bool,
+    limit: usize,
+}
+
+impl Default for SuggestionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            limit: 3,
+        }
+    }
 }
 
 impl Default for AutoHelpConfig {
@@ -105,10 +123,12 @@ pub struct Router {
     command_prefixes: Vec<char>,
     middlewares: Vec<Box<dyn Middleware + Send>>,
     routes: Vec<Route>,
+    command_aliases: HashMap<String, String>,
     on_unknown_command: Option<Box<Handler>>,
     unknown_command_policy: UnknownCommandPolicy,
     help_entries: Vec<HelpEntry>,
     auto_help: AutoHelpConfig,
+    suggestions: SuggestionConfig,
 }
 
 impl Default for Router {
@@ -117,10 +137,12 @@ impl Default for Router {
             command_prefixes: vec!['/', '!'],
             middlewares: Vec::new(),
             routes: Vec::new(),
+            command_aliases: HashMap::new(),
             on_unknown_command: None,
             unknown_command_policy: UnknownCommandPolicy::Ignore,
             help_entries: Vec::new(),
             auto_help: AutoHelpConfig::default(),
+            suggestions: SuggestionConfig::default(),
         }
     }
 }
@@ -171,5 +193,31 @@ mod tests {
         assert!(help.contains("Bot commands"));
         assert!(help.contains("/ban <user> [reason...]"));
         assert!(!help.contains("/ping"));
+    }
+
+    #[test]
+    fn canonicalize_command_uses_alias() {
+        let router = Router::new().alias_command("p", "ping");
+        let command = Command {
+            prefix: '/',
+            name: "p".to_owned(),
+            args: vec!["now".to_owned()],
+            raw: "p now".to_owned(),
+        };
+
+        let canonical = router.canonicalize_command(&command);
+        assert_eq!(canonical.name, "ping");
+        assert_eq!(canonical.args, vec!["now".to_owned()]);
+    }
+
+    #[test]
+    fn suggest_commands_prefers_close_matches() {
+        let router = Router::new()
+            .on_command("ping", |_ctx| Ok(HandlerResult::Continue))
+            .on_command("pause", |_ctx| Ok(HandlerResult::Continue))
+            .with_unknown_command_suggestions(2);
+
+        let suggestions = router.suggest_commands("pnig");
+        assert!(suggestions.iter().any(|item| item == "ping"));
     }
 }

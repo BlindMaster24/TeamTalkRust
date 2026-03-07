@@ -69,6 +69,52 @@ impl Middleware for CommandOnly {
     }
 }
 
+pub struct RequirePrivateMessage;
+
+impl Middleware for RequirePrivateMessage {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if ctx.channel_id().is_none() {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireChannelMessage;
+
+impl Middleware for RequireChannelMessage {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if ctx.channel_id().is_some() {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
+pub struct RequireCommand {
+    command: String,
+}
+
+impl RequireCommand {
+    pub fn new(command: impl Into<String>) -> Self {
+        Self {
+            command: command.into(),
+        }
+    }
+}
+
+impl Middleware for RequireCommand {
+    fn before(&mut self, ctx: &mut super::Context<'_>) -> Result<HandlerResult> {
+        Ok(if ctx.is_command(&self.command) {
+            HandlerResult::Continue
+        } else {
+            HandlerResult::Stop
+        })
+    }
+}
+
 pub struct RateLimitBySource {
     period: Duration,
     seen: HashMap<i32, Instant>,

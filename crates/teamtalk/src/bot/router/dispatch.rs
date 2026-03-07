@@ -11,6 +11,9 @@ impl Router {
         let parsed_command = message
             .text()
             .and_then(|text| parse_command(&text.text, &self.command_prefixes));
+        let parsed_command = parsed_command
+            .as_ref()
+            .map(|command| self.canonicalize_command(command));
 
         let mut ctx = Context {
             client,
@@ -138,7 +141,16 @@ impl Router {
                         }
                     })??;
             } else if let UnknownCommandPolicy::Reply(reply) = &self.unknown_command_policy {
-                let _ = ctx.reply_private(reply);
+                let mut reply = reply.clone();
+                if let Some(command) = parsed_command.as_ref() {
+                    let suggestions = self.suggest_commands(&command.name);
+                    if !suggestions.is_empty() {
+                        reply.push_str("\nDid you mean: ");
+                        reply.push_str(&suggestions.join(", "));
+                        reply.push('?');
+                    }
+                }
+                let _ = ctx.reply_private(&reply);
             }
         }
 

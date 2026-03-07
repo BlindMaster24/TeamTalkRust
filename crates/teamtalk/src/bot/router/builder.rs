@@ -180,8 +180,28 @@ impl Router {
         self
     }
 
+    pub fn alias_command(mut self, alias: impl Into<String>, target: impl Into<String>) -> Self {
+        let alias = normalize_command_name(alias.into());
+        let target = normalize_command_name(target.into());
+        if !alias.is_empty() && !target.is_empty() {
+            self.command_aliases.insert(alias, target);
+        }
+        self
+    }
+
     pub fn with_unknown_command_policy(mut self, policy: UnknownCommandPolicy) -> Self {
         self.unknown_command_policy = policy;
+        self
+    }
+
+    pub fn with_unknown_command_suggestions(mut self, limit: usize) -> Self {
+        self.suggestions.enabled = true;
+        self.suggestions.limit = limit.max(1);
+        self
+    }
+
+    pub fn without_unknown_command_suggestions(mut self) -> Self {
+        self.suggestions.enabled = false;
         self
     }
 

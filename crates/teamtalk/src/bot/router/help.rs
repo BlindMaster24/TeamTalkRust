@@ -40,6 +40,57 @@ impl Router {
         self.command_prefixes.first().copied().unwrap_or('/')
     }
 
+    pub(super) fn canonicalize_command(&self, command: &Command) -> Command {
+        let mut canonical = command.clone();
+        if let Some(target) = self.command_aliases.get(&canonical.name) {
+            canonical.name = target.clone();
+        }
+        canonical
+    }
+
+    pub(super) fn suggest_commands(&self, query: &str) -> Vec<String> {
+        if !self.suggestions.enabled || query.is_empty() {
+            return Vec::new();
+        }
+
+        let mut commands = self
+            .help_entries
+            .iter()
+            .map(|entry| {
+                entry
+                    .usage
+                    .split_whitespace()
+                    .take(2)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .filter(|usage| !usage.is_empty())
+            .collect::<Vec<_>>();
+        commands.extend(self.command_aliases.keys().cloned());
+        commands.sort();
+        commands.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
+
+        let lower = query.to_ascii_lowercase();
+        let mut ranked = commands
+            .into_iter()
+            .map(|candidate| {
+                let candidate_lower = candidate.to_ascii_lowercase();
+                let distance = edit_distance(&candidate_lower, &lower);
+                let starts = candidate_lower.starts_with(&lower);
+                (distance, !starts, candidate)
+            })
+            .filter(|(distance, _, candidate)| {
+                *distance <= 3 || candidate.to_ascii_lowercase().contains(&lower)
+            })
+            .collect::<Vec<_>>();
+        ranked.sort();
+        ranked
+            .into_iter()
+            .take(self.suggestions.limit)
+            .map(|(_, _, candidate)| candidate)
+            .collect()
+    }
+
     pub(super) fn render_auto_help(&self, command: &Command) -> Option<String> {
         if !self.auto_help.enabled {
             return None;

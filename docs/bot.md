@@ -28,6 +28,14 @@ Use `Router::on_command`, `on_command_pattern`, `on_event`, `on_any`,
 handlers, can stop dispatch early, and can run post-handler cleanup through
 `use_middleware_hooks`.
 
+Useful built-in middleware:
+
+- `CommandOnly`
+- `RateLimitBySource`
+- `RequirePrivateMessage`
+- `RequireChannelMessage`
+- `RequireCommand`
+
 Recommended layering:
 
 1. command parsing and validation
@@ -61,6 +69,16 @@ These helpers use `FromStr` and `Display`, so they work well for integers,
 booleans, enums with manual parsing, and similar lightweight types without
 adding serialization dependencies.
 
+If you enable `bot-serde`, you also get JSON-backed helpers:
+
+- `state_get_json`, `state_set_json`
+- `user_state_get_json`, `user_state_set_json`
+- `channel_state_get_json`, `channel_state_set_json`
+- `global_state_get_json`, `global_state_set_json`
+- `dialog_state_get_json`, `dialog_state_set_json`
+
+That is the preferred option when scene/user state is a structured payload.
+
 ## Scene Lifecycle
 
 For multi-step conversations, use `DialogFlow`, `DialogState`, and `Context`'s
@@ -71,5 +89,10 @@ dialog helpers. The framework supports:
 - metadata attached to the dialog state
 - dialog-local scratch storage
 - optional timeout with policy control
+
+The router also supports:
+
+- command aliases through `alias_command`
+- unknown-command suggestions through `with_unknown_command_suggestions`
 
 See [scenes.md](scenes.md) for the full scene model.
