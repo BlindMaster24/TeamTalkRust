@@ -116,6 +116,7 @@
   - `target/teamtalk-coverage-audit.json`
   - `target/teamtalk-coverage-audit.md`
   - `target/teamtalk-coverage-audit.txt`
+- Select outputs with `--format`; accepted values are `json`, `md`, `txt`, `all`, or comma-separated combinations such as `md,txt` or `json,md`.
 - When asked to audit SDK coverage, run the audit manually against:
   - `TEAMTALK_DLL/TeamTalk.h`
   - `TEAMTALK_DLL/Documentation/C-API/`
@@ -139,9 +140,10 @@
   - `symbol in src, missing from tests` = likely test gap for user-facing behavior.
   - `symbol in src, missing from docs` = likely docs gap when behavior is user-visible.
 - Wrapper-needed rules:
-  - Treat non-constant, non-platform-specific `TT_*` symbols as runtime API candidates in the audit output.
+  - Treat non-macro, non-platform-specific `TT_*` symbols as runtime API candidates in the audit output.
   - Then triage them manually before adding wrappers; the scanner should over-report candidates rather than silently hide them.
   - Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
+  - The scanner detects macro/constant symbols from `TeamTalk.h` declarations instead of relying on a fixed prefix list.
   - Keep constants/macros as intentional omissions unless a typed Rust surface is missing.
   - Keep platform-specific symbols as intentional omissions on unsupported targets unless the repository explicitly adds target support.
   - Keep specialized low-level utilities omitted until there is a concrete user-facing use case.

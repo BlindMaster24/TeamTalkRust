@@ -18,28 +18,7 @@ README_PATH = Path('README.md')
 DEFAULT_JSON = Path('target/teamtalk-coverage-audit.json')
 DEFAULT_MD = Path('target/teamtalk-coverage-audit.md')
 DEFAULT_TXT = Path('target/teamtalk-coverage-audit.txt')
-OUTPUT_CHOICES = ('json', 'md', 'txt', 'all')
-
-CONSTANT_PREFIXES = (
-    'TT_CLASSROOM_',
-    'TT_DESKTOPINPUT_',
-    'TT_SOUNDDEVICE_ID_',
-    'TT_TRANSMITUSERS_',
-)
-CONSTANT_SYMBOLS = {
-    'TT_CHANNELID_MAX',
-    'TT_CHANNELS_OPERATOR_MAX',
-    'TT_LOCAL_TX_USERID',
-    'TT_LOCAL_USERID',
-    'TT_MEDIAPLAYBACK_OFFSET_IGNORE',
-    'TT_MUXED_USERID',
-    'TT_SAMPLERATES_MAX',
-    'TT_TRANSMITQUEUE_MAX',
-    'TT_TRANSMITUSERS_FREEFORALL',
-    'TT_TRANSMITUSERS_MAX',
-    'TT_USERID_MAX',
-    'TT_VIDEOFORMATS_MAX',
-}
+OUTPUT_FORMATS = {'json', 'md', 'txt'}
 @dataclass
 class SymbolRecord:
     symbol: str
@@ -53,10 +32,16 @@ class SymbolRecord:
     rationale: str
 
 
+@dataclass(frozen=True)
+class HeaderFacts:
+    macro_symbols: set[str]
+    function_symbols: set[str]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', default='.')
-    parser.add_argument('--format', choices=OUTPUT_CHOICES, default='all')
+    parser.add_argument('--format', default='all')
     parser.add_argument('--json', default=str(DEFAULT_JSON))
     parser.add_argument('--markdown', default=str(DEFAULT_MD))
     parser.add_argument('--text', default=str(DEFAULT_TXT))
@@ -77,6 +62,36 @@ def extract_symbols(text: str) -> list[str]:
     return sorted(set(re.findall(r'\bTT_[A-Za-z0-9_]+\b', text)))
 
 
+def parse_output_formats(value: str) -> tuple[str, ...]:
+    requested = [item.strip().lower() for item in value.split(',') if item.strip()]
+    if not requested:
+        raise SystemExit('--format requires at least one value')
+    if 'all' in requested:
+        return ('json', 'md', 'txt')
+    unknown = sorted(set(requested) - OUTPUT_FORMATS)
+    if unknown:
+        raise SystemExit(f'unsupported format(s): {", ".join(unknown)}')
+    ordered: list[str] = []
+    for name in requested:
+        if name not in ordered:
+            ordered.append(name)
+    return tuple(ordered)
+
+
+def collect_header_facts(text: str) -> HeaderFacts:
+    macro_symbols = set(
+        re.findall(r'^\s*#\s*define\s+(TT_[A-Za-z0-9_]+)\b', text, flags=re.M)
+    )
+    function_symbols = set(
+        re.findall(
+            r'\b(?:TTAPI|TEAMTALKDLL_API)\s+[A-Za-z_][A-Za-z0-9_ \t\*\(\)]*?\b(TT_[A-Za-z0-9_]+)\s*\(',
+            text,
+            flags=re.M,
+        )
+    )
+    return HeaderFacts(macro_symbols=macro_symbols, function_symbols=function_symbols)
+
+
 def text_hits(root: Path) -> dict[Path, str]:
     hits: dict[Path, str] = {}
     if not root.exists():
@@ -95,16 +110,17 @@ def contains_symbol(files: dict[Path, str], symbol: str) -> bool:
     return any(symbol in content for content in files.values())
 
 
-def classify(symbol: str) -> tuple[str, bool, str]:
+def classify(symbol: str, facts: HeaderFacts) -> tuple[str, bool, str]:
     if symbol.startswith('TT_MacOS_') or symbol == 'TT_SendDesktopFromWindowID':
         return 'platform-specific', False, 'macOS-specific API or target-gated desktop window path'
-    if symbol in CONSTANT_SYMBOLS or symbol.startswith(CONSTANT_PREFIXES):
+    if symbol in facts.macro_symbols and symbol not in facts.function_symbols:
         return 'constant-or-macro', False, 'header constant or macro-style symbol; no separate high-level wrapper required'
     return 'runtime-api', True, 'TT_* runtime symbol; review for high-level wrapper, tests, and docs coverage'
 
 
 def build_records(root: Path) -> list[SymbolRecord]:
     header_text = strip_comments(read_text(root / HEADER_PATH))
+    header_facts = collect_header_facts(header_text)
     symbols = extract_symbols(header_text)
     bindings_files = text_hits(root / BINDINGS_PATH)
     for generated in root.glob(GENERATED_BINDINGS_GLOB):
@@ -123,7 +139,7 @@ def build_records(root: Path) -> list[SymbolRecord]:
 
     records: list[SymbolRecord] = []
     for symbol in symbols:
-        category, wrapper_expected, rationale = classify(symbol)
+        category, wrapper_expected, rationale = classify(symbol, header_facts)
         in_bindings = contains_symbol(bindings_files, symbol)
         in_src = contains_symbol(src_files, symbol)
         in_tests = contains_symbol(test_files, symbol)
@@ -229,13 +245,11 @@ def write_if_requested(root: Path, format_name: str, payload: dict, records: lis
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
+    formats = parse_output_formats(args.format)
     records = build_records(root)
     payload = {'summary': summarize(records), 'records': [asdict(record) for record in records]}
-    if args.format == 'all':
-        for name in ('json', 'md', 'txt'):
-            write_if_requested(root, name, payload, records, args)
-    else:
-        write_if_requested(root, args.format, payload, records, args)
+    for name in formats:
+        write_if_requested(root, name, payload, records, args)
     print(json.dumps(payload['summary'], indent=2))
     return 0
 

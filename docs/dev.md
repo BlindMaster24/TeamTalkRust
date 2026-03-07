@@ -84,6 +84,7 @@ Run the TeamTalk header coverage audit with:
 
 ```bash
 python scripts/audit_teamtalk_coverage.py --root .
+python scripts/audit_teamtalk_coverage.py --root . --format md,txt
 ```
 
 The script generates:
@@ -102,7 +103,8 @@ Use the report to distinguish:
 
 Wrapper policy:
 
-- The scanner treats non-constant, non-platform-specific `TT_*` symbols as runtime API candidates.
+- The scanner treats non-macro, non-platform-specific `TT_*` symbols as runtime API candidates.
+- Macro/constant detection comes from `TeamTalk.h` declarations, not from a fixed symbol prefix list.
 - Triage those candidates manually before adding wrappers.
 - Add a high-level wrapper when the symbol is a user-facing runtime API with safe semantics and clear downstream value.
 - Leave constants/macros, unsupported platform-specific APIs, and specialized low-level utilities as intentional omissions unless a concrete use case appears.
