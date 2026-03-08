@@ -99,7 +99,7 @@ progress, it returns `0` and skips issuing a duplicate SDK login command.
 
 For outgoing text, prefer a single high-level call (`send_to_user`,
 `send_to_channel`, `send_to_all`) for one logical message. The client handles
-multipart chunking (`TextMessage.bMore`) for long messages. Avoid manual
+automatic chunking for long messages. Avoid manual
 splitting unless you need custom behavior, since repeated sends may trigger
 server flood protection.
 

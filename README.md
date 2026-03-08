@@ -124,7 +124,7 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 
 - Use one high-level call (`send_to_user` / `send_to_channel` / `send_to_all`) for a logical message.
 - Do not manually split long text unless you explicitly need custom behavior; repeated manual sends can look like spam and may trigger TeamTalk server flood protection.
-- Current `teamtalk` from git `main` chunks long text automatically and sends multipart messages via `TextMessage.bMore`.
+- `teamtalk` automatically chunks long text and sends multipart messages for you.
 
 ### In-Session Auto Recovery
 
@@ -149,8 +149,6 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - [crates/teamtalk-sys](crates/teamtalk-sys/): Raw FFI bindings generated from `TeamTalk.h`.
 - [crates/teamtalk-macros](crates/teamtalk-macros/): Optional proc-macros used by high-level APIs.
 - [docs](docs/README.md): User-facing guides and release process docs.
-- `TEAMTALK_DLL/`: Downloaded TeamTalk SDK runtime and C-API documentation (local workspace asset, git-ignored in CI).
-- `qtTeamTalk/`: Upstream TeamTalk Qt client source snapshot used for reference (optional local mirror).
 
 ## Philosophy
 

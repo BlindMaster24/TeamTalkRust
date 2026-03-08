@@ -123,8 +123,8 @@ cargo build --no-default-features --features tls-rustls
 - Async bot runtime (requires `bot` + `async`): `AsyncBot` and `AsyncBotBuilder`.
 - Async bot wait helpers: `AsyncBot::wait_for_event`, `wait_for_predicate`, and `wait_for_data`
   (plus timeout variants with `async-tokio`).
-- Outgoing long text is chunked automatically and sent as multipart
-  `TextMessage.bMore`; avoid manual splitting unless you need custom behavior.
+- Outgoing long text is chunked automatically; avoid manual splitting unless
+  you need custom behavior.
 - Event subscriptions: `Client::on_event`, `Client::on_any`, filters by user/channel/nickname/username/text type, and grouped removal via `unsubscribe_event_group`.
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Media preflight helper: `Client::get_media_file_info` before playback or
