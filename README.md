@@ -22,7 +22,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = "4.0.0"
+teamtalk = "5.0.0"
 ```
 
 For the latest development version from `main`:
