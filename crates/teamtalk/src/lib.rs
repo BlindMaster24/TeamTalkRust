@@ -51,7 +51,7 @@ pub use client::users::{LoginParams, SendTextOptions};
 pub use client::{
     Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
     ClientManager, ClientRegistry, EventContext, EventData, EventSubscriptionId, Message,
-    ReconnectConfig,
+    ReconnectConfig, ReconnectPhaseTimeouts,
 };
 #[cfg(feature = "state")]
 pub use client::{ServerInfo, StoreSnapshot};

@@ -44,8 +44,7 @@ impl Client {
         auto.login_gave_up = false;
         auto.join_gave_up = false;
         auto.recovery_completed = false;
-        auto.pending_login_cmd = None;
-        auto.pending_join_cmd = None;
+        auto.clear_phase_tracking();
         auto.extra_events.clear();
         auto.force_disconnect = false;
     }
@@ -66,6 +65,31 @@ impl Client {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .workflow
+            .clone()
+    }
+
+    /// Sets watchdog timeouts for stalled connect/login/join phases.
+    ///
+    /// Timeouts are evaluated from the normal `poll()` loop; keep polling the
+    /// client for recovery supervision to progress.
+    pub fn set_reconnect_phase_timeouts(
+        &self,
+        timeouts: ReconnectPhaseTimeouts,
+    ) -> Result<(), crate::events::Error> {
+        validate_phase_timeouts(&timeouts)?;
+        self.auto_reconnect
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .phase_timeouts = timeouts;
+        Ok(())
+    }
+
+    /// Returns watchdog timeouts for stalled connect/login/join phases.
+    pub fn reconnect_phase_timeouts(&self) -> ReconnectPhaseTimeouts {
+        self.auto_reconnect
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .phase_timeouts
             .clone()
     }
 
@@ -173,7 +197,7 @@ impl Client {
             _ => None,
         };
         auto.join_gave_up = false;
-        auto.pending_join_cmd = None;
+        auto.clear_join_phase();
     }
 
     /// Clears the remembered channel.
@@ -184,7 +208,7 @@ impl Client {
             .unwrap_or_else(|e| e.into_inner());
         auto.last_channel = None;
         auto.last_channel_password = None;
-        auto.pending_join_cmd = None;
+        auto.clear_join_phase();
         auto.join_gave_up = false;
     }
 }

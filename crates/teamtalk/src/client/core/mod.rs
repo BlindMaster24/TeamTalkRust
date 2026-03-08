@@ -366,7 +366,11 @@ impl Client {
     }
 
     pub(crate) fn handle_auto_reconnect(&self) {
-        match *self.state.lock().unwrap_or_else(|e| e.into_inner()) {
+        if self.handle_pending_phase_timeout() {
+            return;
+        }
+        let state = *self.state.lock().unwrap_or_else(|e| e.into_inner());
+        match state {
             ConnectionState::Disconnected => self.handle_connect_recovery(),
             ConnectionState::Connected => self.handle_login_recovery(),
             ConnectionState::LoggedIn => self.handle_join_recovery(),
@@ -380,6 +384,7 @@ mod debug;
 mod message;
 mod reconnect_state;
 mod recovery;
+mod watchdog;
 
 pub use message::{EventData, Message};
 pub(crate) use reconnect_state::AutoReconnectState;

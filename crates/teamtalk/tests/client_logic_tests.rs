@@ -5,7 +5,9 @@ use std::time::Duration;
 
 use teamtalk::client::Client;
 use teamtalk::client::backend::MockBackend;
-use teamtalk::client::connection::{ConnectParamsOwned, ReconnectConfig, ReconnectWorkflowConfig};
+use teamtalk::client::connection::{
+    ConnectParamsOwned, ReconnectConfig, ReconnectPhaseTimeouts, ReconnectWorkflowConfig,
+};
 use teamtalk::client::ffi;
 use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
@@ -312,6 +314,39 @@ fn reconnect_workflow_config_roundtrip() {
 }
 
 #[test]
+fn reconnect_phase_timeouts_roundtrip() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    let timeouts = ReconnectPhaseTimeouts {
+        connect: Some(Duration::from_secs(20)),
+        login: None,
+        join: Some(Duration::from_secs(5)),
+    };
+
+    client
+        .set_reconnect_phase_timeouts(timeouts.clone())
+        .expect("phase timeouts");
+
+    assert_eq!(client.reconnect_phase_timeouts(), timeouts);
+}
+
+#[test]
+fn reconnect_phase_timeouts_reject_zero_values() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+
+    let err = client
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
+            connect: Some(Duration::ZERO),
+            login: Some(Duration::from_secs(1)),
+            join: Some(Duration::from_secs(1)),
+        })
+        .expect_err("zero timeout should fail");
+
+    assert!(matches!(err, teamtalk::events::Error::InvalidParam));
+}
+
+#[test]
 fn enable_full_auto_reconnect_sets_in_session_params() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend).expect("client");
@@ -365,6 +400,119 @@ fn enable_full_auto_reconnect_sets_in_session_params() {
         actual_workflow.join.max_attempts,
         workflow.join.max_attempts
     );
+}
+
+#[test]
+fn connect_timeout_disconnects_and_schedules_reconnect() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend.clone()).expect("client");
+    client.enable_auto_reconnect(ReconnectConfig {
+        max_attempts: 3,
+        min_delay: Duration::ZERO,
+        max_delay: Duration::ZERO,
+        stability_threshold: Duration::from_millis(50),
+    });
+    client
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
+            connect: Some(Duration::from_millis(10)),
+            login: None,
+            join: None,
+        })
+        .expect("phase timeouts");
+
+    client
+        .connect_remember("example.org", 10333, 10334, false)
+        .expect("connect");
+    assert_eq!(client.connection_state(), ConnectionState::Connecting);
+
+    client.mock_age_connect_phase_for_tests(Duration::from_secs(1));
+    client.mock_run_auto_reconnect_for_tests();
+    assert_eq!(client.connection_state(), ConnectionState::Disconnected);
+
+    client.mock_run_auto_reconnect_for_tests();
+    assert_eq!(client.connection_state(), ConnectionState::Connecting);
+
+    let calls = backend.call_log();
+    assert_eq!(calls.iter().filter(|call| **call == "connect").count(), 2);
+    assert!(calls.iter().filter(|call| **call == "disconnect").count() >= 2);
+}
+
+#[test]
+fn login_timeout_forces_full_recovery_disconnect() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_login_result(42);
+    let client = Client::with_backend(backend.clone()).expect("client");
+    client.enable_full_auto_reconnect(
+        ReconnectConfig {
+            max_attempts: 3,
+            min_delay: Duration::ZERO,
+            max_delay: Duration::ZERO,
+            stability_threshold: Duration::from_millis(50),
+        },
+        ReconnectWorkflowConfig::default(),
+        ConnectParamsOwned::new("example.org", 10333, 10334, false),
+        LoginParams::new("bot", "user", "secret", "TeamTalkRust"),
+    );
+    client
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
+            connect: None,
+            login: Some(Duration::from_millis(10)),
+            join: None,
+        })
+        .expect("phase timeouts");
+    client.mock_set_connection_state_for_tests(ConnectionState::Connected);
+
+    client.mock_run_auto_reconnect_for_tests();
+    assert_eq!(client.connection_state(), ConnectionState::LoggingIn);
+    assert_eq!(client.mock_pending_commands_for_tests().0, Some(42));
+
+    client.mock_age_login_phase_for_tests(Duration::from_secs(1));
+    client.mock_run_auto_reconnect_for_tests();
+
+    assert_eq!(client.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(client.mock_pending_commands_for_tests(), (None, None));
+    assert!(backend.call_log().contains(&"disconnect"));
+}
+
+#[test]
+fn join_timeout_forces_full_recovery_disconnect() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_join_result(55);
+    let client = Client::with_backend(backend.clone()).expect("client");
+    client.enable_full_auto_reconnect(
+        ReconnectConfig {
+            max_attempts: 3,
+            min_delay: Duration::ZERO,
+            max_delay: Duration::ZERO,
+            stability_threshold: Duration::from_millis(50),
+        },
+        ReconnectWorkflowConfig::default(),
+        ConnectParamsOwned::new("example.org", 10333, 10334, false),
+        LoginParams::new("bot", "user", "secret", "TeamTalkRust"),
+    );
+    client
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
+            connect: None,
+            login: None,
+            join: Some(Duration::from_millis(10)),
+        })
+        .expect("phase timeouts");
+    client.set_last_channel(ChannelId(7), Some("secret"));
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    client.mock_run_auto_reconnect_for_tests();
+    assert_eq!(
+        client.connection_state(),
+        ConnectionState::Joining(ChannelId(7))
+    );
+    assert_eq!(client.mock_pending_commands_for_tests().1, Some(55));
+
+    client.mock_age_join_phase_for_tests(Duration::from_secs(1));
+    client.mock_run_auto_reconnect_for_tests();
+
+    assert_eq!(client.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(client.mock_pending_commands_for_tests(), (None, None));
+    assert!(backend.call_log().contains(&"disconnect"));
 }
 
 #[test]

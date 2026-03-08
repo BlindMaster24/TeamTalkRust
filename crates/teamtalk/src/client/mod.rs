@@ -31,7 +31,8 @@ pub use bus::{EventContext, EventSubscriptionGroup, EventSubscriptionId, Subscri
 #[cfg(feature = "state")]
 pub use cache::{ServerInfo, StoreSnapshot};
 pub use connection::{
-    ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectWorkflowConfig,
+    ConnectParams, ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectPhaseTimeouts,
+    ReconnectWorkflowConfig,
 };
 pub use core::{Client, ClientCommands, ClientEvents, EventData, Message};
 pub use hooks::ClientHooks;

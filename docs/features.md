@@ -57,6 +57,10 @@ cargo build --no-default-features --features tls-rustls
 - Auto-login and rejoin using stored `LoginParams` and remembered channels (including passwords set via `join_channel`).
 - Full in-session recovery via `enable_full_auto_reconnect` (connect + login + join workflow).
 - Per-phase retry policy via `ReconnectWorkflowConfig` (`login` and `join` configs).
+- Pending-phase watchdogs via `ReconnectPhaseTimeouts` and
+  `Client::set_reconnect_phase_timeouts` for stalled connect/login/join recovery.
+- Recovery supervision stays poll-driven; keep calling `poll()` so watchdogs and
+  retry transitions continue to advance.
 - Explicit auto-join state helpers: `set_last_channel` and `clear_last_channel`.
 - Keep-alive helpers: `ping` and `set_client_keep_alive_and_ping`.
 - Typed errors with SDK code + message.

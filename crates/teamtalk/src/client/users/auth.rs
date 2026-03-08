@@ -1,4 +1,13 @@
 use super::*;
+use std::time::{Duration, Instant};
+
+fn wait_slice(deadline: Instant) -> i32 {
+    deadline
+        .saturating_duration_since(Instant::now())
+        .min(Duration::from_millis(50))
+        .as_millis()
+        .min(i32::MAX as u128) as i32
+}
 
 impl Client {
     /// Logs in to the server.
@@ -11,6 +20,7 @@ impl Client {
                 .do_login_ex(self.ptr.0, nickname, username, password, client_name);
         if cmd_id > 0 {
             self.set_connection_state(crate::events::ConnectionState::LoggingIn);
+            self.mark_login_phase_started(cmd_id);
         }
         cmd_id
     }
@@ -23,7 +33,7 @@ impl Client {
             .unwrap_or_else(|e| e.into_inner());
         auto.login = Some(params);
         auto.login_gave_up = false;
-        auto.pending_login_cmd = None;
+        auto.clear_login_phase();
     }
 
     /// Returns stored login parameters, if any.
@@ -61,18 +71,42 @@ impl Client {
         if cmd_id <= 0 {
             return Err(crate::events::Error::AuthFailed);
         }
-        let waited = self.poll_until(timeout_ms, |event, msg| match event {
-            crate::events::Event::MySelfLoggedIn => true,
-            crate::events::Event::CmdError => msg.source() == cmd_id,
-            _ => false,
-        });
-        let Some((event, message)) = waited else {
-            return Err(crate::events::Error::Timeout);
-        };
-        if matches!(event, crate::events::Event::CmdError) {
-            return Err(crate::events::Error::AuthFailed);
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::MySelfLoggedIn => return Ok(message),
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::AuthFailed);
+                        }
+                        _ => {}
+                    }
+                }
+                if self.connection_state() != crate::events::ConnectionState::LoggingIn {
+                    return Err(crate::events::Error::AuthFailed);
+                }
+            }
         }
-        Ok(message)
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::MySelfLoggedIn => return Ok(message),
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::AuthFailed);
+                    }
+                    _ => {}
+                }
+            }
+            if self.connection_state() != crate::events::ConnectionState::LoggingIn {
+                return Err(crate::events::Error::AuthFailed);
+            }
+        }
     }
 
     /// Stores login parameters and immediately logs in.

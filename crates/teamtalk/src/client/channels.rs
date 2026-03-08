@@ -3,6 +3,7 @@ use super::Client;
 use crate::events::ConnectionState;
 use crate::types::{Channel, ChannelId, UserId};
 use crate::utils::ToTT;
+use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 fn can_start_join(state: ConnectionState) -> bool {
@@ -21,6 +22,14 @@ fn can_issue_logged_in_command(state: ConnectionState) -> bool {
         state,
         ConnectionState::LoggedIn | ConnectionState::Joining(_) | ConnectionState::Joined(_)
     )
+}
+
+fn wait_slice(deadline: Instant) -> i32 {
+    deadline
+        .saturating_duration_since(Instant::now())
+        .min(Duration::from_millis(50))
+        .as_millis()
+        .min(i32::MAX as u128) as i32
 }
 
 impl Client {
@@ -83,6 +92,8 @@ impl Client {
             }
             auto.join_gave_up = false;
             self.set_connection_state(ConnectionState::Joining(id));
+            drop(auto);
+            self.mark_join_phase_started(cmd_id);
         }
         cmd_id
     }
@@ -101,24 +112,68 @@ impl Client {
                 message: "join command rejected in current state".to_string(),
             });
         }
-        let waited = self.poll_until(timeout_ms, |event, msg| match event {
-            crate::events::Event::UserJoined => msg
-                .user()
-                .map(|user| user.id == self.my_id())
-                .unwrap_or(false),
-            crate::events::Event::CmdError => msg.source() == cmd_id,
-            _ => false,
-        });
-        let Some((event, message)) = waited else {
-            return Err(crate::events::Error::Timeout);
-        };
-        if matches!(event, crate::events::Event::CmdError) {
-            return Err(crate::events::Error::CommandFailed {
-                code: message.source(),
-                message: "join command failed".to_string(),
-            });
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::UserJoined
+                            if message
+                                .user()
+                                .map(|user| user.id == self.my_id())
+                                .unwrap_or(false) =>
+                        {
+                            return Ok(message);
+                        }
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::CommandFailed {
+                                code: message.source(),
+                                message: "join command failed".to_string(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+                if self.connection_state() != ConnectionState::Joining(id) {
+                    return Err(crate::events::Error::CommandFailed {
+                        code: 0,
+                        message: "join phase aborted before completion".to_string(),
+                    });
+                }
+            }
         }
-        Ok(message)
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::UserJoined
+                        if message
+                            .user()
+                            .map(|user| user.id == self.my_id())
+                            .unwrap_or(false) =>
+                    {
+                        return Ok(message);
+                    }
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::CommandFailed {
+                            code: message.source(),
+                            message: "join command failed".to_string(),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+            if self.connection_state() != ConnectionState::Joining(id) {
+                return Err(crate::events::Error::CommandFailed {
+                    code: 0,
+                    message: "join phase aborted before completion".to_string(),
+                });
+            }
+        }
     }
 
     /// Joins a channel by id without a password.
@@ -154,7 +209,7 @@ impl Client {
                 .unwrap_or_else(|e| e.into_inner());
             auto.last_channel = None;
             auto.last_channel_password = None;
-            auto.pending_join_cmd = None;
+            auto.clear_join_phase();
             auto.join_gave_up = false;
         }
         cmd_id

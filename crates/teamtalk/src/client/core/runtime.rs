@@ -106,6 +106,7 @@ impl Client {
                     .auto_reconnect
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
+                auto.clear_connect_phase();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_connected();
                 }
@@ -129,11 +130,10 @@ impl Client {
                     .auto_reconnect
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
+                auto.clear_phase_tracking();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_disconnected();
                 }
-                auto.pending_login_cmd = None;
-                auto.pending_join_cmd = None;
             }
             Event::MySelfLoggedIn => {
                 self.set_connection_state(ConnectionState::LoggedIn);
@@ -141,7 +141,7 @@ impl Client {
                     .auto_reconnect
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
-                auto.pending_login_cmd = None;
+                auto.clear_login_phase();
                 if let Some(handler) = auto.login_handler.as_mut() {
                     handler.mark_connected();
                 }
@@ -152,7 +152,7 @@ impl Client {
                     .auto_reconnect
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
-                auto.pending_join_cmd = None;
+                auto.clear_join_phase();
                 if let Some(handler) = auto.join_handler.as_mut() {
                     handler.mark_disconnected();
                 }
@@ -166,7 +166,7 @@ impl Client {
                         .auto_reconnect
                         .lock()
                         .unwrap_or_else(|e| e.into_inner());
-                    auto.pending_join_cmd = None;
+                    auto.clear_join_phase();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_connected();
                     }
@@ -182,6 +182,7 @@ impl Client {
                         .auto_reconnect
                         .lock()
                         .unwrap_or_else(|e| e.into_inner());
+                    auto.clear_join_phase();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_disconnected();
                     }
@@ -194,9 +195,9 @@ impl Client {
                     .auto_reconnect
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
-                auto.pending_join_cmd = None;
+                auto.clear_join_phase();
                 if matches!(next_state, ConnectionState::Connected) {
-                    auto.pending_login_cmd = None;
+                    auto.clear_login_phase();
                 }
                 if let Some(handler) = auto.join_handler.as_mut() {
                     handler.mark_disconnected();
@@ -215,13 +216,13 @@ impl Client {
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
                 if auto.pending_login_cmd == Some(source) {
-                    auto.pending_login_cmd = None;
+                    auto.clear_login_phase();
                     if let Some(handler) = auto.login_handler.as_mut() {
                         handler.mark_disconnected();
                     }
                     next_state = Some(ConnectionState::Connected);
                 } else if auto.pending_join_cmd == Some(source) {
-                    auto.pending_join_cmd = None;
+                    auto.clear_join_phase();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_disconnected();
                     }
@@ -239,10 +240,10 @@ impl Client {
                     .lock()
                     .unwrap_or_else(|e| e.into_inner());
                 if auto.pending_login_cmd == Some(source) {
-                    auto.pending_login_cmd = None;
+                    auto.clear_login_phase();
                 }
                 if auto.pending_join_cmd == Some(source) {
-                    auto.pending_join_cmd = None;
+                    auto.clear_join_phase();
                 }
             }
             _ => {}

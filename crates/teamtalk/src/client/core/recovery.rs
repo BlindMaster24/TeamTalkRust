@@ -144,7 +144,7 @@ impl Client {
                 .auto_reconnect
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            auto.pending_login_cmd = None;
+            auto.clear_login_phase();
             drop(auto);
             self.set_connection_state(ConnectionState::Connected);
             let failed = Event::AutoLoginFailed { attempts: attempt };
@@ -211,7 +211,7 @@ impl Client {
                 .auto_reconnect
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            auto.pending_join_cmd = None;
+            auto.clear_join_phase();
             drop(auto);
             self.set_connection_state(ConnectionState::LoggedIn);
             let failed = Event::AutoJoinFailed { attempts: attempt };

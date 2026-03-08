@@ -61,6 +61,7 @@ impl Client {
             .connect(self.ptr.0, host, tcp, udp, encrypted);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
+            self.mark_connect_phase_started();
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -139,6 +140,7 @@ impl Client {
             .connect_sys_id(self.ptr.0, host, tcp, udp, encrypted, sys_id);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
+            self.mark_connect_phase_started();
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -174,6 +176,7 @@ impl Client {
             .connect_ex(self.ptr.0, host, tcp, udp, bind_ip, encrypted);
         if ok {
             self.set_connection_state(ConnectionState::Connecting);
+            self.mark_connect_phase_started();
             Ok(())
         } else {
             Err(crate::events::Error::ConnectFailed)
@@ -196,6 +199,7 @@ impl Client {
     /// Disconnects from the server.
     pub fn disconnect(&self) -> Result<(), crate::events::Error> {
         if self.backend().disconnect(self.ptr.0) {
+            self.clear_all_reconnect_phase_tracking();
             self.set_connection_state(ConnectionState::Disconnected);
             Ok(())
         } else {

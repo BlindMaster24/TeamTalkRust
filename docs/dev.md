@@ -310,6 +310,7 @@ The SDK wraps the TeamTalk C API with a polling client and typed structures.
 The design emphasizes:
 
 - Event-driven flow via `Client::poll()`.
+- Recovery watchdogs are poll-driven as well; there is no background reconnect timer outside the normal event loop.
 - Strongly typed IDs (`UserId`, `ChannelId`) to avoid mixing values.
 - Explicit conversion between Rust structs and TeamTalk FFI types.
 - `Client` is thread-safe (`Send` + `Sync`) and uses internal locking.
@@ -319,6 +320,7 @@ The design emphasizes:
 ### Modules
 
 - `client`: main client and per-domain operations (users, channels, audio).
+- `client/core/watchdog.rs`: stalled connect/login/join supervision for built-in auto recovery.
 - `types`: strongly typed data structures and conversion helpers.
 - `events`: event and error types emitted by polling.
 - `utils`: string and math helpers for working with TeamTalk types.

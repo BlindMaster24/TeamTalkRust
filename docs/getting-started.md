@@ -84,7 +84,10 @@ creating `Client`.
 If you plan to use auto-reconnect, prefer `connect_remember` and
 `login_remember` so the client can restore state after reconnect. For protected
 channels, call `join_channel` once with the password or use `set_last_channel`
-to store the channel and password explicitly.
+to store the channel and password explicitly. Built-in auto recovery now also
+supports pending-phase watchdogs via `set_reconnect_phase_timeouts(...)` if you
+need stricter connect/login/join supervision. Those watchdogs are evaluated
+while you continue polling the client.
 
 For manual reconnect flows, use `reconnect`, `reconnect_ex`, or
 `reconnect_sys_id`. These helpers apply a disconnect barrier first. Direct

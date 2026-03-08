@@ -1,6 +1,6 @@
 use std::env;
 use teamtalk::types::ChannelId;
-use teamtalk::{Client, Event, LoginParams, ReconnectConfig};
+use teamtalk::{Client, Event, LoginParams, ReconnectConfig, ReconnectPhaseTimeouts};
 
 fn env_or(name: &str, default: &str) -> String {
     env::var(name).unwrap_or_else(|_| default.to_string())
@@ -26,6 +26,7 @@ fn main() -> teamtalk::Result<()> {
 
     let client = Client::new()?;
     client.enable_auto_reconnect_with_events(ReconnectConfig::default(), vec![Event::MySelfKicked]);
+    client.set_reconnect_phase_timeouts(ReconnectPhaseTimeouts::default())?;
     client.set_login_params(LoginParams::new(
         &nickname,
         &username,

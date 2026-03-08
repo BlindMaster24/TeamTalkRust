@@ -45,6 +45,39 @@ impl Default for ReconnectWorkflowConfig {
     }
 }
 
+/// Watchdog timeouts for in-progress recovery phases.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ReconnectPhaseTimeouts {
+    /// Maximum time to wait for `ConnectSuccess`, `ConnectFailed`, or `ConnectCryptError`.
+    pub connect: Option<Duration>,
+    /// Maximum time to wait for login completion after a login command is accepted.
+    pub login: Option<Duration>,
+    /// Maximum time to wait for channel join completion after a join command is accepted.
+    pub join: Option<Duration>,
+}
+
+impl ReconnectPhaseTimeouts {
+    /// Disables phase watchdogs for all built-in recovery phases.
+    pub const fn disabled() -> Self {
+        Self {
+            connect: None,
+            login: None,
+            join: None,
+        }
+    }
+}
+
+impl Default for ReconnectPhaseTimeouts {
+    fn default() -> Self {
+        let timeout = Some(Duration::from_secs(15));
+        Self {
+            connect: timeout,
+            login: timeout,
+            join: timeout,
+        }
+    }
+}
+
 pub struct ReconnectHandler {
     pub config: ReconnectConfig,
     backoff: ExponentialBackoff,
@@ -182,8 +215,7 @@ fn reset_auto_recovery_handlers(auto: &mut super::core::AutoReconnectState) {
     auto.login_gave_up = false;
     auto.join_gave_up = false;
     auto.recovery_completed = false;
-    auto.pending_login_cmd = None;
-    auto.pending_join_cmd = None;
+    auto.clear_phase_tracking();
 }
 
 fn validate_client_keep_alive(keep_alive: &crate::types::ClientKeepAlive) -> Result<(), Error> {
@@ -214,6 +246,15 @@ fn dedupe_events(events: Vec<crate::events::Event>) -> Vec<crate::events::Event>
         unique.push(event);
     }
     unique
+}
+
+fn validate_phase_timeouts(timeouts: &ReconnectPhaseTimeouts) -> Result<(), Error> {
+    for timeout in [timeouts.connect, timeouts.login, timeouts.join] {
+        if matches!(timeout, Some(value) if value.is_zero()) {
+            return Err(Error::InvalidParam);
+        }
+    }
+    Ok(())
 }
 
 fn ensure_connect_not_busy(has_connection_flags: bool) -> Result<(), Error> {

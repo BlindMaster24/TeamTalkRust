@@ -131,6 +131,8 @@ teamtalk::utils::strings::copy_to_string(&raw_tt_str, &mut buf);
 - `enable_full_auto_reconnect(...)` enables reconnect + auto-login + auto-join as a single in-session workflow.
 - Recovery state is memory-only: connect/login/channel credentials are reused while the process runs, but not persisted across restarts.
 - Per-phase retry tuning is available via `ReconnectWorkflowConfig` (`login` and `join` policies).
+- Pending connect/login/join phases can be supervised with `ReconnectPhaseTimeouts` so stalled recovery phases are forced back into the reconnect path instead of waiting forever.
+- Phase watchdogs are evaluated inside the normal `poll()` loop; the client still needs to be polled regularly for recovery supervision to progress.
 - New hooks/events expose phase progress and failures: `BeforeAutoLogin`, `AutoLoginFailed`, `BeforeAutoJoin`, `AutoJoinFailed`, `AutoRecoverCompleted`.
 
 ### Async Event Stream
