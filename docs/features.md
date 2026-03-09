@@ -6,7 +6,7 @@ Enable features in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "4.0.0", features = ["dispatch", "async"] }
+teamtalk = { version = "5.0.0", features = ["dispatch", "async"] }
 ```
 
 ## Available Features

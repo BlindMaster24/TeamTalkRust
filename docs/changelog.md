@@ -1,5 +1,48 @@
 # Changelog
 
+## [5.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v4.0.0...teamtalk-v5.0.0) - 2026-03-08
+
+### Added
+- *(client)* add win32 desktop and hotkey guards
+- *(client)* fill DLL event and desktop gaps
+- *(bot)* add rights-based permissions layer
+- *(bot)* expand guards, aliases, and macros
+- *(bot)* add guards, aliases, and serde state
+- *(bot)* complete scene lifecycle and guides
+- *(bot)* add flow-aware scene helpers
+- *(bot)* enrich dialog state machine lifecycle
+
+### Changed
+- *(client)* split users module by responsibility
+- *(client)* decompose connection, audio, and users modules
+- *(core)* split backend mock, dispatch, scripts tables, and loader download
+- *(client)* split core recovery and debug internals
+- *(teamtalk)* decompose router, core message, and synced recording
+- *(types)* split entities into domain submodules
+- *(teamtalk)* split hooks, loader versions, and types entities
+- *(client)* split core runtime/state handling
+- *(types)* extract base and preprocess modules
+- *(types)* split users_channels and move id definitions
+- *(loader)* move loader into module directory
+- *(recording)* separate synced utilities from session flow
+- *(bot)* split router helpers from dispatch pipeline
+- *(client)* decompose core and hooks internals
+- *(types)* split monolithic types module into submodules
+
+### Fixed
+- *(client)* recover stalled auto reconnect phases
+
+### Docs
+- *(audit)* update coverage workflow and desktop helpers
+
+### Other
+- *(bot)* cover guards and json defaults
+
+## [0.1.2](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-macros-v0.1.1...teamtalk-macros-v0.1.2) - 2026-03-08
+
+### Added
+- *(bot)* expand guards, aliases, and macros
+
 ## [4.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v3.1.0...teamtalk-v4.0.0) - 2026-03-01
 
 ### Breaking
