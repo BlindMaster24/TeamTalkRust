@@ -10,16 +10,40 @@ pub struct MockBackend {
 #[derive(Default)]
 struct MockBackendState {
     channels: std::collections::HashMap<i32, Channel>,
+    channel_paths: std::collections::HashMap<i32, String>,
+    channel_users: std::collections::HashMap<i32, Vec<ffi::User>>,
+    root_channel_id: ChannelId,
     my_channel_id: ChannelId,
     my_user_id: i32,
     my_user_rights: u32,
+    my_user_account: Option<ffi::UserAccount>,
+    my_user_type: u32,
+    my_user_data: i32,
     user: Option<ffi::User>,
+    users_by_id: std::collections::HashMap<i32, ffi::User>,
+    users_by_username: std::collections::HashMap<String, ffi::User>,
+    user_stats: std::collections::HashMap<i32, ffi::UserStatistics>,
+    server_properties: Option<ffi::ServerProperties>,
+    client_statistics: Option<ffi::ClientStatistics>,
+    server_users: Vec<ffi::User>,
     start_ok: bool,
     stop_ok: bool,
     login_result: i32,
     logout_result: i32,
     join_result: i32,
     leave_result: i32,
+    make_channel_result: i32,
+    update_channel_result: i32,
+    remove_channel_result: i32,
+    move_user_result: i32,
+    list_user_accounts_result: i32,
+    new_user_account_result: i32,
+    delete_user_account_result: i32,
+    change_nickname_result: i32,
+    ban_ip_result: i32,
+    list_bans_result: i32,
+    update_server_result: i32,
+    save_config_result: i32,
     last_login: Option<(String, String, String, String)>,
     last_text_message: Option<ffi::TextMessage>,
     text_messages: Vec<ffi::TextMessage>,
@@ -42,6 +66,18 @@ impl MockBackend {
                 logout_result: 1,
                 join_result: 1,
                 leave_result: 1,
+                make_channel_result: 1,
+                update_channel_result: 1,
+                remove_channel_result: 1,
+                move_user_result: 1,
+                list_user_accounts_result: 1,
+                new_user_account_result: 1,
+                delete_user_account_result: 1,
+                change_nickname_result: 1,
+                ban_ip_result: 1,
+                list_bans_result: 1,
+                update_server_result: 1,
+                save_config_result: 1,
                 connect_ok: true,
                 disconnect_ok: true,
                 ..MockBackendState::default()
@@ -52,6 +88,21 @@ impl MockBackend {
     pub fn set_channel(&self, channel: Channel) {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.channels.insert(channel.id.0, channel);
+    }
+
+    pub fn set_channel_path(&self, channel_id: ChannelId, path: &str) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.channel_paths.insert(channel_id.0, path.to_string());
+    }
+
+    pub fn set_channel_users(&self, channel_id: ChannelId, users: Vec<ffi::User>) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.channel_users.insert(channel_id.0, users);
+    }
+
+    pub fn set_root_channel_id(&self, channel_id: ChannelId) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.root_channel_id = channel_id;
     }
 
     pub fn set_my_channel_id(&self, channel_id: ChannelId) {
@@ -69,9 +120,54 @@ impl MockBackend {
         state.my_user_rights = rights;
     }
 
+    pub fn set_my_user_account(&self, account: ffi::UserAccount) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.my_user_account = Some(account);
+    }
+
+    pub fn set_my_user_type(&self, user_type: u32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.my_user_type = user_type;
+    }
+
+    pub fn set_my_user_data(&self, user_data: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.my_user_data = user_data;
+    }
+
     pub fn set_user(&self, user: ffi::User) {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.user = Some(user);
+    }
+
+    pub fn set_user_by_id(&self, user_id: i32, user: ffi::User) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.users_by_id.insert(user_id, user);
+    }
+
+    pub fn set_user_by_username(&self, username: &str, user: ffi::User) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.users_by_username.insert(username.to_string(), user);
+    }
+
+    pub fn set_user_statistics(&self, user_id: i32, statistics: ffi::UserStatistics) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.user_stats.insert(user_id, statistics);
+    }
+
+    pub fn set_server_properties(&self, properties: ffi::ServerProperties) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.server_properties = Some(properties);
+    }
+
+    pub fn set_client_statistics(&self, statistics: ffi::ClientStatistics) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.client_statistics = Some(statistics);
+    }
+
+    pub fn set_server_users(&self, users: Vec<ffi::User>) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.server_users = users;
     }
 
     pub fn set_start_ok(&self, ok: bool) {
@@ -301,6 +397,34 @@ impl TeamTalkBackend for MockBackend {
         state.channels.get(&channel_id).cloned()
     }
 
+    fn get_server_channels(&self, _ptr: *mut ffi::TTInstance) -> Vec<Channel> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .channels
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    fn get_channel_path(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<String> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .channel_paths
+            .get(&channel_id)
+            .cloned()
+    }
+
+    fn get_channel_id_from_path(&self, _ptr: *mut ffi::TTInstance, path: &str) -> ChannelId {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state
+            .channel_paths
+            .iter()
+            .find_map(|(id, stored)| (stored == path).then_some(ChannelId(*id)))
+            .unwrap_or_default()
+    }
+
     fn get_my_user_id(&self, _ptr: *mut ffi::TTInstance) -> i32 {
         self.state
             .lock()
@@ -323,6 +447,105 @@ impl TeamTalkBackend for MockBackend {
         } else {
             false
         }
+    }
+
+    fn get_user_by_id(&self, _ptr: *mut ffi::TTInstance, user_id: i32) -> Option<User> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .users_by_id
+            .get(&user_id)
+            .copied()
+            .map(User::from)
+    }
+
+    fn get_user_by_username(&self, _ptr: *mut ffi::TTInstance, username: &str) -> Option<User> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .users_by_username
+            .get(username)
+            .copied()
+            .map(User::from)
+    }
+
+    fn get_user_statistics(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> Option<UserStatistics> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .user_stats
+            .get(&user_id)
+            .copied()
+            .map(UserStatistics::from)
+    }
+
+    fn get_server_users(&self, _ptr: *mut ffi::TTInstance) -> Vec<User> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .server_users
+            .iter()
+            .copied()
+            .map(User::from)
+            .collect()
+    }
+
+    fn get_server_properties(&self, _ptr: *mut ffi::TTInstance) -> Option<ServerProperties> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .server_properties
+            .map(ServerProperties::from)
+    }
+
+    fn get_client_statistics(&self, _ptr: *mut ffi::TTInstance) -> Option<ClientStatistics> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .client_statistics
+            .map(ClientStatistics::from)
+    }
+
+    fn get_my_user_account(&self, _ptr: *mut ffi::TTInstance) -> Option<UserAccount> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .my_user_account
+            .map(UserAccount::from)
+    }
+
+    fn get_my_user_type(&self, _ptr: *mut ffi::TTInstance) -> u32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .my_user_type
+    }
+
+    fn get_my_user_data(&self, _ptr: *mut ffi::TTInstance) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .my_user_data
+    }
+
+    fn get_my_local_subscriptions(&self, _ptr: *mut ffi::TTInstance) -> Subscriptions {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let raw = state
+            .user
+            .filter(|user| user.nUserID == state.my_user_id)
+            .map(|user| user.uLocalSubscriptions)
+            .or_else(|| {
+                state
+                    .users_by_id
+                    .get(&state.my_user_id)
+                    .map(|user| user.uLocalSubscriptions)
+            })
+            .unwrap_or_default();
+        Subscriptions::from_raw(raw)
     }
 
     fn get_my_channel_id(&self, _ptr: *mut ffi::TTInstance) -> ChannelId {
@@ -387,5 +610,124 @@ impl TeamTalkBackend for MockBackend {
 
     fn get_flags(&self, _ptr: *mut ffi::TTInstance) -> u32 {
         self.state.lock().unwrap_or_else(|e| e.into_inner()).flags
+    }
+
+    fn do_make_channel(&self, _ptr: *mut ffi::TTInstance, _channel: &Channel) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .make_channel_result
+    }
+
+    fn do_update_channel(&self, _ptr: *mut ffi::TTInstance, _channel: &Channel) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .update_channel_result
+    }
+
+    fn do_remove_channel(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove_channel_result
+    }
+
+    fn do_move_user(&self, _ptr: *mut ffi::TTInstance, _user_id: i32, _channel_id: i32) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .move_user_result
+    }
+
+    fn is_channel_operator(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _user_id: i32,
+        _channel_id: i32,
+    ) -> bool {
+        false
+    }
+
+    fn get_root_channel_id(&self, _ptr: *mut ffi::TTInstance) -> ChannelId {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .root_channel_id
+    }
+
+    fn get_channel_users(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Vec<User> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .channel_users
+            .get(&channel_id)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .map(User::from)
+            .collect()
+    }
+
+    fn do_list_user_accounts(&self, _ptr: *mut ffi::TTInstance, _index: i32, _count: i32) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .list_user_accounts_result
+    }
+
+    fn do_new_user_account(&self, _ptr: *mut ffi::TTInstance, _account: &UserAccount) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .new_user_account_result
+    }
+
+    fn do_delete_user_account(&self, _ptr: *mut ffi::TTInstance, _username: &str) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .delete_user_account_result
+    }
+
+    fn do_change_nickname(&self, _ptr: *mut ffi::TTInstance, _nickname: &str) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .change_nickname_result
+    }
+
+    fn do_ban_ip_address(&self, _ptr: *mut ffi::TTInstance, _ip: &str, _ban_type: i32) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .ban_ip_result
+    }
+
+    fn do_list_bans(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _channel_id: i32,
+        _index: i32,
+        _count: i32,
+    ) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .list_bans_result
+    }
+
+    fn do_update_server(&self, _ptr: *mut ffi::TTInstance, _props: &ServerProperties) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .update_server_result
+    }
+
+    fn do_save_config(&self, _ptr: *mut ffi::TTInstance) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .save_config_result
     }
 }

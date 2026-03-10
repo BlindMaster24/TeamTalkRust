@@ -9,17 +9,12 @@ impl Client {
 
     /// Returns the account of the current user.
     pub fn get_my_user_account(&self) -> Option<UserAccount> {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::UserAccount>() };
-        if unsafe { ffi::api().TT_GetMyUserAccount(self.ptr.0, &mut raw) } == 1 {
-            Some(UserAccount::from(raw))
-        } else {
-            None
-        }
+        self.backend().get_my_user_account(self.ptr.0)
     }
 
     /// Returns the user type of the current user.
     pub fn get_my_user_type(&self) -> u32 {
-        unsafe { ffi::api().TT_GetMyUserType(self.ptr.0) }
+        self.backend().get_my_user_type(self.ptr.0)
     }
 
     /// Returns the user rights of the current user.
@@ -34,7 +29,7 @@ impl Client {
 
     /// Requests user data for the current user.
     pub fn get_my_user_data(&self) -> i32 {
-        unsafe { ffi::api().TT_GetMyUserData(self.ptr.0) }
+        self.backend().get_my_user_data(self.ptr.0)
     }
 
     /// Changes the current nickname.
@@ -42,7 +37,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoChangeNickname(self.ptr.0, nick.tt().as_ptr()) }
+        self.backend().do_change_nickname(self.ptr.0, nick)
     }
 
     /// Sets the status and status message.

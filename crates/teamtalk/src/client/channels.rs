@@ -2,9 +2,7 @@
 use super::Client;
 use crate::events::ConnectionState;
 use crate::types::{Channel, ChannelId, UserId};
-use crate::utils::ToTT;
 use std::time::{Duration, Instant};
-use teamtalk_sys as ffi;
 
 fn can_start_join(state: ConnectionState) -> bool {
     matches!(state, ConnectionState::LoggedIn)
@@ -35,16 +33,7 @@ fn wait_slice(deadline: Instant) -> i32 {
 impl Client {
     /// Returns available channels from the server.
     pub fn get_server_channels(&self) -> Vec<Channel> {
-        let mut count: i32 = 0;
-        unsafe {
-            ffi::api().TT_GetServerChannels(self.ptr.0, std::ptr::null_mut(), &mut count);
-            let mut channels = vec![std::mem::zeroed::<ffi::Channel>(); count as usize];
-            if ffi::api().TT_GetServerChannels(self.ptr.0, channels.as_mut_ptr(), &mut count) == 1 {
-                channels.into_iter().map(Channel::from).collect()
-            } else {
-                vec![]
-            }
-        }
+        self.backend().get_server_channels(self.ptr.0)
     }
 
     /// Returns a channel by id.
@@ -54,21 +43,12 @@ impl Client {
 
     /// Returns a channel path by id.
     pub fn get_channel_path(&self, id: ChannelId) -> Option<String> {
-        use crate::types::TT_STRLEN;
-        use crate::utils::strings::tt_buf;
-        let mut buf = tt_buf::<TT_STRLEN>();
-        unsafe {
-            if ffi::api().TT_GetChannelPath(self.ptr.0, id.0, buf.as_mut_ptr()) == 1 {
-                Some(crate::utils::strings::to_string(&buf))
-            } else {
-                None
-            }
-        }
+        self.backend().get_channel_path(self.ptr.0, id.0)
     }
 
     /// Returns a channel id from a path.
     pub fn get_channel_id_from_path(&self, path: &str) -> ChannelId {
-        ChannelId(unsafe { ffi::api().TT_GetChannelIDFromPath(self.ptr.0, path.tt().as_ptr()) })
+        self.backend().get_channel_id_from_path(self.ptr.0, path)
     }
 
     /// Joins a channel.
@@ -220,7 +200,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoMakeChannel(self.ptr.0, &channel.to_ffi()) }
+        self.backend().do_make_channel(self.ptr.0, channel)
     }
 
     /// Updates an existing channel.
@@ -228,7 +208,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoUpdateChannel(self.ptr.0, &channel.to_ffi()) }
+        self.backend().do_update_channel(self.ptr.0, channel)
     }
 
     /// Removes a channel.
@@ -236,7 +216,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoRemoveChannel(self.ptr.0, id.0) }
+        self.backend().do_remove_channel(self.ptr.0, id.0)
     }
 
     /// Moves a user to a different channel.
@@ -244,17 +224,19 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoMoveUser(self.ptr.0, user_id.0, channel_id.0) }
+        self.backend()
+            .do_move_user(self.ptr.0, user_id.0, channel_id.0)
     }
 
     /// Checks if a user is an operator in a channel.
     pub fn is_channel_operator(&self, user_id: UserId, channel_id: ChannelId) -> bool {
-        unsafe { ffi::api().TT_IsChannelOperator(self.ptr.0, user_id.0, channel_id.0) == 1 }
+        self.backend()
+            .is_channel_operator(self.ptr.0, user_id.0, channel_id.0)
     }
 
     /// Joins the root channel.
     pub fn join_root(&self) -> i32 {
-        let root = ChannelId(unsafe { ffi::api().TT_GetRootChannelID(self.ptr.0) });
+        let root = self.backend().get_root_channel_id(self.ptr.0);
         self.join_channel(root, "")
     }
 
@@ -271,26 +253,6 @@ impl Client {
 
     /// Returns users in a channel.
     pub fn get_channel_users(&self, channel_id: ChannelId) -> Vec<crate::types::User> {
-        let mut count: i32 = 0;
-        unsafe {
-            ffi::api().TT_GetChannelUsers(
-                self.ptr.0,
-                channel_id.0,
-                std::ptr::null_mut(),
-                &mut count,
-            );
-            let mut users = vec![std::mem::zeroed::<ffi::User>(); count as usize];
-            if ffi::api().TT_GetChannelUsers(
-                self.ptr.0,
-                channel_id.0,
-                users.as_mut_ptr(),
-                &mut count,
-            ) == 1
-            {
-                users.into_iter().map(crate::types::User::from).collect()
-            } else {
-                vec![]
-            }
-        }
+        self.backend().get_channel_users(self.ptr.0, channel_id.0)
     }
 }

@@ -1,7 +1,6 @@
 //! Server management APIs.
 use super::Client;
 use crate::types::{ChannelId, ServerProperties, User, UserId};
-use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
@@ -16,26 +15,12 @@ fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
 impl Client {
     /// Returns current server properties.
     pub fn get_server_properties(&self) -> Option<ServerProperties> {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::ServerProperties>() };
-        if unsafe { ffi::api().TT_GetServerProperties(self.ptr.0, &mut raw) } == 1 {
-            Some(ServerProperties::from(raw))
-        } else {
-            None
-        }
+        self.backend().get_server_properties(self.ptr.0)
     }
 
     /// Returns all users on the server.
     pub fn get_server_users(&self) -> Vec<User> {
-        let mut count: i32 = 0;
-        unsafe {
-            ffi::api().TT_GetServerUsers(self.ptr.0, std::ptr::null_mut(), &mut count);
-            let mut users = vec![std::mem::zeroed::<ffi::User>(); count as usize];
-            if ffi::api().TT_GetServerUsers(self.ptr.0, users.as_mut_ptr(), &mut count) == 1 {
-                users.into_iter().map(User::from).collect()
-            } else {
-                vec![]
-            }
-        }
+        self.backend().get_server_users(self.ptr.0)
     }
 
     /// Bans an IP address.
@@ -43,17 +28,12 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoBanIPAddress(self.ptr.0, ip.tt().as_ptr(), ban_type) }
+        self.backend().do_ban_ip_address(self.ptr.0, ip, ban_type)
     }
 
     /// Returns client statistics.
     pub fn get_client_statistics(&self) -> Option<crate::types::ClientStatistics> {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::ClientStatistics>() };
-        if unsafe { ffi::api().TT_GetClientStatistics(self.ptr.0, &mut raw) } == 1 {
-            Some(crate::types::ClientStatistics::from(raw))
-        } else {
-            None
-        }
+        self.backend().get_client_statistics(self.ptr.0)
     }
 
     /// Requests a list of bans.
@@ -61,7 +41,8 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoListBans(self.ptr.0, channel_id.0, index, count) }
+        self.backend()
+            .do_list_bans(self.ptr.0, channel_id.0, index, count)
     }
 
     /// Updates server properties.
@@ -69,7 +50,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoUpdateServer(self.ptr.0, &props.to_ffi()) }
+        self.backend().do_update_server(self.ptr.0, props)
     }
 
     /// Saves the server configuration.
@@ -77,12 +58,12 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoSaveConfig(self.ptr.0) }
+        self.backend().do_save_config(self.ptr.0)
     }
 
     /// Returns the root channel ID.
     pub fn get_root_channel_id(&self) -> ChannelId {
-        ChannelId(unsafe { ffi::api().TT_GetRootChannelID(self.ptr.0) })
+        self.backend().get_root_channel_id(self.ptr.0)
     }
 
     /// Requests server statistics.

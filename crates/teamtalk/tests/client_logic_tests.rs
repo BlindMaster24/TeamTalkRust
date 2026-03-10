@@ -22,6 +22,16 @@ fn test_channel(id: i32, name: &str) -> Channel {
     channel
 }
 
+fn raw_user(id: i32, username: &str, local_subscriptions: u32) -> ffi::User {
+    let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
+    user.nUserID = id;
+    user.uLocalSubscriptions = local_subscriptions;
+    let encoded: Vec<_> = username.encode_utf16().chain(std::iter::once(0)).collect();
+    let len = encoded.len().min(user.szUsername.len());
+    user.szUsername[..len].copy_from_slice(&encoded[..len]);
+    user
+}
+
 #[test]
 fn login_with_params_requires_connected_state() {
     let backend = Arc::new(MockBackend::new());
@@ -749,4 +759,108 @@ fn kick_user_returns_zero_when_not_logged_in() {
     let cmd = client.kick_user(UserId(100), ChannelId(200));
 
     assert_eq!(cmd, 0);
+}
+
+#[test]
+fn channel_queries_use_backend_results() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_channel(test_channel(7, "alpha"));
+    backend.set_channel(test_channel(9, "beta"));
+    backend.set_channel_path(ChannelId(7), "/Root/Alpha");
+    backend.set_channel_users(ChannelId(7), vec![raw_user(55, "alice", 0)]);
+    backend.set_root_channel_id(ChannelId(7));
+    let client = Client::with_backend(backend).expect("client");
+
+    let channels = client.get_server_channels();
+    let path = client.get_channel_path(ChannelId(7));
+    let looked_up = client.get_channel_id_from_path("/Root/Alpha");
+    let users = client.get_channel_users(ChannelId(7));
+    let root = client.get_root_channel_id();
+
+    assert_eq!(channels.len(), 2);
+    assert_eq!(path.as_deref(), Some("/Root/Alpha"));
+    assert_eq!(looked_up, ChannelId(7));
+    assert_eq!(users.len(), 1);
+    assert_eq!(users[0].id, UserId(55));
+    assert_eq!(root, ChannelId(7));
+}
+
+#[test]
+fn user_queries_use_backend_results() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_my_user_id(42);
+    backend.set_user(raw_user(42, "me", 0x1234));
+    backend.set_user_by_id(77, raw_user(77, "by-id", 0));
+    backend.set_user_by_username("lookup", raw_user(88, "lookup", 0));
+    let client = Client::with_backend(backend).expect("client");
+
+    let by_id = client.get_user(UserId(77)).expect("user by id");
+    let by_name = client
+        .get_user_by_username("lookup")
+        .expect("user by username");
+    let subs = client.my_subscriptions();
+
+    assert_eq!(by_id.id, UserId(77));
+    assert_eq!(by_name.id, UserId(88));
+    assert_eq!(subs.raw(), 0x1234);
+}
+
+#[test]
+fn server_and_profile_queries_use_backend_results() {
+    let backend = Arc::new(MockBackend::new());
+    let mut account = unsafe { std::mem::zeroed::<ffi::UserAccount>() };
+    account.uUserRights = 0x55AA;
+    account.uUserType = 3;
+    let mut properties = unsafe { std::mem::zeroed::<ffi::ServerProperties>() };
+    properties.nMaxUsers = 99;
+    let mut statistics = unsafe { std::mem::zeroed::<ffi::ClientStatistics>() };
+    statistics.nUdpBytesSent = 123;
+    backend.set_my_user_account(account);
+    backend.set_my_user_type(7);
+    backend.set_my_user_data(91);
+    backend.set_server_properties(properties);
+    backend.set_client_statistics(statistics);
+    backend.set_server_users(vec![raw_user(11, "srv-user", 0)]);
+    let client = Client::with_backend(backend).expect("client");
+
+    let my_account = client.get_my_user_account().expect("account");
+    let my_type = client.get_my_user_type();
+    let my_data = client.get_my_user_data();
+    let props = client.get_server_properties().expect("server props");
+    let stats = client.get_client_statistics().expect("client stats");
+    let users = client.get_server_users();
+
+    assert_eq!(my_account.user_rights, 0x55AA);
+    assert_eq!(my_type, 7);
+    assert_eq!(my_data, 91);
+    assert_eq!(props.max_users, 99);
+    assert_eq!(stats.udp_sent, 123);
+    assert_eq!(users.len(), 1);
+    assert_eq!(users[0].id, UserId(11));
+}
+
+#[test]
+fn mock_command_wrappers_stay_on_backend_path() {
+    let backend = Arc::new(MockBackend::new());
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    assert_eq!(client.make_channel(&test_channel(1, "ops")), 1);
+    assert_eq!(client.update_channel(&test_channel(1, "ops")), 1);
+    assert_eq!(client.remove_channel(ChannelId(1)), 1);
+    assert_eq!(client.move_user(UserId(2), ChannelId(3)), 1);
+    assert_eq!(client.list_user_accounts(0, 10), 1);
+    assert_eq!(
+        client.create_user_account(&teamtalk::types::UserAccount::builder("user").build()),
+        1
+    );
+    assert_eq!(client.delete_user_account("user"), 1);
+    assert_eq!(client.change_nickname("nick"), 1);
+    assert_eq!(client.ban_ip("127.0.0.1", 1), 1);
+    assert_eq!(client.list_bans(ChannelId(1), 0, 10), 1);
+    let server_props = teamtalk::types::ServerProperties::from(unsafe {
+        std::mem::zeroed::<ffi::ServerProperties>()
+    });
+    assert_eq!(client.update_server(&server_props), 1);
+    assert_eq!(client.save_server_config(), 1);
 }
