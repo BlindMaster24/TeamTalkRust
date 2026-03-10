@@ -15,6 +15,7 @@ use teamtalk::events::ConnectionState;
 use teamtalk::types::{
     Channel, ChannelId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
 };
+use teamtalk::utils::strings::ToTT;
 
 fn test_channel(id: i32, name: &str) -> Channel {
     let mut channel = Channel::builder(name).build();
@@ -26,7 +27,7 @@ fn raw_user(id: i32, username: &str, local_subscriptions: u32) -> ffi::User {
     let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
     user.nUserID = id;
     user.uLocalSubscriptions = local_subscriptions;
-    let encoded: Vec<_> = username.encode_utf16().chain(std::iter::once(0)).collect();
+    let encoded = username.tt();
     let len = encoded.len().min(user.szUsername.len());
     user.szUsername[..len].copy_from_slice(&encoded[..len]);
     user
