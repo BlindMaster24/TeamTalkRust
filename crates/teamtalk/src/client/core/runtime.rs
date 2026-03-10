@@ -29,7 +29,7 @@ impl Client {
     pub fn poll(&self, timeout_ms: i32) -> Option<(Event, Message)> {
         let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
         let t = timeout_ms;
-        if unsafe { ffi::api().TT_GetMessage(self.ptr.0, &mut msg, &t) } == 1 {
+        if self.backend().get_message(self.ptr.0, &mut msg, &t) {
             let event = Event::from(msg.nClientEvent);
             let message = Message::from_raw(event, msg);
             self.update_state_for_event(event, &message);

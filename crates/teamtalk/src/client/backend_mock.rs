@@ -178,6 +178,15 @@ impl TeamTalkBackend for MockBackend {
         self.init_poll()
     }
 
+    fn get_message(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _msg: &mut ffi::TTMessage,
+        _timeout_ms: &i32,
+    ) -> bool {
+        false
+    }
+
     fn close(&self, ptr: *mut ffi::TTInstance) {
         let _ = ptr;
     }

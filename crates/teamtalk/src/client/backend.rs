@@ -7,6 +7,12 @@ pub trait TeamTalkBackend: Send + Sync {
     fn init_poll(&self) -> *mut ffi::TTInstance;
     #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance;
+    fn get_message(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        msg: &mut ffi::TTMessage,
+        timeout_ms: &i32,
+    ) -> bool;
     fn close(&self, ptr: *mut ffi::TTInstance);
     fn start_recording_muxed(
         &self,
@@ -90,6 +96,12 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     fn init_poll(&self) -> *mut ffi::TTInstance;
     #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance;
+    fn get_message(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        msg: &mut ffi::TTMessage,
+        timeout_ms: &i32,
+    ) -> bool;
     fn close(&self, ptr: *mut ffi::TTInstance);
     fn start_recording_muxed(
         &self,
@@ -178,6 +190,15 @@ impl TeamTalkBackend for FfiBackend {
     #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance {
         unsafe { ffi::api().TT_InitTeamTalk(hwnd, msg) }
+    }
+
+    fn get_message(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        msg: &mut ffi::TTMessage,
+        timeout_ms: &i32,
+    ) -> bool {
+        unsafe { ffi::api().TT_GetMessage(ptr, msg, timeout_ms) == 1 }
     }
 
     fn close(&self, ptr: *mut ffi::TTInstance) {
