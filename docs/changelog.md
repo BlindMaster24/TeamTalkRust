@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v5.0.0...teamtalk-v6.0.0) - 2026-03-10
+
+### Changed
+- *(mock)* seal backend abstraction
+- *(client)* expand backend coverage for mockable paths
+
+### Fixed
+- *(test)* use TTCHAR helper in client logic tests
+- *(async)* route mock polling through backend
+
+### Other
+- *(ci)* add nextest-driven test workflow
+
 ## [5.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v4.0.0...teamtalk-v5.0.0) - 2026-03-08
 
 ### Added
