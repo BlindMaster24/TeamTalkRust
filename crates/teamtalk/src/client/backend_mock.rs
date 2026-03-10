@@ -264,6 +264,9 @@ impl MockBackend {
 }
 
 #[cfg(feature = "mock")]
+impl sealed::Sealed for MockBackend {}
+
+#[cfg(feature = "mock")]
 impl TeamTalkBackend for MockBackend {
     fn init_poll(&self) -> *mut ffi::TTInstance {
         std::ptr::dangling_mut()

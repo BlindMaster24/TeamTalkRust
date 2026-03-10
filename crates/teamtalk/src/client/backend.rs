@@ -6,7 +6,15 @@ use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 #[cfg(feature = "mock")]
-pub trait TeamTalkBackend: Send + Sync {
+pub(crate) mod sealed {
+    pub trait Sealed {}
+}
+
+#[cfg(feature = "mock")]
+/// Internal backend abstraction used by crate-provided mock and runtime paths.
+///
+/// This trait is sealed and is not intended for downstream implementations.
+pub trait TeamTalkBackend: sealed::Sealed + Send + Sync {
     fn init_poll(&self) -> *mut ffi::TTInstance;
     #[cfg(windows)]
     fn init_hwnd(&self, hwnd: ffi::HWND, msg: u32) -> *mut ffi::TTInstance;
@@ -262,6 +270,9 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
 }
 
 pub(crate) struct FfiBackend;
+
+#[cfg(feature = "mock")]
+impl sealed::Sealed for FfiBackend {}
 
 impl TeamTalkBackend for FfiBackend {
     fn init_poll(&self) -> *mut ffi::TTInstance {

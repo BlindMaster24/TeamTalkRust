@@ -95,6 +95,12 @@ Recommended test stack:
 - `proptest` for property-based invariants and roundtrip behavior.
 - `cargo-llvm-cov` for logic coverage summaries.
 
+Backend testing notes:
+
+- `Client::with_backend(...)` and the `mock` feature exist to support crate-level testing and mock-driven integration tests.
+- `TeamTalkBackend` is sealed and should be treated as an internal-facing test/runtime abstraction, not as a stable downstream extension point.
+- Future backend evolution may continue in major releases without preserving external backend implementations.
+
 ## TeamTalk Coverage Audit
 
 Run the TeamTalk header coverage audit with:

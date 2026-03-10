@@ -142,6 +142,9 @@ impl Client {
     }
 
     #[cfg(feature = "mock")]
+    /// Creates a client from a crate-provided backend implementation.
+    ///
+    /// This is intended for crate-level mock and integration testing support.
     pub fn with_backend(backend: Arc<dyn super::backend::TeamTalkBackend>) -> Result<Self> {
         init::new_client_with_backend(backend)
     }

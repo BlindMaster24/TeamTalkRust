@@ -17,7 +17,7 @@ teamtalk = { version = "5.0.0", features = ["dispatch", "async"] }
   `into_client`).
 - `async-tokio`: Tokio wake integration for the async wrapper (requires a Tokio runtime).
 - `logging`: enables `tracing` integration for SDK logs (including loader logs).
-- `mock`: in-memory event source for tests.
+- `mock`: in-memory event source for tests. The backend abstraction behind this feature is sealed and exists for crate-provided testing support, not for stable downstream backend implementations.
 - `offline`: disables SDK downloads; requires `TEAMTALK_DLL/` to be present.
 - `scripts`: Lua scripting support for extensions.
 - `plugins`: native plugin loading for extensions.
