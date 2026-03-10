@@ -115,17 +115,11 @@ miri-test:
 # Full Definition of Done.
 dod: fmt check clippy test doc
 
-# CI-like full check for bash users.
+# CI-like full check with platform-specific script wrappers.
 ci: dod doc-links version-check
-
-# CI-like full check for PowerShell users.
-ci-ps: dod doc-links-ps version-check-ps
 
 # CI-like full check using cargo-nextest for test execution.
 ci-nextest: fmt check clippy test-nextest doc doc-links version-check
-
-# CI-like full check using cargo-nextest for test execution (PowerShell).
-ci-nextest-ps: fmt check clippy test-nextest doc doc-links-ps version-check-ps
 
 # Fast local sanity pass.
 quick: fmt check-fast test-fast
@@ -139,9 +133,6 @@ qa-full: ci
 # Full QA profile using cargo-nextest for test execution.
 qa-nextest: ci-nextest
 
-# Full QA profile using cargo-nextest for test execution (PowerShell).
-qa-nextest-ps: ci-nextest-ps
-
 # =========================
 # Docs
 # =========================
@@ -154,44 +145,54 @@ doc:
 doc-open:
     cargo doc --no-deps --all-features --open
 
-# Build docs helper script (bash).
+# Build docs helper script.
+[unix]
 docs-build:
     bash ./scripts/build-docs.sh
 
-# Build docs helper script (PowerShell).
-docs-build-ps:
+# Build docs helper script.
+[windows]
+docs-build:
     ./scripts/build-docs.ps1
 
-# Validate markdown links (bash).
+# Validate markdown links.
+[unix]
 doc-links:
     bash ./scripts/check-doc-links.sh
 
-# Validate markdown links (PowerShell).
-doc-links-ps:
+# Validate markdown links.
+[windows]
+doc-links:
     ./scripts/check-doc-links.ps1
 
-# Coverage summary (bash).
+# Coverage summary.
+[unix]
 coverage:
     bash ./scripts/coverage.sh
 
-# Coverage summary (PowerShell).
-coverage-ps:
+# Coverage summary.
+[windows]
+coverage:
     ./scripts/coverage.ps1
 
-# Verify version refs in docs (bash).
+# Verify version refs in docs.
+[unix]
 version-check:
     bash ./scripts/check-version-refs.sh
 
-# Verify version refs in docs (PowerShell).
-version-check-ps:
+# Verify version refs in docs.
+[windows]
+version-check:
     ./scripts/check-version-refs.ps1
 
-# Sync version refs in docs (bash).
+# Sync version refs in docs.
+[unix]
 version-sync:
     bash ./scripts/update-version.sh
 
-# Sync version refs in docs (PowerShell).
-version-sync-ps:
+# Sync version refs in docs.
+[windows]
+version-sync:
     ./scripts/update-version.ps1
 
 # =========================

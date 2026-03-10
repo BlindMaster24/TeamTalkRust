@@ -348,8 +348,8 @@
     - `just qa-full`
     - `just qa-nextest`
     - `just dod`
-    - `just ci` / `just ci-ps`
-    - `just ci-nextest` / `just ci-nextest-ps`
+    - `just ci`
+    - `just ci-nextest`
     - `just check-feature <feature>`
     - `just clippy-feature <feature>`
     - `just test-feature <feature>`
@@ -364,11 +364,11 @@
   - Docs/version refs:
     - `just doc`
     - `just doc-open`
-    - `just docs-build` / `just docs-build-ps`
-    - `just doc-links` / `just doc-links-ps`
-    - `just coverage` / `just coverage-ps`
-    - `just version-check` / `just version-check-ps`
-    - `just version-sync` / `just version-sync-ps`
+    - `just docs-build`
+    - `just doc-links`
+    - `just coverage`
+    - `just version-check`
+    - `just version-sync`
   - Dependencies:
     - `just deps-outdated`
     - `just deps-outdated-all`
@@ -409,7 +409,7 @@
   2. `just deps-safe-cycle`
   3. `just runs-fail`
 - Pre-release operations (recommended sequence):
-  1. `just qa-nextest` (or `just qa-nextest-ps` on Windows without bash)
+  1. `just qa-nextest`
   2. `just release-dry`
   3. `just release-watch`
 - Release-day operations (explicit publish path):
@@ -421,7 +421,7 @@
     - `cargo fmt --all -- --check`
     - `cargo check --workspace --all-targets`
     - `cargo nextest run --workspace`
-  - `just qa-nextest` / `just ci-nextest` / `just ci-nextest-ps` ->
+  - `just qa-nextest` / `just ci-nextest` ->
     - `cargo fmt --all -- --check`
     - `cargo check --workspace --all-targets --all-features`
     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`

@@ -185,7 +185,6 @@ Common commands:
 just dod
 just ci
 just ci-nextest
-just ci-nextest-ps
 just test
 just test-nextest
 just doc
@@ -317,7 +316,6 @@ Coverage (logic-only; excludes thin FFI wrappers):
 scripts/coverage.sh
 scripts/coverage.ps1
 just coverage
-just coverage-ps
 ```
 
 The coverage scripts exclude thin FFI wrapper modules and the `teamtalk-sys`
