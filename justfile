@@ -119,7 +119,8 @@ dod: fmt check clippy test doc
 ci: dod doc-links version-check
 
 # CI-like full check using cargo-nextest for test execution.
-ci-nextest: fmt check clippy test-nextest doc doc-links version-check
+ci-nextest: fmt check clippy doc doc-links version-check
+    cargo nextest run --profile ci --workspace --all-features
 
 # Fast local sanity pass.
 quick: fmt check-fast test-fast

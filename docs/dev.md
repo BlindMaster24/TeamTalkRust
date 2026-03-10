@@ -77,7 +77,8 @@ cargo nextest run --workspace --all-features
 ```
 
 Use `cargo test` for the canonical compatibility gate and `cargo-nextest` for
-faster local and CI execution.
+faster local and CI execution. Local runs use the strict default profile; CI-style
+runs use the softer `ci` profile from `.config/nextest.toml`.
 
 Quick checks used in CI:
 

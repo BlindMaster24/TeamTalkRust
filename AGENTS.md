@@ -311,7 +311,8 @@
 - `cargo fmt --all -- --check` enforces formatting; `cargo fmt --all` applies it.
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings` enforces lint rules.
 - `cargo test --workspace --all-targets --all-features` runs the full test matrix.
-- `cargo nextest run --workspace --all-features` is the preferred fast runner for local development and CI execution.
+- `cargo nextest run --workspace --all-features` is the preferred strict local runner.
+- `cargo nextest run --profile ci --workspace --all-features` is the preferred CI-style runner.
 - `cargo doc --no-deps --all-features` builds API docs; `cargo doc --no-deps --all-features --open` opens them.
 - `scripts/build-docs.ps1` and `scripts/build-docs.sh` run the docs build locally.
 - `scripts/check-doc-links.ps1` and `scripts/check-doc-links.sh` validate that docs paths are proper links.
@@ -347,6 +348,7 @@
     - `just quick-nextest`
     - `just qa-full`
     - `just qa-nextest`
+  - Repository nextest config lives in `.config/nextest.toml` with a strict default profile and a softer `ci` profile.
     - `just dod`
     - `just ci`
     - `just ci-nextest`
@@ -425,7 +427,7 @@
     - `cargo fmt --all -- --check`
     - `cargo check --workspace --all-targets --all-features`
     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-    - `cargo nextest run --workspace --all-features`
+    - `cargo nextest run --profile ci --workspace --all-features`
     - `cargo test --workspace --examples --all-features`
     - `cargo doc --no-deps --all-features`
     - `bash ./scripts/check-doc-links.sh` (or `./scripts/check-doc-links.ps1`)

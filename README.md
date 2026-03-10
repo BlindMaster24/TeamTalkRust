@@ -66,6 +66,8 @@ just deps-safe-cycle
 just release-status
 ```
 
+`cargo-nextest` uses a strict default profile for local runs and a softer `ci` profile with retries and slow-test supervision for CI-style runs.
+
 ## Quick Start
 
 ```rust
