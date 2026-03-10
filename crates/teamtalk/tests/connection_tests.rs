@@ -1,3 +1,4 @@
+use rstest::rstest;
 use std::time::Duration;
 
 use teamtalk::client::connection::{
@@ -22,18 +23,27 @@ fn reconnect_handler_resets_after_stable_connection() {
     assert_eq!(handler.current_delay(), Duration::from_millis(0));
 }
 
-#[test]
-fn reconnect_handler_respects_max_attempts() {
+#[rstest]
+#[case(1, 0, true)]
+#[case(1, 1, false)]
+#[case(2, 1, true)]
+#[case(2, 2, false)]
+fn reconnect_handler_respects_max_attempts(
+    #[case] max_attempts: u32,
+    #[case] recorded_attempts: u32,
+    #[case] can_attempt: bool,
+) {
     let config = ReconnectConfig {
-        max_attempts: 1,
+        max_attempts,
         min_delay: Duration::from_millis(0),
         max_delay: Duration::from_millis(0),
         stability_threshold: Duration::from_millis(0),
     };
     let mut handler = ReconnectHandler::new(config);
-    assert!(handler.can_attempt());
-    handler.record_attempt();
-    assert!(!handler.can_attempt());
+    for _ in 0..recorded_attempts {
+        handler.record_attempt();
+    }
+    assert_eq!(handler.can_attempt(), can_attempt);
 }
 
 #[test]

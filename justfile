@@ -1,4 +1,5 @@
 set positional-arguments
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 # =========================
 # Core
@@ -67,13 +68,25 @@ clippy-fix:
 test:
     cargo test --workspace --all-targets --all-features
 
+# Run tests with cargo-nextest (preferred local/CI runner).
+test-nextest:
+    cargo nextest run --workspace --all-features
+
 # Run tests without all-features.
 test-fast:
     cargo test --workspace --all-targets
 
+# Run tests with cargo-nextest without all-features.
+test-nextest-fast:
+    cargo nextest run --workspace
+
 # Run tests with one explicit feature.
 test-feature feature:
     cargo test --workspace --all-targets --features {{feature}}
+
+# Run tests with cargo-nextest and one explicit feature.
+test-nextest-feature feature:
+    cargo nextest run --workspace --features {{feature}}
 
 # Run a single integration test target.
 test-one target:
@@ -86,6 +99,10 @@ test-filter filter:
 # Run examples as test targets.
 examples:
     cargo test --workspace --examples --all-features
+
+# Run examples with one explicit feature.
+examples-feature feature:
+    cargo test --workspace --examples --features {{feature}}
 
 # Run benchmark suite.
 bench:
@@ -104,11 +121,26 @@ ci: dod doc-links version-check
 # CI-like full check for PowerShell users.
 ci-ps: dod doc-links-ps version-check-ps
 
+# CI-like full check using cargo-nextest for test execution.
+ci-nextest: fmt check clippy test-nextest doc doc-links version-check
+
+# CI-like full check using cargo-nextest for test execution (PowerShell).
+ci-nextest-ps: fmt check clippy test-nextest doc doc-links-ps version-check-ps
+
 # Fast local sanity pass.
 quick: fmt check-fast test-fast
 
+# Fast local sanity pass using cargo-nextest.
+quick-nextest: fmt check-fast test-nextest-fast
+
 # Full QA profile used before release.
 qa-full: ci
+
+# Full QA profile using cargo-nextest for test execution.
+qa-nextest: ci-nextest
+
+# Full QA profile using cargo-nextest for test execution (PowerShell).
+qa-nextest-ps: ci-nextest-ps
 
 # =========================
 # Docs
@@ -137,6 +169,14 @@ doc-links:
 # Validate markdown links (PowerShell).
 doc-links-ps:
     ./scripts/check-doc-links.ps1
+
+# Coverage summary (bash).
+coverage:
+    bash ./scripts/coverage.sh
+
+# Coverage summary (PowerShell).
+coverage-ps:
+    ./scripts/coverage.ps1
 
 # Verify version refs in docs (bash).
 version-check:
@@ -259,7 +299,7 @@ rebuild: clean check
 
 # Install common CLI tools used by this repository.
 tools-install:
-    cargo install just cargo-edit cargo-outdated cargo-llvm-cov
+    cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest
 
 # Run TeamTalk header+docs audit pass.
 audit-pass:

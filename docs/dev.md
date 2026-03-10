@@ -70,6 +70,15 @@ Run the full test suite with all features enabled:
 cargo test --workspace --all-targets --all-features
 ```
 
+Preferred day-to-day runner:
+
+```bash
+cargo nextest run --workspace --all-features
+```
+
+Use `cargo test` for the canonical compatibility gate and `cargo-nextest` for
+faster local and CI execution.
+
 Quick checks used in CI:
 
 ```bash
@@ -77,6 +86,13 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-targets
 ```
+
+Recommended test stack:
+
+- `cargo-nextest` for the primary test runner in CI and local fast loops.
+- `rstest` for parameterized cases and fixtures in repetitive scenario tests.
+- `proptest` for property-based invariants and roundtrip behavior.
+- `cargo-llvm-cov` for logic coverage summaries.
 
 ## TeamTalk Coverage Audit
 
@@ -120,17 +136,22 @@ Wrapper policy:
 The repository includes a [`justfile`](../justfile) with shortcuts for checks,
 docs, and dependency updates.
 
+On Windows, the `justfile` uses PowerShell as `windows-shell`, so `just` does
+not require a separate `sh` installation for normal recipes.
+
 Install tools:
 
 ```bash
-cargo install just cargo-edit cargo-outdated cargo-llvm-cov
+cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest
 ```
 
 Daily profile:
 
 ```bash
 just quick
+just quick-nextest
 just test-feature async
+just test-nextest-feature async
 just release-status
 ```
 
@@ -146,6 +167,7 @@ Pre-release:
 
 ```bash
 just qa-full
+just qa-nextest
 just release-dry
 just release-watch
 ```
@@ -162,7 +184,10 @@ Common commands:
 ```bash
 just dod
 just ci
+just ci-nextest
+just ci-nextest-ps
 just test
+just test-nextest
 just doc
 just search tokio
 just info release-plz
@@ -197,6 +222,7 @@ Daily flow:
 ```bash
 just env-check
 just quick
+just quick-nextest
 just test-feature async
 just release-status
 ```
@@ -290,6 +316,8 @@ Coverage (logic-only; excludes thin FFI wrappers):
 ```bash
 scripts/coverage.sh
 scripts/coverage.ps1
+just coverage
+just coverage-ps
 ```
 
 The coverage scripts exclude thin FFI wrapper modules and the `teamtalk-sys`

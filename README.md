@@ -52,14 +52,16 @@ checks, docs, dependencies, and release operations.
 Install optional tooling:
 
 ```bash
-cargo install just cargo-edit cargo-outdated cargo-llvm-cov
+cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest
 ```
 
 Common commands:
 
 ```bash
 just quick
+just quick-nextest
 just ci
+just ci-nextest
 just deps-safe-cycle
 just release-status
 ```

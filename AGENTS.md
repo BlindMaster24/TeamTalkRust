@@ -311,6 +311,7 @@
 - `cargo fmt --all -- --check` enforces formatting; `cargo fmt --all` applies it.
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings` enforces lint rules.
 - `cargo test --workspace --all-targets --all-features` runs the full test matrix.
+- `cargo nextest run --workspace --all-features` is the preferred fast runner for local development and CI execution.
 - `cargo doc --no-deps --all-features` builds API docs; `cargo doc --no-deps --all-features --open` opens them.
 - `scripts/build-docs.ps1` and `scripts/build-docs.sh` run the docs build locally.
 - `scripts/check-doc-links.ps1` and `scripts/check-doc-links.sh` validate that docs paths are proper links.
@@ -331,7 +332,8 @@
 - The repo ships a root `justfile` as a convenience CLI for common workflows.
 - `just` is optional; every task must still be runnable with direct `cargo`/`gh`/scripts commands.
 - Install recommended tooling:
-  - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov`
+  - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest`
+- The `justfile` sets `windows-shell` to PowerShell so recipes work on Windows without a separate `sh` installation.
 - Discover tasks with `just --list`.
 - Prefer `just` commands first for repeatable local flows; if `just` or a required subcommand is unavailable, use the equivalent manual commands.
 - Core `just` command map (preferred):
@@ -342,15 +344,21 @@
     - `just cargo-list`
   - Quality:
     - `just quick`
+    - `just quick-nextest`
     - `just qa-full`
+    - `just qa-nextest`
     - `just dod`
     - `just ci` / `just ci-ps`
+    - `just ci-nextest` / `just ci-nextest-ps`
     - `just check-feature <feature>`
     - `just clippy-feature <feature>`
     - `just test-feature <feature>`
+    - `just test-nextest`
+    - `just test-nextest-feature <feature>`
     - `just test-one <target>`
     - `just test-filter <pattern>`
     - `just examples`
+    - `just examples-feature <feature>`
     - `just bench`
     - `just miri-test`
   - Docs/version refs:
@@ -358,6 +366,7 @@
     - `just doc-open`
     - `just docs-build` / `just docs-build-ps`
     - `just doc-links` / `just doc-links-ps`
+    - `just coverage` / `just coverage-ps`
     - `just version-check` / `just version-check-ps`
     - `just version-sync` / `just version-sync-ps`
   - Dependencies:
@@ -392,15 +401,15 @@
     2) continue with available checks and clearly report which optional step was skipped.
 - Daily operations (recommended sequence):
   1. `just env-check` (verify toolchain + CLI presence).
-  2. `just quick` (fast health check during active development).
-  3. `just test-feature <feature>` when working in one feature slice.
+  2. `just quick-nextest` (fast health check during active development).
+  3. `just test-nextest-feature <feature>` when working in one feature slice.
   4. `just release-status` when release state/PR state matters.
 - Weekly maintenance (recommended sequence):
   1. `just deps-outdated`
   2. `just deps-safe-cycle`
   3. `just runs-fail`
 - Pre-release operations (recommended sequence):
-  1. `just qa-full`
+  1. `just qa-nextest` (or `just qa-nextest-ps` on Windows without bash)
   2. `just release-dry`
   3. `just release-watch`
 - Release-day operations (explicit publish path):
@@ -408,15 +417,16 @@
   2. `just release-run`
   3. `just release-watch`
 - Fallback equivalents for critical recipes:
-  - `just quick` ->
+  - `just quick-nextest` ->
     - `cargo fmt --all -- --check`
     - `cargo check --workspace --all-targets`
-    - `cargo test --workspace --all-targets`
-  - `just qa-full` / `just ci` ->
+    - `cargo nextest run --workspace`
+  - `just qa-nextest` / `just ci-nextest` / `just ci-nextest-ps` ->
     - `cargo fmt --all -- --check`
     - `cargo check --workspace --all-targets --all-features`
     - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-    - `cargo test --workspace --all-targets --all-features`
+    - `cargo nextest run --workspace --all-features`
+    - `cargo test --workspace --examples --all-features`
     - `cargo doc --no-deps --all-features`
     - `bash ./scripts/check-doc-links.sh` (or `./scripts/check-doc-links.ps1`)
     - `bash ./scripts/check-version-refs.sh` (or `./scripts/check-version-refs.ps1`)
@@ -658,6 +668,8 @@
 - Place tests under `crates/<crate>/tests` only.
 - Do not add `#[cfg(test)]` unit-test modules inside library source files.
 - Prefer focused unit tests and feature-gated tests for optional modules.
+- Prefer `rstest` for repetitive scenario matrices and fixtures instead of hand-written copy-paste test cases.
+- Prefer `proptest` for roundtrip and invariant-heavy surfaces (typed flags, conversions, parser/state invariants).
 - Name tests by behavior, for example `recording_start_on_command`.
 - Add at least one usage example for every new high-level API, even if no tests are added.
 - When adding or expanding tests, run the full test matrix and (if requested) coverage commands above.

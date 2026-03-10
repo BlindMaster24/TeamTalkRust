@@ -28,6 +28,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: taiki-e/install-action@nextest
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
@@ -67,11 +68,21 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.features }}" = "all" ]; then
-            cargo test --workspace --all-targets --all-features
+            cargo nextest run --workspace --all-features
           elif [ -n "${{ matrix.features }}" ]; then
-            cargo test --workspace --all-targets --features "${{ matrix.features }}"
+            cargo nextest run --workspace --features "${{ matrix.features }}"
           else
-            cargo test --workspace --all-targets
+            cargo nextest run --workspace
+          fi
+      - name: examples
+        shell: bash
+        run: |
+          if [ "${{ matrix.features }}" = "all" ]; then
+            cargo test --workspace --examples --all-features
+          elif [ -n "${{ matrix.features }}" ]; then
+            cargo test --workspace --examples --features "${{ matrix.features }}"
+          else
+            cargo test --workspace --examples
           fi
       - name: doc
         run: cargo doc --no-deps --all-features
