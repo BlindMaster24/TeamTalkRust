@@ -9,7 +9,9 @@ pub struct MockBackend {
 #[cfg(feature = "mock")]
 #[derive(Default)]
 struct MockBackendState {
+    queued_messages: std::collections::VecDeque<ffi::TTMessage>,
     channels: std::collections::HashMap<i32, Channel>,
+    channel_files: std::collections::HashMap<(i32, i32), ffi::RemoteFile>,
     channel_paths: std::collections::HashMap<i32, String>,
     channel_users: std::collections::HashMap<i32, Vec<ffi::User>>,
     root_channel_id: ChannelId,
@@ -44,6 +46,10 @@ struct MockBackendState {
     list_bans_result: i32,
     update_server_result: i32,
     save_config_result: i32,
+    query_server_stats_result: i32,
+    ping_result: i32,
+    query_max_payload_ok: bool,
+    quit_result: i32,
     last_login: Option<(String, String, String, String)>,
     last_text_message: Option<ffi::TextMessage>,
     text_messages: Vec<ffi::TextMessage>,
@@ -78,6 +84,10 @@ impl MockBackend {
                 list_bans_result: 1,
                 update_server_result: 1,
                 save_config_result: 1,
+                query_server_stats_result: 1,
+                ping_result: 1,
+                query_max_payload_ok: true,
+                quit_result: 1,
                 connect_ok: true,
                 disconnect_ok: true,
                 ..MockBackendState::default()
@@ -93,6 +103,13 @@ impl MockBackend {
     pub fn set_channel_path(&self, channel_id: ChannelId, path: &str) {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.channel_paths.insert(channel_id.0, path.to_string());
+    }
+
+    pub fn set_channel_file(&self, file: ffi::RemoteFile) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state
+            .channel_files
+            .insert((file.nChannelID, file.nFileID), file);
     }
 
     pub fn set_channel_users(&self, channel_id: ChannelId, users: Vec<ffi::User>) {
@@ -261,6 +278,49 @@ impl MockBackend {
             .call_log
             .clone()
     }
+
+    pub fn set_query_server_stats_result(&self, cmd_id: i32) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .query_server_stats_result = cmd_id;
+    }
+
+    pub fn set_ping_result(&self, cmd_id: i32) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .ping_result = cmd_id;
+    }
+
+    pub fn set_query_max_payload_ok(&self, ok: bool) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .query_max_payload_ok = ok;
+    }
+
+    pub fn set_quit_result(&self, cmd_id: i32) {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .quit_result = cmd_id;
+    }
+
+    pub fn push_server_statistics_event(&self) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_SERVERSTATISTICS;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_cmd_error_event(&self, source: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_ERROR;
+        msg.nSource = source;
+        state.queued_messages.push_back(msg);
+    }
 }
 
 #[cfg(feature = "mock")]
@@ -280,10 +340,16 @@ impl TeamTalkBackend for MockBackend {
     fn get_message(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _msg: &mut ffi::TTMessage,
+        msg: &mut ffi::TTMessage,
         _timeout_ms: &i32,
     ) -> bool {
-        false
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(next) = state.queued_messages.pop_front() {
+            *msg = next;
+            true
+        } else {
+            false
+        }
     }
 
     fn close(&self, ptr: *mut ffi::TTInstance) {
@@ -408,6 +474,21 @@ impl TeamTalkBackend for MockBackend {
             .values()
             .cloned()
             .collect()
+    }
+
+    fn get_channel_file(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+    ) -> Option<RemoteFile> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .channel_files
+            .get(&(channel_id, file_id))
+            .copied()
+            .map(RemoteFile::from)
     }
 
     fn get_channel_path(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<String> {
@@ -732,5 +813,33 @@ impl TeamTalkBackend for MockBackend {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .save_config_result
+    }
+
+    fn do_query_server_stats(&self, _ptr: *mut ffi::TTInstance) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .query_server_stats_result
+    }
+
+    fn do_ping(&self, _ptr: *mut ffi::TTInstance) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .ping_result
+    }
+
+    fn query_max_payload(&self, _ptr: *mut ffi::TTInstance, _user_id: i32) -> bool {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .query_max_payload_ok
+    }
+
+    fn do_quit(&self, _ptr: *mut ffi::TTInstance) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .quit_result
     }
 }

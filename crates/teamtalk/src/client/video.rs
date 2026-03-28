@@ -26,6 +26,22 @@ impl From<ffi::VideoCaptureDevice> for VideoCaptureDevice {
     }
 }
 
+/// Guard around a video frame acquired from the SDK.
+pub struct VideoFrameGuard<'a> {
+    client: &'a Client,
+    ptr: *mut ffi::VideoFrame,
+}
+
+impl VideoFrameGuard<'_> {
+    pub fn frame(&self) -> &ffi::VideoFrame {
+        unsafe { &*self.ptr }
+    }
+
+    pub fn as_ptr(&self) -> *mut ffi::VideoFrame {
+        self.ptr
+    }
+}
+
 impl Client {
     /// Returns available video capture devices.
     pub fn get_video_capture_devices(&self) -> Vec<VideoCaptureDevice> {
@@ -69,6 +85,12 @@ impl Client {
             let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr.0, user_id.0);
             if ptr.is_null() { None } else { Some(ptr) }
         }
+    }
+
+    /// Acquires the latest video frame and releases it automatically on drop.
+    pub fn acquire_video_frame_guard(&self, user_id: UserId) -> Option<VideoFrameGuard<'_>> {
+        self.acquire_video_frame(user_id)
+            .map(|ptr| VideoFrameGuard { client: self, ptr })
     }
 
     /// Releases a previously acquired video frame.
@@ -138,5 +160,11 @@ impl Client {
                 frame,
             ) == 1
         }
+    }
+}
+
+impl Drop for VideoFrameGuard<'_> {
+    fn drop(&mut self) {
+        let _ = unsafe { self.client.release_video_frame(self.ptr) };
     }
 }

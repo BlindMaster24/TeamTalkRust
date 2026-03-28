@@ -1,6 +1,7 @@
 //! Server management APIs.
 use super::Client;
 use crate::types::{ChannelId, ServerProperties, User, UserId};
+use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
@@ -10,6 +11,14 @@ fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
             | crate::events::ConnectionState::Joining(_)
             | crate::events::ConnectionState::Joined(_)
     )
+}
+
+fn wait_slice(deadline: Instant) -> i32 {
+    deadline
+        .saturating_duration_since(Instant::now())
+        .min(Duration::from_millis(50))
+        .as_millis()
+        .min(i32::MAX as u128) as i32
 }
 
 impl Client {
@@ -71,12 +80,62 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoQueryServerStats(self.ptr.0) }
+        self.backend().do_query_server_stats(self.ptr.0)
+    }
+
+    /// Requests server statistics and waits for the statistics event or command error.
+    pub fn query_server_stats_and_wait(
+        &self,
+        timeout_ms: i32,
+    ) -> Result<crate::client::Message, crate::events::Error> {
+        let cmd_id = self.query_server_stats();
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: "server statistics query rejected in current state".to_string(),
+            });
+        }
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::ServerStatistics => return Ok(message),
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::CommandFailed {
+                                code: message.source(),
+                                message: "server statistics query failed".to_string(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::ServerStatistics => return Ok(message),
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::CommandFailed {
+                            code: message.source(),
+                            message: "server statistics query failed".to_string(),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
 
     /// Pings the server and waits for processing events.
     pub fn ping(&self) -> i32 {
-        unsafe { ffi::api().TT_DoPing(self.ptr.0) }
+        self.backend().do_ping(self.ptr.0)
     }
 
     /// Queries the max payload for a user.
@@ -85,12 +144,12 @@ impl Client {
     /// server payload (`user_id = 0`). For that default path use
     /// `query_server_max_payload()`.
     pub fn query_max_payload(&self, user_id: UserId) -> bool {
-        unsafe { ffi::api().TT_QueryMaxPayload(self.ptr.0, user_id.0) == 1 }
+        self.backend().query_max_payload(self.ptr.0, user_id.0)
     }
 
     /// Queries the max payload supported by the server (`user_id = 0`).
     pub fn query_server_max_payload(&self) -> bool {
-        unsafe { ffi::api().TT_QueryMaxPayload(self.ptr.0, 0) == 1 }
+        self.backend().query_max_payload(self.ptr.0, 0)
     }
 
     /// Pumps a message into the Windows message loop (Windows only).
@@ -101,6 +160,6 @@ impl Client {
 
     /// Quits the TeamTalk client (for standalone apps).
     pub fn quit(&self) -> i32 {
-        unsafe { ffi::api().TT_DoQuit(self.ptr.0) }
+        self.backend().do_quit(self.ptr.0)
     }
 }

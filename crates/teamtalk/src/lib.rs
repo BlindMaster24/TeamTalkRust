@@ -42,12 +42,15 @@ pub use client::audio::AudioDeviceProfile;
 pub use client::audio::{
     AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,
 };
+pub use client::desktop::DesktopWindowGuard;
+pub use client::media::MediaVideoFrameGuard;
 pub use client::recording::{
     RecordSession, RecordingOptions, RecordingSampleFormat, RecordingSession, RecordingTarget,
     SilencePolicy, SyncedUserRecording, SyncedUserRecordingBus, SyncedUserRecordingOptions,
     SyncedUserRecordingSession, UserRecordingOptions, UserRecordingSession,
 };
 pub use client::users::{LoginParams, SendTextOptions};
+pub use client::video::VideoFrameGuard;
 pub use client::{
     Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
     ClientManager, ClientRegistry, EventContext, EventData, EventSubscriptionId, Message,

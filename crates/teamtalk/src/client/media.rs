@@ -21,6 +21,22 @@ impl MediaFilePlayback {
     }
 }
 
+/// Guard around a media video frame acquired from the SDK.
+pub struct MediaVideoFrameGuard<'a> {
+    client: &'a Client,
+    ptr: *mut ffi::VideoFrame,
+}
+
+impl MediaVideoFrameGuard<'_> {
+    pub fn frame(&self) -> &ffi::VideoFrame {
+        unsafe { &*self.ptr }
+    }
+
+    pub fn as_ptr(&self) -> *mut ffi::VideoFrame {
+        self.ptr
+    }
+}
+
 impl Client {
     /// Queries media-file metadata before playback or streaming.
     pub fn get_media_file_info(&self, file_path: &str) -> Option<crate::types::MediaFileInfo> {
@@ -128,6 +144,15 @@ impl Client {
         }
     }
 
+    /// Acquires a media video frame and releases it automatically on drop.
+    pub fn acquire_user_media_video_frame_guard(
+        &self,
+        user_id: UserId,
+    ) -> Option<MediaVideoFrameGuard<'_>> {
+        self.acquire_user_media_video_frame(user_id)
+            .map(|ptr| MediaVideoFrameGuard { client: self, ptr })
+    }
+
     /// Releases a previously acquired media video frame.
     ///
     /// # Safety
@@ -139,5 +164,11 @@ impl Client {
             return false;
         }
         unsafe { ffi::api().TT_ReleaseUserMediaVideoFrame(self.ptr.0, frame) == 1 }
+    }
+}
+
+impl Drop for MediaVideoFrameGuard<'_> {
+    fn drop(&mut self) {
+        let _ = unsafe { self.client.release_user_media_video_frame(self.ptr) };
     }
 }

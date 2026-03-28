@@ -46,6 +46,12 @@ impl Client {
         self.backend().get_channel_path(self.ptr.0, id.0)
     }
 
+    /// Returns a channel by path.
+    pub fn get_channel_by_path(&self, path: &str) -> Option<Channel> {
+        let id = self.get_channel_id_from_path(path);
+        (id.0 > 0).then(|| self.get_channel(id)).flatten()
+    }
+
     /// Returns a channel id from a path.
     pub fn get_channel_id_from_path(&self, path: &str) -> ChannelId {
         self.backend().get_channel_id_from_path(self.ptr.0, path)
@@ -249,6 +255,12 @@ impl Client {
     /// Returns the channel ID where the current user is.
     pub fn my_channel_id(&self) -> ChannelId {
         self.backend().get_my_channel_id(self.ptr.0)
+    }
+
+    /// Returns the current channel for the local user, if any.
+    pub fn my_channel(&self) -> Option<Channel> {
+        let id = self.my_channel_id();
+        (id.0 > 0).then(|| self.get_channel(id)).flatten()
     }
 
     /// Returns users in a channel.

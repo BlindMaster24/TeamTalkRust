@@ -39,6 +39,12 @@ impl Client {
         }
     }
 
+    /// Returns one file by channel id and file id.
+    pub fn get_channel_file(&self, channel_id: ChannelId, file_id: FileId) -> Option<RemoteFile> {
+        self.backend()
+            .get_channel_file(self.ptr.0, channel_id.0, file_id.0)
+    }
+
     /// Sends a local file to a channel.
     pub fn send_file(&self, channel_id: ChannelId, local_path: &str) -> i32 {
         if !can_issue_logged_in_command(self.connection_state()) {

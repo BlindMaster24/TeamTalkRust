@@ -45,8 +45,13 @@
 ### Fixed
 - *(client)* recover stalled auto reconnect phases
 
+### Added
+- *(client)* add channel/file convenience helpers and safer media frame guard
+- *(client)* add server stats wait helper plus video and desktop frame guards
+
 ### Docs
 - *(audit)* update coverage workflow and desktop helpers
+- *(client)* document channel lookup, file transfer, and media frame helper additions
 
 ### Other
 - *(bot)* cover guards and json defaults

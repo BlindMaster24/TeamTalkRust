@@ -62,6 +62,24 @@ impl From<ffi::FileTransferStatus> for FileTransferStatus {
     }
 }
 
+impl FileTransferStatus {
+    pub fn is_active(self) -> bool {
+        matches!(self, Self::Active)
+    }
+
+    pub fn is_finished(self) -> bool {
+        matches!(self, Self::Finished)
+    }
+
+    pub fn is_error(self) -> bool {
+        matches!(self, Self::Error)
+    }
+
+    pub fn is_terminal(self) -> bool {
+        !self.is_active()
+    }
+}
+
 /// File transfer information.
 pub struct FileTransfer {
     pub status: FileTransferStatus,
@@ -82,6 +100,21 @@ impl FileTransfer {
         } else {
             self.transferred as f32 / self.size as f32
         }
+    }
+
+    /// Returns remaining bytes to transfer.
+    pub fn remaining_bytes(&self) -> i64 {
+        self.size.saturating_sub(self.transferred)
+    }
+
+    /// Returns whether the transfer reached a terminal state.
+    pub fn is_terminal(&self) -> bool {
+        self.status.is_terminal()
+    }
+
+    /// Returns whether the transfer finished successfully.
+    pub fn is_finished(&self) -> bool {
+        self.status.is_finished()
     }
 }
 

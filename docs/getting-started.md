@@ -106,6 +106,17 @@ server flood protection.
 When querying UDP payload limits, prefer `query_server_max_payload()`. The
 current TeamTalk SDK only supports server query mode (`user_id = 0`).
 
+For channel file lookups, use `get_channel_file(channel_id, file_id)` when you
+already know the file id and want one `RemoteFile` instead of listing the full
+channel directory. For media playback frames, prefer
+`acquire_user_media_video_frame_guard()` over the raw pointer API so the SDK
+frame is released automatically on drop.
+
+For other acquire/release SDK surfaces, the same pattern now exists for live
+video and desktop frames: prefer `acquire_video_frame_guard()` and
+`acquire_user_desktop_window_guard()` / `_guard_ex()` over the raw pointer
+variants unless you explicitly need the low-level API.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:

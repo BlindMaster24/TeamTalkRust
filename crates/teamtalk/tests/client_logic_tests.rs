@@ -13,7 +13,7 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
+    Channel, ChannelId, FileId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
 };
 use teamtalk::utils::strings::ToTT;
 
@@ -31,6 +31,16 @@ fn raw_user(id: i32, username: &str, local_subscriptions: u32) -> ffi::User {
     let len = encoded.len().min(user.szUsername.len());
     user.szUsername[..len].copy_from_slice(&encoded[..len]);
     user
+}
+
+fn raw_remote_file(channel_id: i32, file_id: i32, name: &str) -> ffi::RemoteFile {
+    let mut file = unsafe { std::mem::zeroed::<ffi::RemoteFile>() };
+    file.nChannelID = channel_id;
+    file.nFileID = file_id;
+    let encoded = name.tt();
+    let len = encoded.len().min(file.szFileName.len());
+    file.szFileName[..len].copy_from_slice(&encoded[..len]);
+    file
 }
 
 #[test]
@@ -133,6 +143,40 @@ fn join_channel_does_not_change_state_on_failure() {
 
     assert_eq!(cmd_id, 0);
     assert_eq!(client.connection_state(), ConnectionState::Idle);
+}
+
+#[test]
+fn get_channel_file_returns_single_remote_file() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_channel_file(raw_remote_file(7, 13, "rules.txt"));
+    let client = Client::with_backend(backend).expect("client");
+
+    let file = client
+        .get_channel_file(ChannelId(7), FileId(13))
+        .expect("remote file");
+
+    assert_eq!(file.channel_id, ChannelId(7));
+    assert_eq!(file.id, FileId(13));
+    assert_eq!(file.name, "rules.txt");
+}
+
+#[test]
+fn get_channel_by_path_uses_channel_path_lookup() {
+    let backend = Arc::new(MockBackend::new());
+    let channel = test_channel(9, "ops");
+    backend.set_channel(channel.clone());
+    backend.set_channel_path(ChannelId(9), "/root/ops");
+    backend.set_my_channel_id(ChannelId(9));
+    let client = Client::with_backend(backend).expect("client");
+
+    let by_path = client
+        .get_channel_by_path("/root/ops")
+        .expect("channel by path");
+    let mine = client.my_channel().expect("my channel");
+
+    assert_eq!(by_path.id, ChannelId(9));
+    assert_eq!(by_path.name, channel.name);
+    assert_eq!(mine.id, ChannelId(9));
 }
 
 #[test]
@@ -355,6 +399,40 @@ fn reconnect_phase_timeouts_reject_zero_values() {
         .expect_err("zero timeout should fail");
 
     assert!(matches!(err, teamtalk::events::Error::InvalidParam));
+}
+
+#[test]
+fn query_server_stats_and_wait_returns_server_statistics_event() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_connect_ok(true);
+    backend.push_server_statistics_event();
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let message = client
+        .query_server_stats_and_wait(500)
+        .expect("server statistics");
+
+    assert_eq!(message.event(), teamtalk::Event::ServerStatistics);
+}
+
+#[test]
+fn query_server_stats_and_wait_reports_command_error() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_query_server_stats_result(7);
+    backend.push_cmd_error_event(7);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let err = match client.query_server_stats_and_wait(500) {
+        Ok(_) => panic!("expected server statistics command error"),
+        Err(err) => err,
+    };
+
+    assert!(matches!(
+        err,
+        teamtalk::events::Error::CommandFailed { code: 7, .. }
+    ));
 }
 
 #[test]

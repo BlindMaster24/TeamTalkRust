@@ -44,7 +44,9 @@ cargo build --no-default-features --features tls-rustls
 - Hooks API via `ClientHooks` for event callbacks.
 - Poll helpers: `Client::poll_until` and `Client::wait_for`.
 - High-level wait helpers: `Client::login_and_wait` and `Client::join_channel_and_wait`.
+- Command wait helper: `Client::query_server_stats_and_wait`.
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
+- Channel lookup helpers: `get_channel_file`, `get_channel_by_path`, and `my_channel`.
 - Recording guard: `RecordSession` for safe start/stop of channel recording.    
 - Managed recording: `RecordingSession`, `RecordingOptions`, `RecordingTarget`.  
 - Auto-rotation: `RecordingSession::rotate_if_needed` with size/time limits.    
@@ -129,6 +131,16 @@ cargo build --no-default-features --features tls-rustls
 - Audio profiles: `AudioDeviceProfile` with `apply_audio_profile`.
 - Media preflight helper: `Client::get_media_file_info` before playback or
   streaming.
+- Media frame guard: `MediaVideoFrameGuard` via
+  `acquire_user_media_video_frame_guard()` for automatic release of SDK-owned
+  video frames.
+- Video frame guard: `VideoFrameGuard` via `acquire_video_frame_guard()`.
+- Desktop window guard: `DesktopWindowGuard` via
+  `acquire_user_desktop_window_guard()` and
+  `acquire_user_desktop_window_guard_ex()`.
+- File transfer convenience helpers: `FileTransferStatus::{is_active,
+  is_finished, is_error, is_terminal}` plus `FileTransfer::remaining_bytes`,
+  `is_terminal`, and `is_finished`.
 - Desktop helper APIs: batched `send_desktop_inputs`, desktop input translate /
   execute helpers, direct desktop window send APIs, Win32 desktop window
   discovery helpers, and native paint helpers for desktop/video rendering.

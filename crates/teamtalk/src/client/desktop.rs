@@ -3,6 +3,22 @@ use super::Client;
 use crate::types::{DesktopInput, UserId};
 use teamtalk_sys as ffi;
 
+/// Guard around a desktop window acquired from the SDK.
+pub struct DesktopWindowGuard<'a> {
+    client: &'a Client,
+    ptr: *mut ffi::DesktopWindow,
+}
+
+impl DesktopWindowGuard<'_> {
+    pub fn window(&self) -> &ffi::DesktopWindow {
+        unsafe { &*self.ptr }
+    }
+
+    pub fn as_ptr(&self) -> *mut ffi::DesktopWindow {
+        self.ptr
+    }
+}
+
 impl Client {
     /// Closes a desktop window session.
     pub fn close_desktop_window(&self) -> bool {
@@ -198,6 +214,15 @@ impl Client {
         }
     }
 
+    /// Acquires a desktop window update bitmap and releases it automatically on drop.
+    pub fn acquire_user_desktop_window_guard(
+        &self,
+        user_id: UserId,
+    ) -> Option<DesktopWindowGuard<'_>> {
+        self.acquire_user_desktop_window(user_id)
+            .map(|ptr| DesktopWindowGuard { client: self, ptr })
+    }
+
     /// Acquires a desktop window update bitmap converted to a specific bitmap format.
     pub fn acquire_user_desktop_window_ex(
         &self,
@@ -211,6 +236,16 @@ impl Client {
         }
     }
 
+    /// Acquires a desktop window update bitmap in a specific format and releases it on drop.
+    pub fn acquire_user_desktop_window_guard_ex(
+        &self,
+        user_id: UserId,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> Option<DesktopWindowGuard<'_>> {
+        self.acquire_user_desktop_window_ex(user_id, bitmap_format)
+            .map(|ptr| DesktopWindowGuard { client: self, ptr })
+    }
+
     #[allow(clippy::missing_safety_doc)]
     /// Releases a previously acquired desktop window.
     ///
@@ -221,5 +256,11 @@ impl Client {
             return false;
         }
         unsafe { ffi::api().TT_ReleaseUserDesktopWindow(self.ptr.0, window) == 1 }
+    }
+}
+
+impl Drop for DesktopWindowGuard<'_> {
+    fn drop(&mut self) {
+        let _ = unsafe { self.client.release_user_desktop_window(self.ptr) };
     }
 }

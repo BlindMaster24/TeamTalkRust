@@ -1,6 +1,6 @@
 use crate::types::{
-    AudioCodec, Channel, ChannelId, ClientStatistics, ServerProperties, Subscriptions, User,
-    UserAccount, UserStatistics,
+    AudioCodec, Channel, ChannelId, ClientStatistics, RemoteFile, ServerProperties, Subscriptions,
+    User, UserAccount, UserStatistics,
 };
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
@@ -69,6 +69,12 @@ pub trait TeamTalkBackend: sealed::Sealed + Send + Sync {
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
     fn get_server_channels(&self, ptr: *mut ffi::TTInstance) -> Vec<Channel>;
+    fn get_channel_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+    ) -> Option<RemoteFile>;
     fn get_channel_path(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<String>;
     fn get_channel_id_from_path(&self, ptr: *mut ffi::TTInstance, path: &str) -> ChannelId;
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
@@ -139,6 +145,10 @@ pub trait TeamTalkBackend: sealed::Sealed + Send + Sync {
     ) -> i32;
     fn do_update_server(&self, ptr: *mut ffi::TTInstance, props: &ServerProperties) -> i32;
     fn do_save_config(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_query_server_stats(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_ping(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn query_max_payload(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> bool;
+    fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32;
 }
 
 #[cfg(not(feature = "mock"))]
@@ -197,6 +207,12 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
     fn get_server_channels(&self, ptr: *mut ffi::TTInstance) -> Vec<Channel>;
+    fn get_channel_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+    ) -> Option<RemoteFile>;
     fn get_channel_path(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<String>;
     fn get_channel_id_from_path(&self, ptr: *mut ffi::TTInstance, path: &str) -> ChannelId;
     fn get_my_user_id(&self, ptr: *mut ffi::TTInstance) -> i32;
@@ -267,6 +283,10 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     ) -> i32;
     fn do_update_server(&self, ptr: *mut ffi::TTInstance, props: &ServerProperties) -> i32;
     fn do_save_config(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_query_server_stats(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_ping(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn query_max_payload(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> bool;
+    fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32;
 }
 
 pub(crate) struct FfiBackend;
@@ -418,6 +438,20 @@ impl TeamTalkBackend for FfiBackend {
             } else {
                 vec![]
             }
+        }
+    }
+
+    fn get_channel_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+    ) -> Option<RemoteFile> {
+        let mut raw = unsafe { std::mem::zeroed::<ffi::RemoteFile>() };
+        if unsafe { ffi::api().TT_GetChannelFile(ptr, channel_id, file_id, &mut raw) } == 1 {
+            Some(RemoteFile::from(raw))
+        } else {
+            None
         }
     }
 
@@ -696,6 +730,22 @@ impl TeamTalkBackend for FfiBackend {
 
     fn do_save_config(&self, ptr: *mut ffi::TTInstance) -> i32 {
         unsafe { ffi::api().TT_DoSaveConfig(ptr) }
+    }
+
+    fn do_query_server_stats(&self, ptr: *mut ffi::TTInstance) -> i32 {
+        unsafe { ffi::api().TT_DoQueryServerStats(ptr) }
+    }
+
+    fn do_ping(&self, ptr: *mut ffi::TTInstance) -> i32 {
+        unsafe { ffi::api().TT_DoPing(ptr) }
+    }
+
+    fn query_max_payload(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> bool {
+        unsafe { ffi::api().TT_QueryMaxPayload(ptr, user_id) == 1 }
+    }
+
+    fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32 {
+        unsafe { ffi::api().TT_DoQuit(ptr) }
     }
 }
 
