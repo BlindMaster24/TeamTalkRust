@@ -47,6 +47,8 @@ cargo build --no-default-features --features tls-rustls
 - Command wait helper: `Client::query_server_stats_and_wait`.
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
 - Channel lookup helpers: `get_channel_file`, `get_channel_by_path`, and `my_channel`.
+- File transfer tracking: `FileTransferHandle`, `watch_file_transfer`,
+  `wait_for_file_transfer`, and `wait_for_file_transfer_terminal`.
 - Recording guard: `RecordSession` for safe start/stop of channel recording.    
 - Managed recording: `RecordingSession`, `RecordingOptions`, `RecordingTarget`.  
 - Auto-rotation: `RecordingSession::rotate_if_needed` with size/time limits.    

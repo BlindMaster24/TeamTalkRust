@@ -48,6 +48,7 @@
 ### Added
 - *(client)* add channel/file convenience helpers and safer media frame guard
 - *(client)* add server stats wait helper plus video and desktop frame guards
+- *(client)* add file transfer handle and terminal wait helpers
 
 ### Docs
 - *(audit)* update coverage workflow and desktop helpers

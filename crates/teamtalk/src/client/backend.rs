@@ -65,6 +65,21 @@ pub trait TeamTalkBackend: sealed::Sealed + Send + Sync {
         password: &str,
     ) -> i32;
     fn do_leave_channel(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_send_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, local_path: &str) -> i32;
+    fn do_recv_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+        local_path: &str,
+    ) -> i32;
+    fn do_delete_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, file_id: i32) -> i32;
+    fn get_file_transfer_info(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        transfer_id: i32,
+    ) -> Option<crate::types::FileTransfer>;
+    fn cancel_file_transfer(&self, ptr: *mut ffi::TTInstance, transfer_id: i32) -> bool;
     fn do_text_message(&self, ptr: *mut ffi::TTInstance, message: &ffi::TextMessage) -> i32;
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
@@ -203,6 +218,21 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
         password: &str,
     ) -> i32;
     fn do_leave_channel(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn do_send_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, local_path: &str) -> i32;
+    fn do_recv_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+        local_path: &str,
+    ) -> i32;
+    fn do_delete_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, file_id: i32) -> i32;
+    fn get_file_transfer_info(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        transfer_id: i32,
+    ) -> Option<crate::types::FileTransfer>;
+    fn cancel_file_transfer(&self, ptr: *mut ffi::TTInstance, transfer_id: i32) -> bool;
     fn do_text_message(&self, ptr: *mut ffi::TTInstance, message: &ffi::TextMessage) -> i32;
     fn do_change_status(&self, ptr: *mut ffi::TTInstance, status_mode: i32, message: &str) -> i32;
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel>;
@@ -409,6 +439,41 @@ impl TeamTalkBackend for FfiBackend {
 
     fn do_leave_channel(&self, ptr: *mut ffi::TTInstance) -> i32 {
         unsafe { ffi::api().TT_DoLeaveChannel(ptr) }
+    }
+
+    fn do_send_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, local_path: &str) -> i32 {
+        unsafe { ffi::api().TT_DoSendFile(ptr, channel_id, local_path.tt().as_ptr()) }
+    }
+
+    fn do_recv_file(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        file_id: i32,
+        local_path: &str,
+    ) -> i32 {
+        unsafe { ffi::api().TT_DoRecvFile(ptr, channel_id, file_id, local_path.tt().as_ptr()) }
+    }
+
+    fn do_delete_file(&self, ptr: *mut ffi::TTInstance, channel_id: i32, file_id: i32) -> i32 {
+        unsafe { ffi::api().TT_DoDeleteFile(ptr, channel_id, file_id) }
+    }
+
+    fn get_file_transfer_info(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        transfer_id: i32,
+    ) -> Option<crate::types::FileTransfer> {
+        let mut raw = unsafe { std::mem::zeroed::<ffi::FileTransfer>() };
+        if unsafe { ffi::api().TT_GetFileTransferInfo(ptr, transfer_id, &mut raw) } == 1 {
+            Some(crate::types::FileTransfer::from(raw))
+        } else {
+            None
+        }
+    }
+
+    fn cancel_file_transfer(&self, ptr: *mut ffi::TTInstance, transfer_id: i32) -> bool {
+        unsafe { ffi::api().TT_CancelFileTransfer(ptr, transfer_id) == 1 }
     }
 
     fn do_text_message(&self, ptr: *mut ffi::TTInstance, message: &ffi::TextMessage) -> i32 {

@@ -76,3 +76,30 @@ fn file_transfer_helper_methods_report_remaining_and_terminal_state() {
     assert!(finished.is_finished());
     assert!(finished.is_terminal());
 }
+
+#[test]
+fn file_transfer_direction_helpers_match_inbound_flag() {
+    let upload = FileTransfer {
+        status: FileTransferStatus::Active,
+        id: TransferId(1),
+        channel_id: ChannelId(2),
+        local_path: String::new(),
+        remote_name: String::new(),
+        size: 1,
+        transferred: 0,
+        inbound: false,
+    };
+    let download = FileTransfer {
+        status: FileTransferStatus::Active,
+        id: TransferId(2),
+        channel_id: ChannelId(2),
+        local_path: String::new(),
+        remote_name: String::new(),
+        size: 1,
+        transferred: 0,
+        inbound: true,
+    };
+
+    assert!(!upload.inbound);
+    assert!(download.inbound);
+}

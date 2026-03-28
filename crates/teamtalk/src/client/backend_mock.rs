@@ -34,6 +34,9 @@ struct MockBackendState {
     logout_result: i32,
     join_result: i32,
     leave_result: i32,
+    send_file_result: i32,
+    recv_file_result: i32,
+    delete_file_result: i32,
     make_channel_result: i32,
     update_channel_result: i32,
     remove_channel_result: i32,
@@ -50,6 +53,8 @@ struct MockBackendState {
     ping_result: i32,
     query_max_payload_ok: bool,
     quit_result: i32,
+    file_transfers: std::collections::HashMap<i32, ffi::FileTransfer>,
+    cancelled_transfers: Vec<i32>,
     last_login: Option<(String, String, String, String)>,
     last_text_message: Option<ffi::TextMessage>,
     text_messages: Vec<ffi::TextMessage>,
@@ -72,6 +77,9 @@ impl MockBackend {
                 logout_result: 1,
                 join_result: 1,
                 leave_result: 1,
+                send_file_result: 1,
+                recv_file_result: 1,
+                delete_file_result: 1,
                 make_channel_result: 1,
                 update_channel_result: 1,
                 remove_channel_result: 1,
@@ -217,6 +225,21 @@ impl MockBackend {
         state.leave_result = cmd_id;
     }
 
+    pub fn set_send_file_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.send_file_result = cmd_id;
+    }
+
+    pub fn set_recv_file_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.recv_file_result = cmd_id;
+    }
+
+    pub fn set_delete_file_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.delete_file_result = cmd_id;
+    }
+
     pub fn last_login(&self) -> Option<(String, String, String, String)> {
         self.state
             .lock()
@@ -305,6 +328,28 @@ impl MockBackend {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .quit_result = cmd_id;
+    }
+
+    pub fn set_file_transfer_info(&self, transfer: ffi::FileTransfer) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.file_transfers.insert(transfer.nTransferID, transfer);
+    }
+
+    pub fn cancelled_transfers(&self) -> Vec<i32> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .cancelled_transfers
+            .clone()
+    }
+
+    pub fn push_file_transfer_event(&self, transfer: ffi::FileTransfer) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_FILETRANSFER;
+        msg.ttType = ffi::TTType::__FILETRANSFER;
+        msg.__bindgen_anon_1.filetransfer = transfer;
+        state.queued_messages.push_back(msg);
     }
 
     pub fn push_server_statistics_event(&self) {
@@ -446,6 +491,53 @@ impl TeamTalkBackend for MockBackend {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .leave_result
+    }
+
+    fn do_send_file(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32, _local_path: &str) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .send_file_result
+    }
+
+    fn do_recv_file(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _channel_id: i32,
+        _file_id: i32,
+        _local_path: &str,
+    ) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .recv_file_result
+    }
+
+    fn do_delete_file(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32, _file_id: i32) -> i32 {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .delete_file_result
+    }
+
+    fn get_file_transfer_info(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        transfer_id: i32,
+    ) -> Option<crate::types::FileTransfer> {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .file_transfers
+            .get(&transfer_id)
+            .copied()
+            .map(crate::types::FileTransfer::from)
+    }
+
+    fn cancel_file_transfer(&self, _ptr: *mut ffi::TTInstance, transfer_id: i32) -> bool {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.cancelled_transfers.push(transfer_id);
+        true
     }
 
     fn do_text_message(&self, _ptr: *mut ffi::TTInstance, message: &ffi::TextMessage) -> i32 {

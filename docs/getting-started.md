@@ -117,6 +117,10 @@ video and desktop frames: prefer `acquire_video_frame_guard()` and
 `acquire_user_desktop_window_guard()` / `_guard_ex()` over the raw pointer
 variants unless you explicitly need the low-level API.
 
+For active uploads and downloads, use `watch_file_transfer(transfer_id)` when
+you already have a transfer id, or `wait_for_file_transfer_terminal(...)` when
+you want to wait until a transfer reaches `Finished`, `Closed`, or `Error`.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:

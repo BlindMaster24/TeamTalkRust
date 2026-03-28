@@ -43,6 +43,7 @@ pub use client::audio::{
     AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,
 };
 pub use client::desktop::DesktopWindowGuard;
+pub use client::files::FileTransferHandle;
 pub use client::media::MediaVideoFrameGuard;
 pub use client::recording::{
     RecordSession, RecordingOptions, RecordingSampleFormat, RecordingSession, RecordingTarget,

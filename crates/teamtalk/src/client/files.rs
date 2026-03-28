@@ -1,7 +1,8 @@
 //! File transfer APIs.
 use super::Client;
+use crate::events::{Error, Event, Result};
 use crate::types::{ChannelId, FileId, RemoteFile, TransferId};
-use crate::utils::ToTT;
+use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
@@ -11,6 +12,39 @@ fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
             | crate::events::ConnectionState::Joining(_)
             | crate::events::ConnectionState::Joined(_)
     )
+}
+
+fn wait_slice(deadline: Instant) -> i32 {
+    deadline
+        .saturating_duration_since(Instant::now())
+        .min(Duration::from_millis(50))
+        .as_millis()
+        .min(i32::MAX as u128) as i32
+}
+
+/// Handle for tracking an active file transfer.
+pub struct FileTransferHandle<'a> {
+    client: &'a Client,
+    transfer_id: TransferId,
+}
+
+impl FileTransferHandle<'_> {
+    pub fn transfer_id(&self) -> TransferId {
+        self.transfer_id
+    }
+
+    pub fn refresh(&self) -> Option<crate::types::FileTransfer> {
+        self.client.get_file_transfer_info(self.transfer_id)
+    }
+
+    pub fn cancel(&self) -> bool {
+        self.client.cancel_file_transfer(self.transfer_id)
+    }
+
+    pub fn wait_until_terminal(&self, timeout_ms: i32) -> Result<crate::types::FileTransfer> {
+        self.client
+            .wait_for_file_transfer_terminal(self.transfer_id, timeout_ms)
+    }
 }
 
 impl Client {
@@ -50,7 +84,8 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoSendFile(self.ptr.0, channel_id.0, local_path.tt().as_ptr()) }
+        self.backend()
+            .do_send_file(self.ptr.0, channel_id.0, local_path)
     }
 
     /// Receives a remote file into a local directory.
@@ -58,14 +93,8 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe {
-            ffi::api().TT_DoRecvFile(
-                self.ptr.0,
-                channel_id.0,
-                remote_file_id.0,
-                local_dir.tt().as_ptr(),
-            )
-        }
+        self.backend()
+            .do_recv_file(self.ptr.0, channel_id.0, remote_file_id.0, local_dir)
     }
 
     /// Deletes a remote file from a channel.
@@ -73,7 +102,8 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
-        unsafe { ffi::api().TT_DoDeleteFile(self.ptr.0, channel_id.0, remote_file_id.0) }
+        self.backend()
+            .do_delete_file(self.ptr.0, channel_id.0, remote_file_id.0)
     }
 
     /// Returns file transfer info by transfer id.
@@ -81,16 +111,83 @@ impl Client {
         &self,
         transfer_id: TransferId,
     ) -> Option<crate::types::FileTransfer> {
-        let mut raw = unsafe { std::mem::zeroed::<ffi::FileTransfer>() };
-        if unsafe { ffi::api().TT_GetFileTransferInfo(self.ptr.0, transfer_id.0, &mut raw) } == 1 {
-            Some(crate::types::FileTransfer::from(raw))
-        } else {
-            None
-        }
+        self.backend()
+            .get_file_transfer_info(self.ptr.0, transfer_id.0)
     }
 
     /// Cancels an in-progress file transfer.
     pub fn cancel_file_transfer(&self, transfer_id: TransferId) -> bool {
-        unsafe { ffi::api().TT_CancelFileTransfer(self.ptr.0, transfer_id.0) == 1 }
+        self.backend()
+            .cancel_file_transfer(self.ptr.0, transfer_id.0)
+    }
+
+    /// Returns a tracking handle for an active transfer id.
+    pub fn watch_file_transfer(&self, transfer_id: TransferId) -> FileTransferHandle<'_> {
+        FileTransferHandle {
+            client: self,
+            transfer_id,
+        }
+    }
+
+    /// Waits for the next matching file transfer event.
+    pub fn wait_for_file_transfer(
+        &self,
+        transfer_id: TransferId,
+        timeout_ms: i32,
+    ) -> Result<crate::types::FileTransfer> {
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50)
+                    && matches!(event, Event::FileTransfer)
+                    && let Some(transfer) = message.file_transfer()
+                    && transfer.id == transfer_id
+                {
+                    return Ok(transfer);
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms)
+                && matches!(event, Event::FileTransfer)
+                && let Some(transfer) = message.file_transfer()
+                && transfer.id == transfer_id
+            {
+                return Ok(transfer);
+            }
+        }
+    }
+
+    /// Waits until a file transfer reaches a terminal state.
+    pub fn wait_for_file_transfer_terminal(
+        &self,
+        transfer_id: TransferId,
+        timeout_ms: i32,
+    ) -> Result<crate::types::FileTransfer> {
+        if timeout_ms < 0 {
+            loop {
+                let transfer = self.wait_for_file_transfer(transfer_id, 50)?;
+                if transfer.is_terminal() {
+                    return Ok(transfer);
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(Error::Timeout);
+            }
+            let transfer = self.wait_for_file_transfer(transfer_id, wait_ms)?;
+            if transfer.is_terminal() {
+                return Ok(transfer);
+            }
+        }
     }
 }

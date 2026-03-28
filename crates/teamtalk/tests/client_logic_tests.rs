@@ -13,7 +13,8 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, FileId, MessageTarget, TT_STRLEN, UserId, UserPresence, UserStatus,
+    Channel, ChannelId, FileId, MessageTarget, TT_STRLEN, TransferId, UserId, UserPresence,
+    UserStatus,
 };
 use teamtalk::utils::strings::ToTT;
 
@@ -41,6 +42,18 @@ fn raw_remote_file(channel_id: i32, file_id: i32, name: &str) -> ffi::RemoteFile
     let len = encoded.len().min(file.szFileName.len());
     file.szFileName[..len].copy_from_slice(&encoded[..len]);
     file
+}
+
+fn raw_file_transfer(
+    transfer_id: i32,
+    channel_id: i32,
+    status: ffi::FileTransferStatus,
+) -> ffi::FileTransfer {
+    let mut transfer = unsafe { std::mem::zeroed::<ffi::FileTransfer>() };
+    transfer.nTransferID = transfer_id;
+    transfer.nChannelID = channel_id;
+    transfer.nStatus = status;
+    transfer
 }
 
 #[test]
@@ -433,6 +446,48 @@ fn query_server_stats_and_wait_reports_command_error() {
         err,
         teamtalk::events::Error::CommandFailed { code: 7, .. }
     ));
+}
+
+#[test]
+fn file_transfer_handle_refresh_and_cancel_use_backend() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_file_transfer_info(raw_file_transfer(
+        55,
+        7,
+        ffi::FileTransferStatus::FILETRANSFER_ACTIVE,
+    ));
+    let client = Client::with_backend(backend.clone()).expect("client");
+
+    let handle = client.watch_file_transfer(TransferId(55));
+    let transfer = handle.refresh().expect("transfer info");
+
+    assert_eq!(transfer.id, TransferId(55));
+    assert_eq!(transfer.channel_id, ChannelId(7));
+    assert!(handle.cancel());
+    assert_eq!(backend.cancelled_transfers(), vec![55]);
+}
+
+#[test]
+fn wait_for_file_transfer_terminal_uses_matching_transfer_id() {
+    let backend = Arc::new(MockBackend::new());
+    backend.push_file_transfer_event(raw_file_transfer(
+        90,
+        3,
+        ffi::FileTransferStatus::FILETRANSFER_ACTIVE,
+    ));
+    backend.push_file_transfer_event(raw_file_transfer(
+        90,
+        3,
+        ffi::FileTransferStatus::FILETRANSFER_FINISHED,
+    ));
+    let client = Client::with_backend(backend).expect("client");
+
+    let transfer = client
+        .wait_for_file_transfer_terminal(TransferId(90), 500)
+        .expect("terminal transfer");
+
+    assert_eq!(transfer.id, TransferId(90));
+    assert!(transfer.is_finished());
 }
 
 #[test]
