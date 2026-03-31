@@ -25,8 +25,8 @@ tag creation, GitHub releases, and crates.io publishing.
 
 On every push to `main`:
 
-1. `Release-plz PR` job creates or updates a release PR with version/changelog
-   changes.
+1. `Release-plz PR` job creates or updates the current open release PR with
+   version/changelog changes.
 2. The workflow syncs version references in:
    - [README](../README.md)
    - [getting-started.md](getting-started.md)

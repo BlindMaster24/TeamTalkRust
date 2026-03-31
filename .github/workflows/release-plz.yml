@@ -73,13 +73,6 @@ jobs:
               "https://api.github.com$1"
           }
 
-          open_release_prs=$(api "/repos/${REPO}/pulls?state=open&head=${OWNER}:release-plz/&base=main&per_page=100" | jq 'length')
-          if [ "${open_release_prs}" -gt 0 ]; then
-            echo "run_release_pr=false" >> "$GITHUB_OUTPUT"
-            echo "skip_reason=open release-plz PR already exists" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           associated_release_prs=$(
             api "/repos/${REPO}/commits/${SHA}/pulls?per_page=100" \
               | jq '[.[] | select(.merged_at != null and (.head.ref | startswith("release-plz/")))] | length'

@@ -212,7 +212,7 @@
   - `semver_check = true` is enabled for `teamtalk`; breaking API changes can force major releases.
   - Keep `release_commits` commented unless explicitly requested; it is an opt-in noise filter.
   - Publish policy is split:
-    - `push` to `main` runs only `release-pr` updates.
+    - `push` to `main` runs only `release-pr` creation/update.
     - publish runs on merged `release-plz/*` PRs and on explicit manual dispatch.
   - Publishing guardrail with `release_always = false`:
     - `release-plz release` publishes only when the current commit is associated with a merged `release-plz/*` PR.
