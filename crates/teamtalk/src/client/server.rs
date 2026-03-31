@@ -2,6 +2,7 @@
 use super::Client;
 use crate::types::{ChannelId, ServerProperties, User, UserId};
 use std::time::{Duration, Instant};
+#[cfg(windows)]
 use teamtalk_sys as ffi;
 
 fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
