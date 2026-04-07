@@ -76,6 +76,48 @@ impl UserAccountBuilder {
         self
     }
 
+    /// Sets the note field.
+    pub fn note(mut self, note: &str) -> Self {
+        self.inner.note = note.to_string();
+        self
+    }
+
+    /// Sets the initial channel path.
+    pub fn init_channel(mut self, channel: &str) -> Self {
+        self.inner.init_channel = channel.to_string();
+        self
+    }
+
+    /// Sets custom user data.
+    pub fn user_data(mut self, user_data: i32) -> Self {
+        self.inner.user_data = user_data;
+        self
+    }
+
+    /// Replaces the auto-operator channel list.
+    pub fn auto_operator_channels(mut self, channels: Vec<ChannelId>) -> Self {
+        self.inner.auto_operator_channels = channels;
+        self
+    }
+
+    /// Adds one auto-operator channel.
+    pub fn add_auto_operator_channel(mut self, channel_id: ChannelId) -> Self {
+        self.inner.auto_operator_channels.push(channel_id);
+        self
+    }
+
+    /// Sets the audio codec bitrate limit.
+    pub fn audio_codec_bps_limit(mut self, limit: i32) -> Self {
+        self.inner.audio_codec_bps_limit = limit;
+        self
+    }
+
+    /// Sets abuse-prevention limits.
+    pub fn abuse_prevention(mut self, abuse_prevent: AbusePrevention) -> Self {
+        self.inner.abuse_prevent = abuse_prevent;
+        self
+    }
+
     /// Builds the user account.
     pub fn build(self) -> UserAccount {
         self.inner

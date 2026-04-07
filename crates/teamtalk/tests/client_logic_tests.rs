@@ -44,6 +44,39 @@ fn raw_remote_file(channel_id: i32, file_id: i32, name: &str) -> ffi::RemoteFile
     file
 }
 
+fn raw_user_account(username: &str, rights: u32) -> ffi::UserAccount {
+    let mut account = ffi::UserAccount {
+        uUserRights: rights,
+        ..Default::default()
+    };
+    let encoded = username.tt();
+    let len = encoded.len().min(account.szUsername.len());
+    account.szUsername[..len].copy_from_slice(&encoded[..len]);
+    account
+}
+
+fn raw_banned_user(username: &str, ip: &str) -> ffi::BannedUser {
+    let mut banned = ffi::BannedUser::default();
+    let username_encoded = username.tt();
+    let username_len = username_encoded.len().min(banned.szUsername.len());
+    banned.szUsername[..username_len].copy_from_slice(&username_encoded[..username_len]);
+    let ip_encoded = ip.tt();
+    let ip_len = ip_encoded.len().min(banned.szIPAddress.len());
+    banned.szIPAddress[..ip_len].copy_from_slice(&ip_encoded[..ip_len]);
+    banned
+}
+
+fn raw_server_properties(name: &str, max_users: i32) -> ffi::ServerProperties {
+    let mut properties = ffi::ServerProperties {
+        nMaxUsers: max_users,
+        ..Default::default()
+    };
+    let encoded = name.tt();
+    let len = encoded.len().min(properties.szServerName.len());
+    properties.szServerName[..len].copy_from_slice(&encoded[..len]);
+    properties
+}
+
 fn raw_file_transfer(
     transfer_id: i32,
     channel_id: i32,
@@ -446,6 +479,197 @@ fn query_server_stats_and_wait_reports_command_error() {
         err,
         teamtalk::events::Error::CommandFailed { code: 7, .. }
     ));
+}
+
+#[test]
+fn wait_for_command_returns_on_matching_success() {
+    let backend = Arc::new(MockBackend::new());
+    backend.push_cmd_success_event(44);
+    let client = Client::with_backend(backend).expect("client");
+
+    client.wait_for_command(44, 500).expect("command success");
+}
+
+#[test]
+fn wait_for_command_reports_matching_error() {
+    let backend = Arc::new(MockBackend::new());
+    backend.push_cmd_error_event(52);
+    let client = Client::with_backend(backend).expect("client");
+
+    let err = client.wait_for_command(52, 500).expect_err("command error");
+
+    assert!(matches!(
+        err,
+        teamtalk::events::Error::CommandFailed { code: 52, .. }
+    ));
+}
+
+#[test]
+fn wait_for_predicate_matches_textual_event() {
+    let backend = Arc::new(MockBackend::new());
+    backend.push_cmd_success_event(71);
+    let client = Client::with_backend(backend).expect("client");
+
+    let (event, message) = client
+        .wait_for_predicate(500, |event, msg| {
+            matches!(event, teamtalk::Event::CmdSuccess) && msg.source() == 71
+        })
+        .expect("predicate match");
+
+    assert_eq!(event, teamtalk::Event::CmdSuccess);
+    assert_eq!(message.source(), 71);
+}
+
+#[test]
+fn wait_for_data_returns_first_typed_payload() {
+    let backend = Arc::new(MockBackend::new());
+    backend.push_cmd_success_event(10);
+    backend.push_server_statistics_event();
+    let client = Client::with_backend(backend).expect("client");
+
+    let (event, _message, data) = client.wait_for_data(500).expect("typed payload");
+
+    assert_eq!(event, teamtalk::Event::ServerStatistics);
+    assert!(matches!(
+        data,
+        teamtalk::client::EventData::ServerStatistics(_)
+    ));
+}
+
+#[test]
+fn list_user_accounts_and_wait_collects_until_matching_success() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_list_user_accounts_result(81);
+    backend.push_user_account_event(raw_user_account("alpha", 1));
+    backend.push_user_account_event(raw_user_account("beta", 2));
+    backend.push_cmd_success_event(81);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let accounts = client
+        .list_user_accounts_and_wait(0, 10, 500)
+        .expect("accounts");
+
+    assert_eq!(accounts.len(), 2);
+    assert_eq!(accounts[0].username, "alpha");
+    assert_eq!(accounts[1].username, "beta");
+}
+
+#[test]
+fn list_user_accounts_and_wait_reports_command_error() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_list_user_accounts_result(82);
+    backend.push_cmd_error_event(82);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let err = client
+        .list_user_accounts_and_wait(0, 10, 500)
+        .expect_err("list error");
+
+    assert!(matches!(
+        err,
+        teamtalk::events::Error::CommandFailed { code: 82, .. }
+    ));
+}
+
+#[test]
+fn list_bans_and_wait_collects_until_matching_success() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_list_bans_result(83);
+    backend.push_banned_user_event(raw_banned_user("alpha", "10.0.0.1"));
+    backend.push_banned_user_event(raw_banned_user("beta", "10.0.0.2"));
+    backend.push_cmd_success_event(83);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let bans = client
+        .list_bans_and_wait(ChannelId(0), 0, 10, 500)
+        .expect("bans");
+
+    assert_eq!(bans.len(), 2);
+    assert_eq!(bans[0].username, "alpha");
+    assert_eq!(bans[1].ip, "10.0.0.2");
+}
+
+#[test]
+fn create_user_account_and_wait_returns_matching_created_account() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_new_user_account_result(84);
+    backend.push_user_account_created_event(raw_user_account("target", 7));
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+    let account = teamtalk::types::UserAccount::builder("target").build();
+
+    let created = client
+        .create_user_account_and_wait(&account, 500)
+        .expect("created account");
+
+    assert_eq!(created.username, "target");
+    assert_eq!(created.user_rights, 7);
+}
+
+#[test]
+fn create_user_account_and_wait_ignores_other_account_events() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_new_user_account_result(85);
+    backend.push_user_account_created_event(raw_user_account("other", 1));
+    backend.push_user_account_created_event(raw_user_account("target", 9));
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+    let account = teamtalk::types::UserAccount::builder("target").build();
+
+    let created = client
+        .create_user_account_and_wait(&account, 500)
+        .expect("created account");
+
+    assert_eq!(created.username, "target");
+    assert_eq!(created.user_rights, 9);
+}
+
+#[test]
+fn delete_user_account_and_wait_returns_matching_removed_account() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_delete_user_account_result(86);
+    backend.push_user_account_removed_event(raw_user_account("target", 5));
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    let removed = client
+        .delete_user_account_and_wait("target", 500)
+        .expect("removed account");
+
+    assert_eq!(removed.username, "target");
+}
+
+#[test]
+fn update_server_and_wait_returns_updated_properties() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_update_server_result(87);
+    backend.push_server_update_event(raw_server_properties("srv-updated", 123));
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+    let props = teamtalk::types::ServerProperties::from(raw_server_properties("srv", 99));
+
+    let updated = client
+        .update_server_and_wait(&props, 500)
+        .expect("updated properties");
+
+    assert_eq!(updated.name, "srv-updated");
+    assert_eq!(updated.max_users, 123);
+}
+
+#[test]
+fn save_server_config_and_wait_uses_command_completion() {
+    let backend = Arc::new(MockBackend::new());
+    backend.set_save_config_result(88);
+    backend.push_cmd_success_event(88);
+    let client = Client::with_backend(backend).expect("client");
+    client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
+
+    client
+        .save_server_config_and_wait(500)
+        .expect("saved config");
 }
 
 #[test]

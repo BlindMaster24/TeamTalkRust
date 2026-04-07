@@ -7,13 +7,17 @@ UserAccount {
     password: "secret",
     user_type: 2,
     user_rights: 7,
-    note: "",
-    init_channel: "",
-    user_data: 0,
-    auto_operator_channels: [],
-    audio_codec_bps_limit: 0,
+    note: "ops",
+    init_channel: "/Root/Ops",
+    user_data: 42,
+    auto_operator_channels: [
+        ChannelId(
+            5,
+        ),
+    ],
+    audio_codec_bps_limit: 96000,
     abuse_prevent: AbusePrevention {
-        commands_limit: 0,
-        commands_interval_ms: 0,
+        commands_limit: 3,
+        commands_interval_ms: 500,
     },
 }

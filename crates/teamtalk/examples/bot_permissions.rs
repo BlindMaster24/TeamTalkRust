@@ -1,16 +1,16 @@
 #[cfg(feature = "bot")]
 use teamtalk::{
-    BotApp, Permissions, RequireClientRightsAll, RequireClientRightsAny, Result, Router, UserRights,
+    BotApp, Permissions, RequireClientRightsAll, RequireClientRightsAny, Result, Router,
 };
 
 #[cfg(feature = "bot")]
 fn main() -> Result<()> {
     let router = Router::new()
         .use_middleware(RequireClientRightsAny::new(
-            UserRights::KICK_USERS | UserRights::BAN_USERS,
+            Permissions::file_manager().rights(),
         ))
         .use_middleware(RequireClientRightsAll::new(
-            Permissions::moderator().rights(),
+            Permissions::channel_admin().rights(),
         ));
 
     let client = teamtalk::Client::new()?;

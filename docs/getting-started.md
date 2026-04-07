@@ -121,6 +121,16 @@ For active uploads and downloads, use `watch_file_transfer(transfer_id)` when
 you already have a transfer id, or `wait_for_file_transfer_terminal(...)` when
 you want to wait until a transfer reaches `Finished`, `Closed`, or `Error`.
 
+For sync-side polling ergonomics, prefer `wait_for_predicate(...)` when you
+need to match by event/message shape, and `wait_for_data(...)` when you only
+care about the next event with typed payload data.
+
+For admin/server commands with a documented completion event, use the matching
+`*_and_wait(...)` helper instead of manually pairing `poll()` with `CmdError`:
+`list_user_accounts_and_wait`, `list_bans_and_wait`,
+`create_user_account_and_wait`, `delete_user_account_and_wait`,
+`update_server_and_wait`, and `save_server_config_and_wait`.
+
 ## Event Bus Helpers
 
 Manual `match` is still available, but the built-in subscription API can route events for you:

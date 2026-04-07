@@ -6,9 +6,9 @@ use teamtalk::events::Event;
 use teamtalk::mock::MockMessage;
 use teamtalk::types::{ChannelId, UserId, UserRights};
 use teamtalk::{
-    Client, HandlerResult, MemoryStateStore, RequireChannelMessage, RequireClientRightsAll,
-    RequireClientRightsAny, RequireCommand, RequireCommandPrefix, RequirePrivateMessage,
-    RequireUserIds, RequireUserType, Router, StateStore,
+    Client, HandlerResult, MemoryStateStore, Permissions, RequireChannelMessage,
+    RequireClientRightsAll, RequireClientRightsAny, RequireCommand, RequireCommandPrefix,
+    RequirePrivateMessage, RequireUserIds, RequireUserType, Router, StateStore,
 };
 use teamtalk_sys::{TextMsgType, User};
 
@@ -211,4 +211,30 @@ fn require_client_rights_all_blocks_when_any_right_is_missing() {
         .dispatch(&client, Event::TextMessage, &message, &mut store)
         .expect("dispatch");
     assert_eq!(store.get("u:7:ran"), None);
+}
+
+#[test]
+fn permission_presets_expand_to_expected_masks() {
+    assert_eq!(
+        Permissions::file_manager().rights(),
+        UserRights::UPLOAD_FILES | UserRights::DOWNLOAD_FILES
+    );
+    assert_eq!(
+        Permissions::channel_admin().rights(),
+        UserRights::MODIFY_CHANNELS | UserRights::MOVE_USERS | UserRights::OPERATOR_ENABLE
+    );
+    assert_eq!(
+        Permissions::media_sender().rights(),
+        UserRights::TRANSMIT_VOICE
+            | UserRights::TRANSMIT_VIDEOCAPTURE
+            | UserRights::TRANSMIT_MEDIAFILE
+    );
+    assert_eq!(
+        Permissions::desktop_controller().rights(),
+        UserRights::TRANSMIT_DESKTOP | UserRights::TRANSMIT_DESKTOPINPUT
+    );
+    assert_eq!(
+        Permissions::admin().rights(),
+        Permissions::server_admin().rights()
+    );
 }

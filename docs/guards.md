@@ -49,8 +49,10 @@ let router = Router::new()
     .use_middleware(RequireClientRightsAll::new(Permissions::moderator().rights()));
 ```
 
-Use `Permissions::moderator()` or `Permissions::admin()` when you want a
-predefined rights bundle instead of assembling bitmasks manually.
+Use `Permissions::moderator()`, `file_manager()`, `channel_admin()`,
+`media_sender()`, `desktop_controller()`, or `server_admin()` / `admin()`
+when you want a predefined rights bundle instead of assembling bitmasks
+manually.
 
 ## Rate limiting
 

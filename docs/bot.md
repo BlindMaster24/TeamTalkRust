@@ -44,8 +44,10 @@ Useful built-in middleware:
 
 For guard patterns and rate limiting, see [guards.md](guards.md).
 
-For common moderation/admin presets, use `Permissions::moderator()` and
-`Permissions::admin()`.
+For common rights bundles, use `Permissions::moderator()`,
+`Permissions::file_manager()`, `Permissions::channel_admin()`,
+`Permissions::media_sender()`, `Permissions::desktop_controller()`, and
+`Permissions::server_admin()` / `Permissions::admin()`.
 
 Recommended layering:
 

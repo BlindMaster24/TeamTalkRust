@@ -43,8 +43,13 @@ cargo build --no-default-features --features tls-rustls
 - Connection state tracking via `ConnectionState` and `Client::connection_state`.
 - Hooks API via `ClientHooks` for event callbacks.
 - Poll helpers: `Client::poll_until` and `Client::wait_for`.
+- Sync wait parity: `Client::wait_for_predicate` and `Client::wait_for_data`.
 - High-level wait helpers: `Client::login_and_wait` and `Client::join_channel_and_wait`.
 - Command wait helper: `Client::query_server_stats_and_wait`.
+- Admin/server wait helpers: `wait_for_command`, `list_user_accounts_and_wait`,
+  `list_bans_and_wait`, `create_user_account_and_wait`,
+  `delete_user_account_and_wait`, `update_server_and_wait`, and
+  `save_server_config_and_wait`.
 - Convenience APIs: `Client::join_root`, `Subscriptions::all_audio`, `all_text`, `all_control`.
 - Channel lookup helpers: `get_channel_file`, `get_channel_by_path`, and `my_channel`.
 - File transfer tracking: `FileTransferHandle`, `watch_file_transfer`,
@@ -95,8 +100,9 @@ cargo build --no-default-features --features tls-rustls
 - Guard middleware: `RequirePrivateMessage`, `RequireChannelMessage`,
   `RequireClientRightsAny`, `RequireClientRightsAll`, `RequireCommand`,
   `RequireCommandPrefix`, `RequireUserIds`, `RequireUserType`.
-- Typed TeamTalk account rights: `UserRights` plus `Permissions::moderator()`
-  and `Permissions::admin()` presets.
+- Typed TeamTalk account rights: `UserRights` plus `Permissions::moderator()`,
+  `file_manager()`, `channel_admin()`, `media_sender()`,
+  `desktop_controller()`, `server_admin()`, and `admin()` presets.
 - Function middleware adapters: `FnMiddleware`, `Router::use_middleware_fn`, and
   `Router::use_middleware_hooks`.
 - Unknown command strategy: `UnknownCommandPolicy` (`Ignore` or automatic reply text).

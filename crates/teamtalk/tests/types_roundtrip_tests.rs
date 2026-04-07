@@ -67,31 +67,63 @@ fn user_account_builder_fields() {
         .password("secret")
         .user_type(2)
         .rights(7)
+        .note("ops")
+        .init_channel("/Root/Ops")
+        .user_data(42)
+        .add_auto_operator_channel(teamtalk::types::ChannelId(5))
+        .audio_codec_bps_limit(96000)
+        .abuse_prevention(AbusePrevention {
+            commands_limit: 3,
+            commands_interval_ms: 500,
+        })
         .build();
     assert_eq!(account.username, "alice");
     assert_eq!(account.password, "secret");
     assert_eq!(account.user_type, 2);
     assert_eq!(account.user_rights, 7);
+    assert_eq!(account.note, "ops");
+    assert_eq!(account.init_channel, "/Root/Ops");
+    assert_eq!(account.user_data, 42);
+    assert_eq!(
+        account.auto_operator_channels,
+        vec![teamtalk::types::ChannelId(5)]
+    );
+    assert_eq!(account.audio_codec_bps_limit, 96000);
+    assert_eq!(account.abuse_prevent.commands_limit, 3);
 }
 
 #[test]
 fn user_account_to_from_ffi() {
-    let mut account = UserAccount::builder("bob")
+    let account = UserAccount::builder("bob")
         .password("pass")
         .user_type(3)
         .rights(5)
+        .note("hello")
+        .init_channel("/Root/Main")
+        .user_data(42)
+        .auto_operator_channels(vec![
+            teamtalk::types::ChannelId(1),
+            teamtalk::types::ChannelId(2),
+        ])
+        .audio_codec_bps_limit(48_000)
+        .abuse_prevention(AbusePrevention {
+            commands_limit: 2,
+            commands_interval_ms: 500,
+        })
         .build();
-    account.user_data = 42;
-    account.abuse_prevent = AbusePrevention {
-        commands_limit: 2,
-        commands_interval_ms: 500,
-    };
     let raw = account.to_ffi();
     let parsed = UserAccount::from(raw);
     assert_eq!(parsed.username, "bob");
     assert_eq!(parsed.user_type, 3);
     assert_eq!(parsed.user_rights, 5);
     assert_eq!(parsed.user_data, 42);
+    assert_eq!(parsed.note, "hello");
+    assert_eq!(parsed.init_channel, "/Root/Main");
+    assert_eq!(
+        parsed.auto_operator_channels,
+        vec![teamtalk::types::ChannelId(1), teamtalk::types::ChannelId(2)]
+    );
+    assert_eq!(parsed.audio_codec_bps_limit, 48_000);
     assert_eq!(parsed.abuse_prevent.commands_limit, 2);
     assert_eq!(parsed.abuse_prevent.commands_interval_ms, 500);
 }

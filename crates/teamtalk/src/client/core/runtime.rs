@@ -91,6 +91,20 @@ impl Client {
             .map(|(_, msg)| msg)
     }
 
+    /// Polls until the predicate matches or the timeout expires.
+    pub fn wait_for_predicate<F>(&self, timeout_ms: i32, predicate: F) -> Option<(Event, Message)>
+    where
+        F: FnMut(Event, &Message) -> bool,
+    {
+        self.poll_until(timeout_ms, predicate)
+    }
+
+    /// Polls until an event carries typed payload data or the timeout expires.
+    pub fn wait_for_data(&self, timeout_ms: i32) -> Option<(Event, Message, super::EventData)> {
+        self.poll_until(timeout_ms, |_, msg| msg.data().is_some())
+            .and_then(|(event, msg)| msg.data().map(|data| (event, msg, data)))
+    }
+
     /// Polls until a specific event arrives or the timeout expires.
     pub fn poll_until_event(&self, event: Event, timeout_ms: i32) -> Option<Message> {
         self.wait_for(event, timeout_ms)

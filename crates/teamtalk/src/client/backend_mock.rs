@@ -240,6 +240,36 @@ impl MockBackend {
         state.delete_file_result = cmd_id;
     }
 
+    pub fn set_list_user_accounts_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.list_user_accounts_result = cmd_id;
+    }
+
+    pub fn set_new_user_account_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.new_user_account_result = cmd_id;
+    }
+
+    pub fn set_delete_user_account_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.delete_user_account_result = cmd_id;
+    }
+
+    pub fn set_list_bans_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.list_bans_result = cmd_id;
+    }
+
+    pub fn set_update_server_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.update_server_result = cmd_id;
+    }
+
+    pub fn set_save_config_result(&self, cmd_id: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.save_config_result = cmd_id;
+    }
+
     pub fn last_login(&self) -> Option<(String, String, String, String)> {
         self.state
             .lock()
@@ -356,6 +386,15 @@ impl MockBackend {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
         msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_SERVERSTATISTICS;
+        msg.ttType = ffi::TTType::__SERVERSTATISTICS;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_cmd_success_event(&self, source: i32) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_SUCCESS;
+        msg.nSource = source;
         state.queued_messages.push_back(msg);
     }
 
@@ -364,6 +403,51 @@ impl MockBackend {
         let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
         msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_ERROR;
         msg.nSource = source;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_user_account_event(&self, account: ffi::UserAccount) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_USERACCOUNT;
+        msg.ttType = ffi::TTType::__USERACCOUNT;
+        msg.__bindgen_anon_1.useraccount = account;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_user_account_created_event(&self, account: ffi::UserAccount) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_USERACCOUNT_NEW;
+        msg.ttType = ffi::TTType::__USERACCOUNT;
+        msg.__bindgen_anon_1.useraccount = account;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_user_account_removed_event(&self, account: ffi::UserAccount) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_USERACCOUNT_REMOVE;
+        msg.ttType = ffi::TTType::__USERACCOUNT;
+        msg.__bindgen_anon_1.useraccount = account;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_banned_user_event(&self, banned_user: ffi::BannedUser) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_BANNEDUSER;
+        msg.ttType = ffi::TTType::__BANNEDUSER;
+        msg.__bindgen_anon_1.banneduser = banned_user;
+        state.queued_messages.push_back(msg);
+    }
+
+    pub fn push_server_update_event(&self, properties: ffi::ServerProperties) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut msg = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        msg.nClientEvent = ffi::ClientEvent::CLIENTEVENT_CMD_SERVER_UPDATE;
+        msg.ttType = ffi::TTType::__SERVERPROPERTIES;
+        msg.__bindgen_anon_1.serverproperties = properties;
         state.queued_messages.push_back(msg);
     }
 }

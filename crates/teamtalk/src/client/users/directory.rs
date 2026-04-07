@@ -1,4 +1,13 @@
 use super::*;
+use std::time::{Duration, Instant};
+
+fn wait_slice(deadline: Instant) -> i32 {
+    deadline
+        .saturating_duration_since(Instant::now())
+        .min(Duration::from_millis(50))
+        .as_millis()
+        .min(i32::MAX as u128) as i32
+}
 
 impl Client {
     /// Returns a user by id.
@@ -25,6 +34,73 @@ impl Client {
             .do_list_user_accounts(self.ptr.0, index, count)
     }
 
+    /// Requests a list of user accounts and waits for the matching list to complete.
+    pub fn list_user_accounts_and_wait(
+        &self,
+        index: i32,
+        count: i32,
+        timeout_ms: i32,
+    ) -> crate::events::Result<Vec<UserAccount>> {
+        let cmd_id = self.list_user_accounts(index, count);
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: "user account list command rejected in current state".to_string(),
+            });
+        }
+        let mut accounts = Vec::new();
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::UserAccount => {
+                            if let Some(account) = message.account() {
+                                accounts.push(account);
+                            }
+                        }
+                        crate::events::Event::CmdSuccess if message.source() == cmd_id => {
+                            return Ok(accounts);
+                        }
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::CommandFailed {
+                                code: message.source(),
+                                message: "user account list command failed".to_string(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::UserAccount => {
+                        if let Some(account) = message.account() {
+                            accounts.push(account);
+                        }
+                    }
+                    crate::events::Event::CmdSuccess if message.source() == cmd_id => {
+                        return Ok(accounts);
+                    }
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::CommandFailed {
+                            code: message.source(),
+                            message: "user account list command failed".to_string(),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
     /// Creates a user account.
     pub fn create_user_account(&self, account: &UserAccount) -> i32 {
         if !can_issue_logged_in_command(self.connection_state()) {
@@ -33,12 +109,138 @@ impl Client {
         self.backend().do_new_user_account(self.ptr.0, account)
     }
 
+    /// Creates a user account and waits for the matching account-created event.
+    pub fn create_user_account_and_wait(
+        &self,
+        account: &UserAccount,
+        timeout_ms: i32,
+    ) -> crate::events::Result<UserAccount> {
+        let cmd_id = self.create_user_account(account);
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: "create user account command rejected in current state".to_string(),
+            });
+        }
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::UserAccountCreated => {
+                            if let Some(created) = message.account()
+                                && created.username == account.username
+                            {
+                                return Ok(created);
+                            }
+                        }
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::CommandFailed {
+                                code: message.source(),
+                                message: "create user account command failed".to_string(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::UserAccountCreated => {
+                        if let Some(created) = message.account()
+                            && created.username == account.username
+                        {
+                            return Ok(created);
+                        }
+                    }
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::CommandFailed {
+                            code: message.source(),
+                            message: "create user account command failed".to_string(),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
     /// Deletes a user account by username.
     pub fn delete_user_account(&self, username: &str) -> i32 {
         if !can_issue_logged_in_command(self.connection_state()) {
             return 0;
         }
         self.backend().do_delete_user_account(self.ptr.0, username)
+    }
+
+    /// Deletes a user account and waits for the matching account-removed event.
+    pub fn delete_user_account_and_wait(
+        &self,
+        username: &str,
+        timeout_ms: i32,
+    ) -> crate::events::Result<UserAccount> {
+        let cmd_id = self.delete_user_account(username);
+        if cmd_id <= 0 {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: "delete user account command rejected in current state".to_string(),
+            });
+        }
+        if timeout_ms < 0 {
+            loop {
+                if let Some((event, message)) = self.poll(50) {
+                    match event {
+                        crate::events::Event::UserAccountRemoved => {
+                            if let Some(removed) = message.account()
+                                && removed.username == username
+                            {
+                                return Ok(removed);
+                            }
+                        }
+                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                            return Err(crate::events::Error::CommandFailed {
+                                code: message.source(),
+                                message: "delete user account command failed".to_string(),
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
+        loop {
+            let wait_ms = wait_slice(deadline);
+            if wait_ms <= 0 {
+                return Err(crate::events::Error::Timeout);
+            }
+            if let Some((event, message)) = self.poll(wait_ms) {
+                match event {
+                    crate::events::Event::UserAccountRemoved => {
+                        if let Some(removed) = message.account()
+                            && removed.username == username
+                        {
+                            return Ok(removed);
+                        }
+                    }
+                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                        return Err(crate::events::Error::CommandFailed {
+                            code: message.source(),
+                            message: "delete user account command failed".to_string(),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
 
     /// Returns the current user's subscription mask.
