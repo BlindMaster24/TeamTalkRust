@@ -4,6 +4,7 @@ use std::time::Duration;
 use teamtalk_sys as ffi;
 
 /// Client event emitted by `Client::poll`.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     None,
@@ -97,6 +98,7 @@ pub enum Event {
 }
 
 /// Client connection state derived from commands and events.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ConnectionState {
     #[default]
@@ -210,6 +212,7 @@ impl Event {
 }
 
 /// Error type used across TeamTalk operations.
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Init failed")]
