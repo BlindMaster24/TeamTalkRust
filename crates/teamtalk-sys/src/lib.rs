@@ -5,12 +5,12 @@
 #![allow(unused_variables)]
 #![allow(clippy::all)]
 
-use once_cell::sync::OnceCell;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-static INSTANCE: OnceCell<Arc<TeamTalk5>> = OnceCell::new();
+static INSTANCE: OnceLock<Arc<TeamTalk5>> = OnceLock::new();
 
 pub fn load(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let lib = unsafe { TeamTalk5::new(path)? };
