@@ -551,6 +551,7 @@
 - New optional functionality must be feature-gated in `crates/teamtalk/Cargo.toml`.
 - Linting is enforced via workspace rules in `Cargo.toml`; do not relax lint levels without user approval.
 - Prefer `UnpoisonedMutex<T>` from `crate::utils` over `std::sync::Mutex<T>` for internal mutable state. Do not use `.lock().unwrap_or_else(|e| e.into_inner())`; use `UnpoisonedMutex::lock()` instead.
+- All public enums must have `#[non_exhaustive]`, except FFI-mapping enums that mirror `TeamTalk.h` constants 1:1 (e.g. `AudioCodec`, `AudioPreprocessor`, `FileTransferStatus`). Adding a new enum variant without `#[non_exhaustive]` is a semver-breaking change; the attribute prevents this.
 - Backend abstractions exist only for logic-heavy paths that need mocking. Thin
   FFI wrappers stay direct unless a specific testable logic layer requires a
   backend hook.
