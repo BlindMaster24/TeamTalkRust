@@ -101,12 +101,12 @@ impl MessageBuilder {
     }
 
     /// Sends the message using the provided client.
-    pub fn send(self, client: &crate::client::Client) -> i32 {
+    pub fn send(self, client: &crate::client::Client) -> CommandId {
         client.send_text(self.target, &self.text)
     }
 
     /// Sends the message and wraps the result in a CommandId.
     pub fn send_cmd(self, client: &crate::client::Client) -> CommandId {
-        CommandId(self.send(client))
+        self.send(client)
     }
 }

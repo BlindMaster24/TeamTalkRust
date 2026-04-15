@@ -20,10 +20,10 @@ impl Client {
     pub fn set_client_keep_alive_and_ping(
         &self,
         keep_alive: &crate::types::ClientKeepAlive,
-    ) -> Result<i32, crate::events::Error> {
+    ) -> Result<CommandId, crate::events::Error> {
         self.set_client_keep_alive(keep_alive)?;
         let cmd_id = self.ping();
-        if cmd_id > 0 {
+        if cmd_id.is_ok() {
             Ok(cmd_id)
         } else {
             Err(crate::events::Error::CommandFailed {

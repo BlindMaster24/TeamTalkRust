@@ -131,7 +131,7 @@ impl Client {
             &params.password,
             &params.client_name,
         );
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             let mut auto = self.auto_reconnect.lock();
 
             auto.clear_login_phase();
@@ -143,7 +143,7 @@ impl Client {
         } else {
             let mut auto = self.auto_reconnect.lock();
 
-            auto.pending_login_cmd = Some(cmd_id);
+            auto.pending_login_cmd = Some(cmd_id.raw());
         }
     }
 
@@ -192,7 +192,7 @@ impl Client {
         self.invoke_hooks(before_event, &msg);
 
         let cmd_id = self.join_channel(channel, password.as_deref().unwrap_or(""));
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             let mut auto = self.auto_reconnect.lock();
 
             auto.clear_join_phase();
@@ -204,7 +204,7 @@ impl Client {
         } else {
             let mut auto = self.auto_reconnect.lock();
 
-            auto.pending_join_cmd = Some(cmd_id);
+            auto.pending_join_cmd = Some(cmd_id.raw());
         }
     }
 

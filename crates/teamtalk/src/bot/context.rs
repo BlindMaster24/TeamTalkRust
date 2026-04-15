@@ -4,7 +4,7 @@ use super::fsm::{DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTim
 use super::storage::StateStore;
 use crate::client::{Client, Message};
 use crate::events::{Error, Event, Result};
-use crate::types::{ChannelId, UserId};
+use crate::types::{ChannelId, CommandId, UserId};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::time::Duration;
@@ -46,16 +46,16 @@ impl<'a> Context<'a> {
         self.message.text().map(|text| text.channel_id)
     }
 
-    pub fn reply_private(&self, text: &str) -> i32 {
+    pub fn reply_private(&self, text: &str) -> CommandId {
         self.client.send_to_user(self.sender_id(), text)
     }
 
-    pub fn reply_channel(&self, text: &str) -> Option<i32> {
+    pub fn reply_channel(&self, text: &str) -> Option<CommandId> {
         self.channel_id()
             .map(|channel_id| self.client.send_to_channel(channel_id, text))
     }
 
-    pub fn reply(&self, text: &str) -> i32 {
+    pub fn reply(&self, text: &str) -> CommandId {
         if let Some(channel_id) = self.channel_id() {
             return self.client.send_to_channel(channel_id, text);
         }

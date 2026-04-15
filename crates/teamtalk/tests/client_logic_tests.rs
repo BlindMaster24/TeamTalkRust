@@ -13,8 +13,8 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, FileId, MessageTarget, TT_STRLEN, TransferId, UserId, UserPresence,
-    UserStatus,
+    Channel, ChannelId, CommandId, FileId, MessageTarget, TT_STRLEN, TransferId, UserId,
+    UserPresence, UserStatus,
 };
 use teamtalk::utils::strings::ToTT;
 
@@ -487,7 +487,9 @@ fn wait_for_command_returns_on_matching_success() {
     backend.push_cmd_success_event(44);
     let client = Client::with_backend(backend).expect("client");
 
-    client.wait_for_command(44, 500).expect("command success");
+    client
+        .wait_for_command(CommandId(44), 500)
+        .expect("command success");
 }
 
 #[test]
@@ -496,7 +498,9 @@ fn wait_for_command_reports_matching_error() {
     backend.push_cmd_error_event(52);
     let client = Client::with_backend(backend).expect("client");
 
-    let err = client.wait_for_command(52, 500).expect_err("command error");
+    let err = client
+        .wait_for_command(CommandId(52), 500)
+        .expect_err("command error");
 
     assert!(matches!(
         err,

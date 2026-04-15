@@ -28,32 +28,32 @@ impl Client {
     }
 
     /// Requests user data for the current user.
-    pub fn get_my_user_data(&self) -> i32 {
-        self.backend().get_my_user_data(self.ptr.0)
+    pub fn get_my_user_data(&self) -> CommandId {
+        CommandId(self.backend().get_my_user_data(self.ptr.0))
     }
 
     /// Changes the current nickname.
-    pub fn change_nickname(&self, nick: &str) -> i32 {
+    pub fn change_nickname(&self, nick: &str) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_change_nickname(self.ptr.0, nick)
+        CommandId(self.backend().do_change_nickname(self.ptr.0, nick))
     }
 
     /// Sets the status and status message.
-    pub fn set_status(&self, status: UserStatus, msg: &str) -> i32 {
+    pub fn set_status(&self, status: UserStatus, msg: &str) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        unsafe {
+        CommandId(unsafe {
             ffi::api().TT_DoChangeStatus(self.ptr.0, status.to_bits() as i32, msg.tt().as_ptr())
-        }
+        })
     }
 
     /// Updates only the status message.
-    pub fn set_status_message(&self, msg: &str) -> i32 {
+    pub fn set_status_message(&self, msg: &str) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
@@ -62,7 +62,9 @@ impl Client {
         } else {
             UserStatus::default().to_bits()
         };
-        self.backend()
-            .do_change_status(self.ptr.0, bits as i32, msg)
+        CommandId(
+            self.backend()
+                .do_change_status(self.ptr.0, bits as i32, msg),
+        )
     }
 }

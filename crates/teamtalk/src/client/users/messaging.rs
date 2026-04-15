@@ -2,7 +2,7 @@ use super::*;
 
 impl Client {
     /// Sends a text message to a target.
-    pub fn send_text<T: Into<MessageTarget>>(&self, target: T, text: &str) -> i32 {
+    pub fn send_text<T: Into<MessageTarget>>(&self, target: T, text: &str) -> CommandId {
         self.send_text_with_options(target, text, SendTextOptions::default())
     }
 
@@ -12,14 +12,14 @@ impl Client {
         target: T,
         text: &str,
         options: SendTextOptions,
-    ) -> i32 {
+    ) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
         let target = target.into();
         let chunks = split_text_chunks(text, TT_TEXT_MAX_PAYLOAD);
         let total_chunks = chunks.len();
-        let mut last_cmd_id = 0;
+        let mut last_cmd_id = CommandId::ZERO;
 
         for (index, chunk) in chunks.into_iter().enumerate() {
             let mut msg = text_message_for_target(target);
@@ -36,8 +36,8 @@ impl Client {
                 0
             };
             loop {
-                let cmd_id = self.backend().do_text_message(self.ptr.0, &msg);
-                if cmd_id > 0 {
+                let cmd_id = CommandId(self.backend().do_text_message(self.ptr.0, &msg));
+                if cmd_id.is_ok() {
                     last_cmd_id = cmd_id;
                     break;
                 }
@@ -52,17 +52,17 @@ impl Client {
     }
 
     /// Sends a text message to a user.
-    pub fn send_to_user(&self, user_id: UserId, text: &str) -> i32 {
+    pub fn send_to_user(&self, user_id: UserId, text: &str) -> CommandId {
         self.send_text(MessageTarget::User(user_id), text)
     }
 
     /// Sends a text message to a channel.
-    pub fn send_to_channel(&self, channel_id: ChannelId, text: &str) -> i32 {
+    pub fn send_to_channel(&self, channel_id: ChannelId, text: &str) -> CommandId {
         self.send_text(MessageTarget::Channel(channel_id), text)
     }
 
     /// Sends a text message to all users.
-    pub fn send_to_all(&self, text: &str) -> i32 {
+    pub fn send_to_all(&self, text: &str) -> CommandId {
         self.send_text(MessageTarget::Broadcast, text)
     }
 }

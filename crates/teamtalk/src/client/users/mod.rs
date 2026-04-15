@@ -1,8 +1,8 @@
 //! User management APIs.
 use super::Client;
 use crate::types::{
-    ChannelId, MessageTarget, Subscriptions, TT_STRLEN, User, UserAccount, UserId, UserStatistics,
-    UserStatus,
+    ChannelId, CommandId, MessageTarget, Subscriptions, TT_STRLEN, User, UserAccount, UserId,
+    UserStatistics, UserStatus,
 };
 use crate::utils::ToTT;
 use std::env;

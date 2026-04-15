@@ -11,16 +11,26 @@ fn wait_slice(deadline: Instant) -> i32 {
 
 impl Client {
     /// Logs in to the server.
-    pub fn login(&self, nickname: &str, username: &str, password: &str, client_name: &str) -> i32 {
+    pub fn login(
+        &self,
+        nickname: &str,
+        username: &str,
+        password: &str,
+        client_name: &str,
+    ) -> CommandId {
         if !can_login_in_state(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        let cmd_id =
-            self.backend()
-                .do_login_ex(self.ptr.0, nickname, username, password, client_name);
-        if cmd_id > 0 {
+        let cmd_id = CommandId(self.backend().do_login_ex(
+            self.ptr.0,
+            nickname,
+            username,
+            password,
+            client_name,
+        ));
+        if cmd_id.is_ok() {
             self.set_connection_state(crate::events::ConnectionState::LoggingIn);
-            self.mark_login_phase_started(cmd_id);
+            self.mark_login_phase_started(cmd_id.raw());
         }
         cmd_id
     }
@@ -40,7 +50,7 @@ impl Client {
     }
 
     /// Logs in using stored login parameters.
-    pub fn login_with_params(&self) -> Result<i32, crate::events::Error> {
+    pub fn login_with_params(&self) -> Result<CommandId, crate::events::Error> {
         let params = self
             .login_params()
             .ok_or(crate::events::Error::MissingLoginParams)?;
@@ -62,7 +72,7 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<crate::client::Message, crate::events::Error> {
         let cmd_id = self.login(nickname, username, password, client_name);
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::AuthFailed);
         }
         if timeout_ms < 0 {
@@ -70,7 +80,7 @@ impl Client {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
                         crate::events::Event::MySelfLoggedIn => return Ok(message),
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::AuthFailed);
                         }
                         _ => {}
@@ -91,7 +101,7 @@ impl Client {
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
                     crate::events::Event::MySelfLoggedIn => return Ok(message),
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::AuthFailed);
                     }
                     _ => {}
@@ -110,13 +120,13 @@ impl Client {
         username: &str,
         password: &str,
         client_name: &str,
-    ) -> i32 {
+    ) -> CommandId {
         let params = LoginParams::new(nickname, username, password, client_name);
         self.set_login_params(params);
         self.login(nickname, username, password, client_name)
     }
 
-    pub fn login_from_env(&self) -> i32 {
+    pub fn login_from_env(&self) -> CommandId {
         let params = LoginParams::from_env();
         self.set_login_params(params.clone());
         self.login(
@@ -128,12 +138,12 @@ impl Client {
     }
 
     /// Logs out from the server.
-    pub fn logout(&self) -> i32 {
+    pub fn logout(&self) -> CommandId {
         if !can_logout_in_state(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        let cmd_id = self.backend().do_logout(self.ptr.0);
-        if cmd_id > 0 {
+        let cmd_id = CommandId(self.backend().do_logout(self.ptr.0));
+        if cmd_id.is_ok() {
             self.set_connection_state(crate::events::ConnectionState::Connected);
         }
         cmd_id

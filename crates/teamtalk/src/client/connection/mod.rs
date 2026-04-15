@@ -1,6 +1,7 @@
 //! Connection and reconnect helpers.
 use super::Client;
 use crate::events::{ConnectionState, Error};
+use crate::types::CommandId;
 use crate::utils::backoff::ExponentialBackoff;
 use std::env;
 use std::time::{Duration, Instant};

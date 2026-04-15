@@ -1,6 +1,6 @@
 //! Server management APIs.
 use super::Client;
-use crate::types::{ChannelId, ServerProperties, User, UserId};
+use crate::types::{ChannelId, CommandId, ServerProperties, User, UserId};
 use std::time::{Duration, Instant};
 #[cfg(windows)]
 use teamtalk_sys as ffi;
@@ -26,10 +26,10 @@ impl Client {
     /// Waits for command success or command error for a specific command id.
     pub fn wait_for_command(
         &self,
-        cmd_id: i32,
+        cmd_id: CommandId,
         timeout_ms: i32,
     ) -> Result<(), crate::events::Error> {
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "command rejected in current state".to_string(),
@@ -39,10 +39,10 @@ impl Client {
             loop {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
-                        crate::events::Event::CmdSuccess if message.source() == cmd_id => {
+                        crate::events::Event::CmdSuccess if cmd_id == message.source() => {
                             return Ok(());
                         }
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "command failed".to_string(),
@@ -62,8 +62,8 @@ impl Client {
             }
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
-                    crate::events::Event::CmdSuccess if message.source() == cmd_id => return Ok(()),
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdSuccess if cmd_id == message.source() => return Ok(()),
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "command failed".to_string(),
@@ -86,11 +86,11 @@ impl Client {
     }
 
     /// Bans an IP address.
-    pub fn ban_ip(&self, ip: &str, ban_type: i32) -> i32 {
+    pub fn ban_ip(&self, ip: &str, ban_type: i32) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_ban_ip_address(self.ptr.0, ip, ban_type)
+        CommandId(self.backend().do_ban_ip_address(self.ptr.0, ip, ban_type))
     }
 
     /// Returns client statistics.
@@ -99,12 +99,14 @@ impl Client {
     }
 
     /// Requests a list of bans.
-    pub fn list_bans(&self, channel_id: ChannelId, index: i32, count: i32) -> i32 {
+    pub fn list_bans(&self, channel_id: ChannelId, index: i32, count: i32) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend()
-            .do_list_bans(self.ptr.0, channel_id.0, index, count)
+        CommandId(
+            self.backend()
+                .do_list_bans(self.ptr.0, channel_id.0, index, count),
+        )
     }
 
     /// Requests a list of bans and waits for the matching list to complete.
@@ -116,7 +118,7 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<Vec<crate::types::BannedUser>, crate::events::Error> {
         let cmd_id = self.list_bans(channel_id, index, count);
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "ban list command rejected in current state".to_string(),
@@ -132,10 +134,10 @@ impl Client {
                                 items.push(entry);
                             }
                         }
-                        crate::events::Event::CmdSuccess if message.source() == cmd_id => {
+                        crate::events::Event::CmdSuccess if cmd_id == message.source() => {
                             return Ok(items);
                         }
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "ban list command failed".to_string(),
@@ -160,10 +162,10 @@ impl Client {
                             items.push(entry);
                         }
                     }
-                    crate::events::Event::CmdSuccess if message.source() == cmd_id => {
+                    crate::events::Event::CmdSuccess if cmd_id == message.source() => {
                         return Ok(items);
                     }
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "ban list command failed".to_string(),
@@ -176,11 +178,11 @@ impl Client {
     }
 
     /// Updates server properties.
-    pub fn update_server(&self, props: &ServerProperties) -> i32 {
+    pub fn update_server(&self, props: &ServerProperties) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_update_server(self.ptr.0, props)
+        CommandId(self.backend().do_update_server(self.ptr.0, props))
     }
 
     /// Updates server properties and waits for the updated server state event.
@@ -190,7 +192,7 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<ServerProperties, crate::events::Error> {
         let cmd_id = self.update_server(props);
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "server update command rejected in current state".to_string(),
@@ -205,7 +207,7 @@ impl Client {
                                 return Ok(updated);
                             }
                         }
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "server update command failed".to_string(),
@@ -230,7 +232,7 @@ impl Client {
                             return Ok(updated);
                         }
                     }
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "server update command failed".to_string(),
@@ -243,17 +245,17 @@ impl Client {
     }
 
     /// Saves the server configuration.
-    pub fn save_server_config(&self) -> i32 {
+    pub fn save_server_config(&self) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_save_config(self.ptr.0)
+        CommandId(self.backend().do_save_config(self.ptr.0))
     }
 
     /// Saves the server configuration and waits for command completion.
     pub fn save_server_config_and_wait(&self, timeout_ms: i32) -> Result<(), crate::events::Error> {
         let cmd_id = self.save_server_config();
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "save server config command rejected in current state".to_string(),
@@ -268,11 +270,11 @@ impl Client {
     }
 
     /// Requests server statistics.
-    pub fn query_server_stats(&self) -> i32 {
+    pub fn query_server_stats(&self) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_query_server_stats(self.ptr.0)
+        CommandId(self.backend().do_query_server_stats(self.ptr.0))
     }
 
     /// Requests server statistics and waits for the statistics event or command error.
@@ -281,7 +283,7 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<crate::client::Message, crate::events::Error> {
         let cmd_id = self.query_server_stats();
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "server statistics query rejected in current state".to_string(),
@@ -292,7 +294,7 @@ impl Client {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
                         crate::events::Event::ServerStatistics => return Ok(message),
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "server statistics query failed".to_string(),
@@ -313,7 +315,7 @@ impl Client {
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
                     crate::events::Event::ServerStatistics => return Ok(message),
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "server statistics query failed".to_string(),
@@ -326,8 +328,8 @@ impl Client {
     }
 
     /// Pings the server and waits for processing events.
-    pub fn ping(&self) -> i32 {
-        self.backend().do_ping(self.ptr.0)
+    pub fn ping(&self) -> CommandId {
+        CommandId(self.backend().do_ping(self.ptr.0))
     }
 
     /// Queries the max payload for a user.
@@ -351,7 +353,7 @@ impl Client {
     }
 
     /// Quits the TeamTalk client (for standalone apps).
-    pub fn quit(&self) -> i32 {
-        self.backend().do_quit(self.ptr.0)
+    pub fn quit(&self) -> CommandId {
+        CommandId(self.backend().do_quit(self.ptr.0))
     }
 }

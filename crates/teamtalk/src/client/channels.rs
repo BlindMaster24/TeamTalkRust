@@ -1,7 +1,7 @@
 //! Channel management APIs.
 use super::Client;
 use crate::events::ConnectionState;
-use crate::types::{Channel, ChannelId, UserId};
+use crate::types::{Channel, ChannelId, CommandId, UserId};
 use std::time::{Duration, Instant};
 
 fn can_start_join(state: ConnectionState) -> bool {
@@ -58,14 +58,15 @@ impl Client {
     }
 
     /// Joins a channel.
-    pub fn join_channel(&self, id: ChannelId, password: &str) -> i32 {
+    pub fn join_channel(&self, id: ChannelId, password: &str) -> CommandId {
         if !can_start_join(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        let cmd_id = self
-            .backend()
-            .do_join_channel_by_id(self.ptr.0, id.0, password);
-        if cmd_id > 0 {
+        let cmd_id = CommandId(
+            self.backend()
+                .do_join_channel_by_id(self.ptr.0, id.0, password),
+        );
+        if cmd_id.is_ok() {
             let mut auto = self.auto_reconnect.lock();
 
             auto.last_channel = Some(id);
@@ -77,7 +78,7 @@ impl Client {
             auto.join_gave_up = false;
             self.set_connection_state(ConnectionState::Joining(id));
             drop(auto);
-            self.mark_join_phase_started(cmd_id);
+            self.mark_join_phase_started(cmd_id.raw());
         }
         cmd_id
     }
@@ -90,7 +91,7 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<super::Message, crate::events::Error> {
         let cmd_id = self.join_channel(id, password);
-        if cmd_id <= 0 {
+        if !cmd_id.is_ok() {
             return Err(crate::events::Error::CommandFailed {
                 code: 0,
                 message: "join command rejected in current state".to_string(),
@@ -108,7 +109,7 @@ impl Client {
                         {
                             return Ok(message);
                         }
-                        crate::events::Event::CmdError if message.source() == cmd_id => {
+                        crate::events::Event::CmdError if cmd_id == message.source() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "join command failed".to_string(),
@@ -142,7 +143,7 @@ impl Client {
                     {
                         return Ok(message);
                     }
-                    crate::events::Event::CmdError if message.source() == cmd_id => {
+                    crate::events::Event::CmdError if cmd_id == message.source() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "join command failed".to_string(),
@@ -161,32 +162,32 @@ impl Client {
     }
 
     /// Joins a channel by id without a password.
-    pub fn join_channel_unprotected(&self, channel_id: ChannelId) -> i32 {
+    pub fn join_channel_unprotected(&self, channel_id: ChannelId) -> CommandId {
         self.join_channel(channel_id, "")
     }
 
     /// Joins a channel path.
-    pub fn join_channel_path(&self, path: &str, password: &str) -> i32 {
+    pub fn join_channel_path(&self, path: &str, password: &str) -> CommandId {
         let id = self.get_channel_id_from_path(path);
         if id.0 > 0 {
             self.join_channel(id, password)
         } else {
-            0
+            CommandId::ZERO
         }
     }
 
     /// Joins a channel path without a password.
-    pub fn join_channel_path_unprotected(&self, path: &str) -> i32 {
+    pub fn join_channel_path_unprotected(&self, path: &str) -> CommandId {
         self.join_channel_path(path, "")
     }
 
     /// Leaves the current channel.
-    pub fn leave_channel(&self) -> i32 {
+    pub fn leave_channel(&self) -> CommandId {
         if !can_leave_channel_in_state(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        let cmd_id = self.backend().do_leave_channel(self.ptr.0);
-        if cmd_id > 0 {
+        let cmd_id = CommandId(self.backend().do_leave_channel(self.ptr.0));
+        if cmd_id.is_ok() {
             let mut auto = self.auto_reconnect.lock();
 
             auto.last_channel = None;
@@ -198,36 +199,38 @@ impl Client {
     }
 
     /// Creates a new channel.
-    pub fn make_channel(&self, channel: &Channel) -> i32 {
+    pub fn make_channel(&self, channel: &Channel) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_make_channel(self.ptr.0, channel)
+        CommandId(self.backend().do_make_channel(self.ptr.0, channel))
     }
 
     /// Updates an existing channel.
-    pub fn update_channel(&self, channel: &Channel) -> i32 {
+    pub fn update_channel(&self, channel: &Channel) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_update_channel(self.ptr.0, channel)
+        CommandId(self.backend().do_update_channel(self.ptr.0, channel))
     }
 
     /// Removes a channel.
-    pub fn remove_channel(&self, id: ChannelId) -> i32 {
+    pub fn remove_channel(&self, id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend().do_remove_channel(self.ptr.0, id.0)
+        CommandId(self.backend().do_remove_channel(self.ptr.0, id.0))
     }
 
     /// Moves a user to a different channel.
-    pub fn move_user(&self, user_id: UserId, channel_id: ChannelId) -> i32 {
+    pub fn move_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend()
-            .do_move_user(self.ptr.0, user_id.0, channel_id.0)
+        CommandId(
+            self.backend()
+                .do_move_user(self.ptr.0, user_id.0, channel_id.0),
+        )
     }
 
     /// Checks if a user is an operator in a channel.
@@ -237,13 +240,13 @@ impl Client {
     }
 
     /// Joins the root channel.
-    pub fn join_root(&self) -> i32 {
+    pub fn join_root(&self) -> CommandId {
         let root = self.backend().get_root_channel_id(self.ptr.0);
         self.join_channel(root, "")
     }
 
     /// Leaves the current channel and joins the root channel.
-    pub fn leave_to_root(&self) -> i32 {
+    pub fn leave_to_root(&self) -> CommandId {
         let _ = self.leave_channel();
         self.join_root()
     }

@@ -1,7 +1,7 @@
 //! File transfer APIs.
 use super::Client;
 use crate::events::{Error, Event, Result};
-use crate::types::{ChannelId, FileId, RemoteFile, TransferId};
+use crate::types::{ChannelId, CommandId, FileId, RemoteFile, TransferId};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
@@ -80,30 +80,43 @@ impl Client {
     }
 
     /// Sends a local file to a channel.
-    pub fn send_file(&self, channel_id: ChannelId, local_path: &str) -> i32 {
+    pub fn send_file(&self, channel_id: ChannelId, local_path: &str) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend()
-            .do_send_file(self.ptr.0, channel_id.0, local_path)
+        CommandId(
+            self.backend()
+                .do_send_file(self.ptr.0, channel_id.0, local_path),
+        )
     }
 
     /// Receives a remote file into a local directory.
-    pub fn recv_file(&self, channel_id: ChannelId, remote_file_id: FileId, local_dir: &str) -> i32 {
+    pub fn recv_file(
+        &self,
+        channel_id: ChannelId,
+        remote_file_id: FileId,
+        local_dir: &str,
+    ) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend()
-            .do_recv_file(self.ptr.0, channel_id.0, remote_file_id.0, local_dir)
+        CommandId(self.backend().do_recv_file(
+            self.ptr.0,
+            channel_id.0,
+            remote_file_id.0,
+            local_dir,
+        ))
     }
 
     /// Deletes a remote file from a channel.
-    pub fn delete_file(&self, channel_id: ChannelId, remote_file_id: FileId) -> i32 {
+    pub fn delete_file(&self, channel_id: ChannelId, remote_file_id: FileId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
-            return 0;
+            return CommandId::ZERO;
         }
-        self.backend()
-            .do_delete_file(self.ptr.0, channel_id.0, remote_file_id.0)
+        CommandId(
+            self.backend()
+                .do_delete_file(self.ptr.0, channel_id.0, remote_file_id.0),
+        )
     }
 
     /// Returns file transfer info by transfer id.
