@@ -329,11 +329,21 @@
   - Components list: `rustup component list` and `rustup component list --installed`
   - Targets list: `rustup target list` and `rustup target list --installed`
 - Overrides: `rustup override list`, `rustup override set <toolchain>`, `rustup override unset`
+- Cargo cache management (`cargo-cache`):
+  - `cargo-cache` manages `~/.cargo/` (global registry, git checkouts, installed binaries).
+  - `cargo cache -a` — show size breakdown (registry index, crate archives, source checkouts, git dbs, binaries).
+  - `cargo cache --autoclean` — remove crate source checkouts and old archive versions not needed by any local lockfile; safe default.
+  - `cargo cache --autoclean-expensive` — same, but scans all workspace Cargo.lock files on the system; slower but more thorough.
+  - `cargo cache --clean-ci` — aggressive cleanup: git checkouts, crate source checkouts, and stale registry archives; use when disk space is critical.
+  - `cargo cache --list` — show installed binaries and their sizes.
+  - `cargo cache --fsck` — verify registry integrity; fix broken entries.
+  - Typical usage: run `cargo cache --autoclean` after `cargo clean` or when disk is full; `cargo cache -a` to inspect before cleaning.
+  - The tool is global (operates on `~/.cargo/`, not `target/`); `cargo clean` handles `target/` separately.
 ## Task Runner (`just`)
 - The repo ships a root `justfile` as a convenience CLI for common workflows.
 - `just` is optional; every task must still be runnable with direct `cargo`/`gh`/scripts commands.
 - Install recommended tooling:
-  - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest`
+  - `cargo install just cargo-edit cargo-outdated cargo-llvm-cov cargo-nextest cargo-cache`
 - The `justfile` sets `windows-shell` to PowerShell so recipes work on Windows without a separate `sh` installation.
 - Discover tasks with `just --list`.
 - Prefer `just` commands first for repeatable local flows; if `just` or a required subcommand is unavailable, use the equivalent manual commands.
