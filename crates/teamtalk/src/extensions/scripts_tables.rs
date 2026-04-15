@@ -126,10 +126,10 @@ impl ScriptManager {
     pub(super) fn text_table(&self, msg: &TextMessage) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
         table.set("msg_type", msg.msg_type as i32)?;
-        table.set("from_id", msg.from_id.0)?;
+        table.set("from_id", msg.from_id.raw())?;
         table.set("from_username", msg.from_username.clone())?;
-        table.set("to_id", msg.to_id.0)?;
-        table.set("channel_id", msg.channel_id.0)?;
+        table.set("to_id", msg.to_id.raw())?;
+        table.set("channel_id", msg.channel_id.raw())?;
         table.set("text", msg.text.clone())?;
         table.set("more", msg.more)?;
         Ok(table)
@@ -137,14 +137,14 @@ impl ScriptManager {
 
     pub(super) fn user_table(&self, user: &User) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
-        table.set("id", user.id.0)?;
+        table.set("id", user.id.raw())?;
         table.set("username", user.username.clone())?;
         table.set("nickname", user.nickname.clone())?;
         table.set("user_data", user.user_data)?;
         table.set("user_type", user.user_type as i64)?;
         table.set("ip_address", user.ip_address.clone())?;
         table.set("version", user.version as i64)?;
-        table.set("channel_id", user.channel_id.0)?;
+        table.set("channel_id", user.channel_id.raw())?;
         table.set("status_mode", user.status.to_bits() as i64)?;
         table.set("status_msg", user.status_msg.clone())?;
         table.set("state", user.state.raw() as i64)?;
@@ -174,8 +174,8 @@ impl ScriptManager {
 
     pub(super) fn channel_table(&self, channel: &Channel) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
-        table.set("id", channel.id.0)?;
-        table.set("parent_id", channel.parent_id.0)?;
+        table.set("id", channel.id.raw())?;
+        table.set("parent_id", channel.parent_id.raw())?;
         table.set("name", channel.name.clone())?;
         table.set("topic", channel.topic.clone())?;
         table.set("channel_type", channel.channel_type.raw() as i64)?;
@@ -189,7 +189,7 @@ impl ScriptManager {
         let tx = self.lua.create_table()?;
         for (idx, (user_id, stream_type)) in channel.transmit_users.iter().enumerate() {
             let entry = self.lua.create_table()?;
-            entry.set("user_id", user_id.0)?;
+            entry.set("user_id", user_id.raw())?;
             entry.set("stream_type", *stream_type as i64)?;
             tx.set(idx + 1, entry)?;
         }
@@ -199,7 +199,7 @@ impl ScriptManager {
             channel
                 .transmit_users_queue
                 .iter()
-                .map(|id| id.0)
+                .map(|id| id.raw())
                 .collect::<Vec<_>>(),
         )?;
         Ok(table)
@@ -207,8 +207,8 @@ impl ScriptManager {
 
     pub(super) fn file_transfer_table(&self, transfer: &FileTransfer) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
-        table.set("id", transfer.id.0)?;
-        table.set("channel_id", transfer.channel_id.0)?;
+        table.set("id", transfer.id.raw())?;
+        table.set("channel_id", transfer.channel_id.raw())?;
         table.set("local_path", transfer.local_path.clone())?;
         table.set("remote_name", transfer.remote_name.clone())?;
         table.set("size", transfer.size)?;
@@ -220,8 +220,8 @@ impl ScriptManager {
 
     pub(super) fn remote_file_table(&self, file: &RemoteFile) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
-        table.set("channel_id", file.channel_id.0)?;
-        table.set("id", file.id.0)?;
+        table.set("channel_id", file.channel_id.raw())?;
+        table.set("id", file.id.raw())?;
         table.set("name", file.name.clone())?;
         table.set("size", file.size)?;
         table.set("owner", file.owner.clone())?;
@@ -288,7 +288,7 @@ impl ScriptManager {
             account
                 .auto_operator_channels
                 .iter()
-                .map(|id| id.0)
+                .map(|id| id.raw())
                 .collect::<Vec<_>>(),
         )?;
         table.set("audio_codec_bps_limit", account.audio_codec_bps_limit)?;

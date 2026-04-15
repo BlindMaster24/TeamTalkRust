@@ -5,7 +5,7 @@ impl Client {
         unsafe {
             ffi::api().TT_EnableAudioBlockEvent(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 types,
                 if enable { 1 } else { 0 },
             ) == 1
@@ -19,7 +19,7 @@ impl Client {
         unsafe {
             ffi::api().TT_SetUserJitterControl(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 ffi::StreamType::STREAMTYPE_VOICE,
                 &cfg,
             ) == 1
@@ -38,7 +38,7 @@ impl Client {
         unsafe {
             ffi::api().TT_EnableAudioBlockEventEx(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 types,
                 fmt_ptr,
                 if enable { 1 } else { 0 },
@@ -85,8 +85,8 @@ impl Client {
     /// Starts a sound loopback test with additional options.
     pub fn start_sound_loopback_test_ex(
         &self,
-        in_id: i32,
-        out_id: i32,
+        in_id: SoundDeviceId,
+        out_id: SoundDeviceId,
         rate: i32,
         chans: i32,
         duplex: bool,
@@ -98,8 +98,8 @@ impl Client {
         let eff_ptr = effects.map_or(std::ptr::null(), |e| e);
         unsafe {
             ffi::api().TT_StartSoundLoopbackTestEx(
-                in_id,
-                out_id,
+                in_id.raw(),
+                out_id.raw(),
                 rate,
                 chans,
                 if duplex { 1 } else { 0 },
@@ -115,7 +115,7 @@ impl Client {
         if unsafe {
             ffi::api().TT_GetUserJitterControl(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 ffi::StreamType::STREAMTYPE_VOICE,
                 &mut raw,
             ) == 1
@@ -133,7 +133,7 @@ impl Client {
         user_id: UserId,
     ) -> Option<*mut ffi::AudioBlock> {
         unsafe {
-            let ptr = ffi::api().TT_AcquireUserAudioBlock(self.ptr.0, types, user_id.0);
+            let ptr = ffi::api().TT_AcquireUserAudioBlock(self.ptr.0, types, user_id.raw());
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }
@@ -163,22 +163,22 @@ impl Client {
         stream_type: ffi::StreamType,
         volume: i32,
     ) -> bool {
-        unsafe { ffi::api().TT_SetUserVolume(self.ptr.0, user_id.0, stream_type, volume) == 1 }
+        unsafe { ffi::api().TT_SetUserVolume(self.ptr.0, user_id.raw(), stream_type, volume) == 1 }
     }
 
     /// Starts a sound loopback test.
     pub fn start_sound_loopback_test(
         &self,
-        in_id: i32,
-        out_id: i32,
+        in_id: SoundDeviceId,
+        out_id: SoundDeviceId,
         rate: i32,
         chans: i32,
         duplex: bool,
     ) -> *mut ffi::TTSoundLoop {
         unsafe {
             ffi::api().TT_StartSoundLoopbackTest(
-                in_id,
-                out_id,
+                in_id.raw(),
+                out_id.raw(),
                 rate,
                 chans,
                 if duplex { 1 } else { 0 },

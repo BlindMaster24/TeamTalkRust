@@ -15,23 +15,26 @@ impl Client {
     }
 
     /// Returns default input and output device ids.
-    pub fn get_default_sound_devices(&self) -> (i32, i32) {
+    pub fn get_default_sound_devices(&self) -> (SoundDeviceId, SoundDeviceId) {
         let mut input: i32 = 0;
         let mut output: i32 = 0;
         unsafe {
             ffi::api().TT_GetDefaultSoundDevices(&mut input, &mut output);
         }
-        (input, output)
+        (SoundDeviceId(input), SoundDeviceId(output))
     }
 
     /// Returns default input and output device ids for a sound system.
-    pub fn get_default_sound_devices_ex(&self, system: ffi::SoundSystem) -> (i32, i32) {
+    pub fn get_default_sound_devices_ex(
+        &self,
+        system: ffi::SoundSystem,
+    ) -> (SoundDeviceId, SoundDeviceId) {
         let mut input: i32 = 0;
         let mut output: i32 = 0;
         unsafe {
             ffi::api().TT_GetDefaultSoundDevicesEx(system, &mut input, &mut output);
         }
-        (input, output)
+        (SoundDeviceId(input), SoundDeviceId(output))
     }
 
     /// Restarts the global sound system.
@@ -40,13 +43,13 @@ impl Client {
     }
 
     /// Initializes the sound input device by id.
-    pub fn init_sound_input_device(&self, device_id: i32) -> bool {
-        unsafe { ffi::api().TT_InitSoundInputDevice(self.ptr.0, device_id) == 1 }
+    pub fn init_sound_input_device(&self, device_id: SoundDeviceId) -> bool {
+        unsafe { ffi::api().TT_InitSoundInputDevice(self.ptr.0, device_id.raw()) == 1 }
     }
 
     /// Initializes the sound output device by id.
-    pub fn init_sound_output_device(&self, device_id: i32) -> bool {
-        unsafe { ffi::api().TT_InitSoundOutputDevice(self.ptr.0, device_id) == 1 }
+    pub fn init_sound_output_device(&self, device_id: SoundDeviceId) -> bool {
+        unsafe { ffi::api().TT_InitSoundOutputDevice(self.ptr.0, device_id.raw()) == 1 }
     }
 
     /// Initializes a shared input device.
@@ -60,8 +63,8 @@ impl Client {
     }
 
     /// Initializes duplex input/output devices.
-    pub fn init_sound_duplex_devices(&self, in_id: i32, out_id: i32) -> bool {
-        unsafe { ffi::api().TT_InitSoundDuplexDevices(self.ptr.0, in_id, out_id) == 1 }
+    pub fn init_sound_duplex_devices(&self, in_id: SoundDeviceId, out_id: SoundDeviceId) -> bool {
+        unsafe { ffi::api().TT_InitSoundDuplexDevices(self.ptr.0, in_id.raw(), out_id.raw()) == 1 }
     }
 
     /// Returns an audio profile using default input and output devices.
@@ -128,8 +131,12 @@ impl Client {
     /// Mutes or unmutes a user stream.
     pub fn set_user_mute(&self, user_id: UserId, stream_type: ffi::StreamType, mute: bool) -> bool {
         unsafe {
-            ffi::api().TT_SetUserMute(self.ptr.0, user_id.0, stream_type, if mute { 1 } else { 0 })
-                == 1
+            ffi::api().TT_SetUserMute(
+                self.ptr.0,
+                user_id.raw(),
+                stream_type,
+                if mute { 1 } else { 0 },
+            ) == 1
         }
     }
 
@@ -142,7 +149,7 @@ impl Client {
     ) -> bool {
         unsafe {
             let st = stream_type as u32;
-            ffi::api().TT_SetUserAudioStreamBufferSize(self.ptr.0, user_id.0, st, msec) == 1
+            ffi::api().TT_SetUserAudioStreamBufferSize(self.ptr.0, user_id.raw(), st, msec) == 1
         }
     }
 
@@ -154,7 +161,8 @@ impl Client {
         msec: i32,
     ) -> bool {
         unsafe {
-            ffi::api().TT_SetUserStoppedPlaybackDelay(self.ptr.0, user_id.0, stream_type, msec) == 1
+            ffi::api().TT_SetUserStoppedPlaybackDelay(self.ptr.0, user_id.raw(), stream_type, msec)
+                == 1
         }
     }
 
@@ -241,7 +249,9 @@ impl Client {
         y: f32,
         z: f32,
     ) -> bool {
-        unsafe { ffi::api().TT_SetUserPosition(self.ptr.0, user_id.0, stream_type, x, y, z) == 1 }
+        unsafe {
+            ffi::api().TT_SetUserPosition(self.ptr.0, user_id.raw(), stream_type, x, y, z) == 1
+        }
     }
 
     /// Sets a user's stereo playback.
@@ -255,7 +265,7 @@ impl Client {
         unsafe {
             ffi::api().TT_SetUserStereo(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 stream_type,
                 left as i32,
                 right as i32,

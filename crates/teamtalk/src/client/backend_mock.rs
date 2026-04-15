@@ -105,12 +105,14 @@ impl MockBackend {
 
     pub fn set_channel(&self, channel: Channel) {
         let mut state = self.state.lock();
-        state.channels.insert(channel.id.0, channel);
+        state.channels.insert(channel.id.raw(), channel);
     }
 
     pub fn set_channel_path(&self, channel_id: ChannelId, path: &str) {
         let mut state = self.state.lock();
-        state.channel_paths.insert(channel_id.0, path.to_string());
+        state
+            .channel_paths
+            .insert(channel_id.raw(), path.to_string());
     }
 
     pub fn set_channel_file(&self, file: ffi::RemoteFile) {
@@ -122,7 +124,7 @@ impl MockBackend {
 
     pub fn set_channel_users(&self, channel_id: ChannelId, users: Vec<ffi::User>) {
         let mut state = self.state.lock();
-        state.channel_users.insert(channel_id.0, users);
+        state.channel_users.insert(channel_id.raw(), users);
     }
 
     pub fn set_root_channel_id(&self, channel_id: ChannelId) {
@@ -135,9 +137,9 @@ impl MockBackend {
         state.my_channel_id = channel_id;
     }
 
-    pub fn set_my_user_id(&self, user_id: i32) {
+    pub fn set_my_user_id(&self, user_id: UserId) {
         let mut state = self.state.lock();
-        state.my_user_id = user_id;
+        state.my_user_id = user_id.raw();
     }
 
     pub fn set_my_user_rights(&self, rights: u32) {
@@ -457,7 +459,7 @@ impl TeamTalkBackend for MockBackend {
     fn start_recording_channel(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _channel_id: i32,
+        _channel_id: ChannelId,
         _file_path: &str,
         _format: ffi::AudioFileFormat,
     ) -> bool {
@@ -479,7 +481,7 @@ impl TeamTalkBackend for MockBackend {
         self.state.lock().stop_ok
     }
 
-    fn stop_recording_channel(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32) -> bool {
+    fn stop_recording_channel(&self, _ptr: *mut ffi::TTInstance, _channel_id: ChannelId) -> bool {
         self.state.lock().stop_ok
     }
 
@@ -508,7 +510,7 @@ impl TeamTalkBackend for MockBackend {
     fn do_join_channel_by_id(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _channel_id: i32,
+        _channel_id: ChannelId,
         _password: &str,
     ) -> i32 {
         self.state.lock().join_result
@@ -518,40 +520,50 @@ impl TeamTalkBackend for MockBackend {
         self.state.lock().leave_result
     }
 
-    fn do_send_file(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32, _local_path: &str) -> i32 {
+    fn do_send_file(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _channel_id: ChannelId,
+        _local_path: &str,
+    ) -> i32 {
         self.state.lock().send_file_result
     }
 
     fn do_recv_file(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _channel_id: i32,
-        _file_id: i32,
+        _channel_id: ChannelId,
+        _file_id: FileId,
         _local_path: &str,
     ) -> i32 {
         self.state.lock().recv_file_result
     }
 
-    fn do_delete_file(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32, _file_id: i32) -> i32 {
+    fn do_delete_file(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _channel_id: ChannelId,
+        _file_id: FileId,
+    ) -> i32 {
         self.state.lock().delete_file_result
     }
 
     fn get_file_transfer_info(
         &self,
         _ptr: *mut ffi::TTInstance,
-        transfer_id: i32,
+        transfer_id: TransferId,
     ) -> Option<crate::types::FileTransfer> {
         self.state
             .lock()
             .file_transfers
-            .get(&transfer_id)
+            .get(&transfer_id.raw())
             .copied()
             .map(crate::types::FileTransfer::from)
     }
 
-    fn cancel_file_transfer(&self, _ptr: *mut ffi::TTInstance, transfer_id: i32) -> bool {
+    fn cancel_file_transfer(&self, _ptr: *mut ffi::TTInstance, transfer_id: TransferId) -> bool {
         let mut state = self.state.lock();
-        state.cancelled_transfers.push(transfer_id);
+        state.cancelled_transfers.push(transfer_id.raw());
         true
     }
 
@@ -568,9 +580,9 @@ impl TeamTalkBackend for MockBackend {
         1
     }
 
-    fn get_channel(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<Channel> {
+    fn get_channel(&self, _ptr: *mut ffi::TTInstance, channel_id: ChannelId) -> Option<Channel> {
         let state = self.state.lock();
-        state.channels.get(&channel_id).cloned()
+        state.channels.get(&channel_id.raw()).cloned()
     }
 
     fn get_server_channels(&self, _ptr: *mut ffi::TTInstance) -> Vec<Channel> {
@@ -580,19 +592,27 @@ impl TeamTalkBackend for MockBackend {
     fn get_channel_file(
         &self,
         _ptr: *mut ffi::TTInstance,
-        channel_id: i32,
-        file_id: i32,
+        channel_id: ChannelId,
+        file_id: FileId,
     ) -> Option<RemoteFile> {
         self.state
             .lock()
             .channel_files
-            .get(&(channel_id, file_id))
+            .get(&(channel_id.raw(), file_id.raw()))
             .copied()
             .map(RemoteFile::from)
     }
 
-    fn get_channel_path(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Option<String> {
-        self.state.lock().channel_paths.get(&channel_id).cloned()
+    fn get_channel_path(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        channel_id: ChannelId,
+    ) -> Option<String> {
+        self.state
+            .lock()
+            .channel_paths
+            .get(&channel_id.raw())
+            .cloned()
     }
 
     fn get_channel_id_from_path(&self, _ptr: *mut ffi::TTInstance, path: &str) -> ChannelId {
@@ -604,15 +624,15 @@ impl TeamTalkBackend for MockBackend {
             .unwrap_or_default()
     }
 
-    fn get_my_user_id(&self, _ptr: *mut ffi::TTInstance) -> i32 {
-        self.state.lock().my_user_id
+    fn get_my_user_id(&self, _ptr: *mut ffi::TTInstance) -> UserId {
+        UserId(self.state.lock().my_user_id)
     }
 
     fn get_my_user_rights(&self, _ptr: *mut ffi::TTInstance) -> u32 {
         self.state.lock().my_user_rights
     }
 
-    fn get_user(&self, _ptr: *mut ffi::TTInstance, _user_id: i32, user: &mut ffi::User) -> bool {
+    fn get_user(&self, _ptr: *mut ffi::TTInstance, _user_id: UserId, user: &mut ffi::User) -> bool {
         let state = self.state.lock();
         if let Some(raw) = state.user {
             *user = raw;
@@ -622,11 +642,11 @@ impl TeamTalkBackend for MockBackend {
         }
     }
 
-    fn get_user_by_id(&self, _ptr: *mut ffi::TTInstance, user_id: i32) -> Option<User> {
+    fn get_user_by_id(&self, _ptr: *mut ffi::TTInstance, user_id: UserId) -> Option<User> {
         self.state
             .lock()
             .users_by_id
-            .get(&user_id)
+            .get(&user_id.raw())
             .copied()
             .map(User::from)
     }
@@ -643,12 +663,12 @@ impl TeamTalkBackend for MockBackend {
     fn get_user_statistics(
         &self,
         _ptr: *mut ffi::TTInstance,
-        user_id: i32,
+        user_id: UserId,
     ) -> Option<UserStatistics> {
         self.state
             .lock()
             .user_stats
-            .get(&user_id)
+            .get(&user_id.raw())
             .copied()
             .map(UserStatistics::from)
     }
@@ -774,19 +794,24 @@ impl TeamTalkBackend for MockBackend {
         self.state.lock().update_channel_result
     }
 
-    fn do_remove_channel(&self, _ptr: *mut ffi::TTInstance, _channel_id: i32) -> i32 {
+    fn do_remove_channel(&self, _ptr: *mut ffi::TTInstance, _channel_id: ChannelId) -> i32 {
         self.state.lock().remove_channel_result
     }
 
-    fn do_move_user(&self, _ptr: *mut ffi::TTInstance, _user_id: i32, _channel_id: i32) -> i32 {
+    fn do_move_user(
+        &self,
+        _ptr: *mut ffi::TTInstance,
+        _user_id: UserId,
+        _channel_id: ChannelId,
+    ) -> i32 {
         self.state.lock().move_user_result
     }
 
     fn is_channel_operator(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _user_id: i32,
-        _channel_id: i32,
+        _user_id: UserId,
+        _channel_id: ChannelId,
     ) -> bool {
         false
     }
@@ -795,11 +820,11 @@ impl TeamTalkBackend for MockBackend {
         self.state.lock().root_channel_id
     }
 
-    fn get_channel_users(&self, _ptr: *mut ffi::TTInstance, channel_id: i32) -> Vec<User> {
+    fn get_channel_users(&self, _ptr: *mut ffi::TTInstance, channel_id: ChannelId) -> Vec<User> {
         self.state
             .lock()
             .channel_users
-            .get(&channel_id)
+            .get(&channel_id.raw())
             .cloned()
             .unwrap_or_default()
             .into_iter()
@@ -830,7 +855,7 @@ impl TeamTalkBackend for MockBackend {
     fn do_list_bans(
         &self,
         _ptr: *mut ffi::TTInstance,
-        _channel_id: i32,
+        _channel_id: ChannelId,
         _index: i32,
         _count: i32,
     ) -> i32 {
@@ -853,7 +878,7 @@ impl TeamTalkBackend for MockBackend {
         self.state.lock().ping_result
     }
 
-    fn query_max_payload(&self, _ptr: *mut ffi::TTInstance, _user_id: i32) -> bool {
+    fn query_max_payload(&self, _ptr: *mut ffi::TTInstance, _user_id: UserId) -> bool {
         self.state.lock().query_max_payload_ok
     }
 

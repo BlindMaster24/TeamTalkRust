@@ -6,7 +6,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoSubscribe(self.ptr.0, user_id.0, mask.raw()) })
+        CommandId(unsafe { ffi::api().TT_DoSubscribe(self.ptr.0, user_id.raw(), mask.raw()) })
     }
 
     /// Unsubscribes from a user's streams.
@@ -14,7 +14,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, mask.raw()) })
+        CommandId(unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.raw(), mask.raw()) })
     }
 
     /// Unsubscribes from all streams for a user.
@@ -22,7 +22,9 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.0, Subscriptions::ALL) })
+        CommandId(unsafe {
+            ffi::api().TT_DoUnsubscribe(self.ptr.0, user_id.raw(), Subscriptions::ALL)
+        })
     }
 
     /// Unsubscribes from all streams for all users.
@@ -30,7 +32,13 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoUnsubscribe(self.ptr.0, 0, Subscriptions::ALL) })
+        CommandId(unsafe {
+            ffi::api().TT_DoUnsubscribe(
+                self.ptr.0,
+                crate::types::LOCAL_USER_ID.raw(),
+                Subscriptions::ALL,
+            )
+        })
     }
 
     pub fn set_user_text_mute(&self, user_id: UserId, mute: bool) -> CommandId {

@@ -93,12 +93,12 @@ impl MockMessage {
     ) -> Message {
         let mut msg = unsafe { std::mem::zeroed::<ffi::TextMessage>() };
         msg.nMsgType = msg_type;
-        msg.nFromUserID = from_id.0;
-        msg.nToUserID = to_id.0;
-        msg.nChannelID = channel_id.0;
+        msg.nFromUserID = from_id.raw();
+        msg.nToUserID = to_id.raw();
+        msg.nChannelID = channel_id.raw();
         write_tt(&mut msg.szFromUsername, from_username);
         write_tt(&mut msg.szMessage, text);
-        message_from_text(msg, from_id.0)
+        message_from_text(msg, from_id.raw())
     }
 
     /// Builds a remote-file message instance.
@@ -154,7 +154,7 @@ impl MockUserBuilder {
     /// Creates a new builder with the provided user id.
     pub fn new(id: UserId) -> Self {
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
-        user.nUserID = id.0;
+        user.nUserID = id.raw();
         Self { user }
     }
 
@@ -184,7 +184,7 @@ impl MockUserBuilder {
 
     /// Sets the channel id field.
     pub fn channel_id(mut self, channel_id: ChannelId) -> Self {
-        self.user.nChannelID = channel_id.0;
+        self.user.nChannelID = channel_id.raw();
         self
     }
 

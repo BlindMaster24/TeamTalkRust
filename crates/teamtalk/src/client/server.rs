@@ -105,7 +105,7 @@ impl Client {
         }
         CommandId(
             self.backend()
-                .do_list_bans(self.ptr.0, channel_id.0, index, count),
+                .do_list_bans(self.ptr.0, channel_id, index, count),
         )
     }
 
@@ -338,12 +338,12 @@ impl Client {
     /// server payload (`user_id = 0`). For that default path use
     /// `query_server_max_payload()`.
     pub fn query_max_payload(&self, user_id: UserId) -> bool {
-        self.backend().query_max_payload(self.ptr.0, user_id.0)
+        self.backend().query_max_payload(self.ptr.0, user_id)
     }
 
     /// Queries the max payload supported by the server (`user_id = 0`).
     pub fn query_server_max_payload(&self) -> bool {
-        self.backend().query_max_payload(self.ptr.0, 0)
+        self.backend().query_max_payload(self.ptr.0, UserId(0))
     }
 
     /// Pumps a message into the Windows message loop (Windows only).

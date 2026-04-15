@@ -18,7 +18,7 @@ impl Client {
     /// Starts recording the specified channel.
     pub fn start_recording_channel(
         &self,
-        channel_id: i32,
+        channel_id: ChannelId,
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> bool {
@@ -44,7 +44,7 @@ impl Client {
     }
 
     /// Stops recording for a channel.
-    pub fn stop_recording_channel(&self, channel_id: i32) -> bool {
+    pub fn stop_recording_channel(&self, channel_id: ChannelId) -> bool {
         self.backend()
             .stop_recording_channel(self.ptr.0, channel_id)
     }
@@ -65,7 +65,7 @@ impl<'a> RecordSession<'a> {
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> Result<Self> {
-        if client.start_recording_channel(channel_id.0, file_path, format) {
+        if client.start_recording_channel(channel_id, file_path, format) {
             Ok(Self {
                 client,
                 channel_id,
@@ -81,7 +81,7 @@ impl<'a> RecordSession<'a> {
 
     /// Stops the recording and returns whether it succeeded.
     pub fn stop(mut self) -> bool {
-        let ok = self.client.stop_recording_channel(self.channel_id.0);
+        let ok = self.client.stop_recording_channel(self.channel_id);
         self.active = false;
         ok
     }
@@ -90,7 +90,7 @@ impl<'a> RecordSession<'a> {
 impl Drop for RecordSession<'_> {
     fn drop(&mut self) {
         if self.active {
-            let _ = self.client.stop_recording_channel(self.channel_id.0);
+            let _ = self.client.stop_recording_channel(self.channel_id);
         }
     }
 }

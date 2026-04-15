@@ -1,4 +1,5 @@
 use super::storage::StateStore;
+use crate::types::UserId;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -56,6 +57,7 @@ impl DialogStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DialogState {
     pub dialog: String,
     pub step: String,
@@ -329,26 +331,26 @@ impl<'a> DialogMachine<'a> {
         }
     }
 
-    fn key(&self, source_id: i32) -> String {
-        format!("{}:{}", self.prefix, source_id)
+    fn key(&self, source_id: UserId) -> String {
+        format!("{}:{}", self.prefix, source_id.raw())
     }
 
-    pub fn start(&mut self, source_id: i32, dialog: impl Into<String>, step: impl Into<String>) {
+    pub fn start(&mut self, source_id: UserId, dialog: impl Into<String>, step: impl Into<String>) {
         self.start_state(source_id, DialogState::new(dialog, step));
     }
 
-    pub fn start_state(&mut self, source_id: i32, state: DialogState) {
+    pub fn start_state(&mut self, source_id: UserId, state: DialogState) {
         self.store
             .set(self.key(source_id), self.prepare_state(state).encode());
     }
 
-    pub fn current(&self, source_id: i32) -> Option<DialogState> {
+    pub fn current(&self, source_id: UserId) -> Option<DialogState> {
         self.store
             .get(&self.key(source_id))
             .and_then(|raw| DialogState::decode(&raw))
     }
 
-    pub fn current_live(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn current_live(&mut self, source_id: UserId) -> Option<DialogState> {
         let mut state = self.current(source_id)?;
         if state.is_expired() {
             match state.timeout_policy() {
@@ -366,17 +368,21 @@ impl<'a> DialogMachine<'a> {
         Some(state)
     }
 
-    pub fn current_active(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn current_active(&mut self, source_id: UserId) -> Option<DialogState> {
         let state = self.current_live(source_id)?;
         state.is_active().then_some(state)
     }
 
-    pub fn is_in(&mut self, source_id: i32, dialog: &str, step: &str) -> bool {
+    pub fn is_in(&mut self, source_id: UserId, dialog: &str, step: &str) -> bool {
         self.current_active(source_id)
             .is_some_and(|state| state.dialog == dialog && state.step == step)
     }
 
-    pub fn advance(&mut self, source_id: i32, next_step: impl Into<String>) -> Option<DialogState> {
+    pub fn advance(
+        &mut self,
+        source_id: UserId,
+        next_step: impl Into<String>,
+    ) -> Option<DialogState> {
         let mut state = self.current_live(source_id)?;
         state.step = next_step.into();
         state.status = DialogStatus::Active;
@@ -384,28 +390,28 @@ impl<'a> DialogMachine<'a> {
         Some(state)
     }
 
-    pub fn pause(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn pause(&mut self, source_id: UserId) -> Option<DialogState> {
         self.update(source_id, |state| state.status = DialogStatus::Paused)
     }
 
-    pub fn resume(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn resume(&mut self, source_id: UserId) -> Option<DialogState> {
         self.update(source_id, |state| state.status = DialogStatus::Active)
     }
 
-    pub fn set_timeout(&mut self, source_id: i32, timeout: Duration) -> Option<DialogState> {
+    pub fn set_timeout(&mut self, source_id: UserId, timeout: Duration) -> Option<DialogState> {
         self.update(source_id, |state| {
             state.deadline_unix_ms =
                 Some(now_unix_ms().saturating_add(duration_to_millis(timeout)));
         })
     }
 
-    pub fn clear_timeout(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn clear_timeout(&mut self, source_id: UserId) -> Option<DialogState> {
         self.update(source_id, |state| state.deadline_unix_ms = None)
     }
 
     pub fn set_timeout_policy(
         &mut self,
-        source_id: i32,
+        source_id: UserId,
         policy: DialogTimeoutPolicy,
     ) -> Option<DialogState> {
         self.update(source_id, |state| {
@@ -413,11 +419,11 @@ impl<'a> DialogMachine<'a> {
         })
     }
 
-    pub fn timeout_policy(&mut self, source_id: i32) -> Option<DialogTimeoutPolicy> {
+    pub fn timeout_policy(&mut self, source_id: UserId) -> Option<DialogTimeoutPolicy> {
         self.current(source_id).map(|state| state.timeout_policy())
     }
 
-    pub fn metadata(&mut self, source_id: i32, key: &str) -> Option<String> {
+    pub fn metadata(&mut self, source_id: UserId, key: &str) -> Option<String> {
         self.current_live(source_id)?
             .metadata(key)
             .map(ToOwned::to_owned)
@@ -425,7 +431,7 @@ impl<'a> DialogMachine<'a> {
 
     pub fn set_metadata(
         &mut self,
-        source_id: i32,
+        source_id: UserId,
         key: impl Into<String>,
         value: impl Into<String>,
     ) -> Option<DialogState> {
@@ -438,7 +444,7 @@ impl<'a> DialogMachine<'a> {
 
     pub fn remove_metadata(
         &mut self,
-        source_id: i32,
+        source_id: UserId,
         key: &str,
     ) -> Option<(DialogState, Option<String>)> {
         let mut removed = None;
@@ -448,19 +454,19 @@ impl<'a> DialogMachine<'a> {
         Some((state, removed))
     }
 
-    pub fn stop(&mut self, source_id: i32) -> Option<DialogState> {
+    pub fn stop(&mut self, source_id: UserId) -> Option<DialogState> {
         self.store
             .remove(&self.key(source_id))
             .and_then(|raw| DialogState::decode(&raw))
     }
 
-    pub fn restart_flow(&mut self, source_id: i32, flow: &DialogFlow) -> DialogState {
+    pub fn restart_flow(&mut self, source_id: UserId, flow: &DialogFlow) -> DialogState {
         let state = DialogState::new(flow.name(), flow.start_step());
         self.start_state(source_id, state.clone());
         self.current(source_id).unwrap_or(state)
     }
 
-    pub fn advance_flow(&mut self, source_id: i32, flow: &DialogFlow) -> Option<DialogState> {
+    pub fn advance_flow(&mut self, source_id: UserId, flow: &DialogFlow) -> Option<DialogState> {
         let current = self.current_live(source_id)?;
         if !current.dialog.eq_ignore_ascii_case(flow.name()) {
             return None;
@@ -469,7 +475,7 @@ impl<'a> DialogMachine<'a> {
         self.advance(source_id, next)
     }
 
-    fn update<F>(&mut self, source_id: i32, mut update: F) -> Option<DialogState>
+    fn update<F>(&mut self, source_id: UserId, mut update: F) -> Option<DialogState>
     where
         F: FnMut(&mut DialogState),
     {

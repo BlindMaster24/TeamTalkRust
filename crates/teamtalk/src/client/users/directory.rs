@@ -12,7 +12,7 @@ fn wait_slice(deadline: Instant) -> i32 {
 impl Client {
     /// Returns a user by id.
     pub fn get_user(&self, user_id: UserId) -> Option<User> {
-        self.backend().get_user_by_id(self.ptr.0, user_id.0)
+        self.backend().get_user_by_id(self.ptr.0, user_id)
     }
 
     /// Returns a user by username.
@@ -22,7 +22,7 @@ impl Client {
 
     /// Returns user statistics by id.
     pub fn get_user_statistics(&self, user_id: UserId) -> Option<UserStatistics> {
-        self.backend().get_user_statistics(self.ptr.0, user_id.0)
+        self.backend().get_user_statistics(self.ptr.0, user_id)
     }
 
     /// Requests a list of user accounts.

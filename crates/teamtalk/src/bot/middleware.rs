@@ -182,7 +182,7 @@ impl Middleware for RequireUserType {
         if !ctx
             .client
             .backend()
-            .get_user(ctx.client.ptr.0, ctx.sender_id().0, &mut raw)
+            .get_user(ctx.client.ptr.0, ctx.sender_id(), &mut raw)
         {
             return Ok(HandlerResult::Stop);
         }

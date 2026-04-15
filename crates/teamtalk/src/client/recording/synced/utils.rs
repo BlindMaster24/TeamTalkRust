@@ -37,7 +37,7 @@ pub(super) fn should_warn_missing_audio_subscriptions(
 
 pub(super) fn render_vars(template: &str, user_id: UserId, username: &str) -> String {
     template
-        .replace("%user_id%", &user_id.0.to_string())
+        .replace("%user_id%", &user_id.raw().to_string())
         .replace("%username%", username)
 }
 

@@ -233,10 +233,10 @@ impl<'a> RecordingSession<'a> {
 
     fn stop_active(&self) -> bool {
         match self.target {
-            RecordingTarget::Channel(id) => self.client.stop_recording_channel(id.0),
+            RecordingTarget::Channel(id) => self.client.stop_recording_channel(id),
             RecordingTarget::CurrentChannel => {
                 if let Some(id) = self.last_channel_id.or_else(|| self.current_channel_id()) {
-                    self.client.stop_recording_channel(id.0)
+                    self.client.stop_recording_channel(id)
                 } else {
                     true
                 }
@@ -259,7 +259,7 @@ impl<'a> RecordingSession<'a> {
                 self.last_channel_id = Some(id);
                 self.last_codec = self.channel_codec(id);
                 self.client
-                    .start_recording_channel(id.0, &path, self.options.format)
+                    .start_recording_channel(id, &path, self.options.format)
             }
             RecordingTarget::CurrentChannel => {
                 let id = self
@@ -271,7 +271,7 @@ impl<'a> RecordingSession<'a> {
                 self.last_channel_id = Some(id);
                 self.last_codec = self.channel_codec(id);
                 self.client
-                    .start_recording_channel(id.0, &path, self.options.format)
+                    .start_recording_channel(id, &path, self.options.format)
             }
             RecordingTarget::Streams {
                 stream_types,
@@ -304,7 +304,7 @@ impl<'a> RecordingSession<'a> {
 
     fn current_channel_id(&self) -> Option<ChannelId> {
         let id = self.client.my_channel_id();
-        if id.0 == 0 { None } else { Some(id) }
+        if id.raw() == 0 { None } else { Some(id) }
     }
 
     fn channel_codec(&self, id: ChannelId) -> Option<AudioCodec> {

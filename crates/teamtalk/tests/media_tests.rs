@@ -1,5 +1,5 @@
 use teamtalk::client::ffi;
-use teamtalk::types::{MediaFileInfo, RemoteFile, SoundDevice};
+use teamtalk::types::{MediaFileInfo, RemoteFile, SoundDevice, SoundDeviceId};
 use teamtalk::utils::strings::ToTT;
 
 fn copy_tt(src: &str, dst: &mut [ffi::TTCHAR]) {
@@ -89,7 +89,7 @@ fn sound_device_from_ffi() {
     copy_tt("dev", &mut raw.szDeviceName);
     copy_tt("uid", &mut raw.szDeviceID);
     let device = SoundDevice::from(raw);
-    assert_eq!(device.id, 10);
+    assert_eq!(device.id, SoundDeviceId(10));
     assert_eq!(device.system, ffi::SoundSystem::SOUNDSYSTEM_DSOUND);
     assert_eq!(device.max_input_channels, 2);
     assert_eq!(device.max_output_channels, 2);

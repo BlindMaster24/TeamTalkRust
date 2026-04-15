@@ -88,7 +88,7 @@ fn main() -> teamtalk::Result<()> {
                             if !recording {
                                 let path = recording_path(root_channel);
                                 let ok = client.start_recording_channel(
-                                    root_channel.0,
+                                    root_channel,
                                     path.to_string_lossy().as_ref(),
                                     ffi::AudioFileFormat::AFF_WAVE_FORMAT,
                                 );
@@ -111,7 +111,7 @@ fn main() -> teamtalk::Result<()> {
                             }
                         } else if command == "/stop" {
                             if recording {
-                                let ok = client.stop_recording_channel(root_channel.0);
+                                let ok = client.stop_recording_channel(root_channel);
                                 recording = false;
                                 let mut notice = String::from("recording stopped");
                                 if ok {

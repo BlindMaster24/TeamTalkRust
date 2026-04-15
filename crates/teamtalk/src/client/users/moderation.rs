@@ -6,7 +6,12 @@ impl Client {
             return CommandId::ZERO;
         }
         CommandId(unsafe {
-            ffi::api().TT_DoChannelOp(self.ptr.0, user_id.0, channel_id.0, i32::from(make_op))
+            ffi::api().TT_DoChannelOp(
+                self.ptr.0,
+                user_id.raw(),
+                channel_id.raw(),
+                i32::from(make_op),
+            )
         })
     }
 
@@ -14,7 +19,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoKickUser(self.ptr.0, user_id.0, channel_id.0) })
+        CommandId(unsafe { ffi::api().TT_DoKickUser(self.ptr.0, user_id.raw(), channel_id.raw()) })
     }
 
     /// Bans a user from a channel.
@@ -22,7 +27,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoBanUser(self.ptr.0, user_id.0, channel_id.0) })
+        CommandId(unsafe { ffi::api().TT_DoBanUser(self.ptr.0, user_id.raw(), channel_id.raw()) })
     }
 
     /// Bans a user with custom ban types.
@@ -30,7 +35,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.0, ban_types) })
+        CommandId(unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.raw(), ban_types) })
     }
 
     /// Removes a ban by IP address.
@@ -38,7 +43,9 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoUnBanUser(self.ptr.0, ip.tt().as_ptr(), channel_id.0) })
+        CommandId(unsafe {
+            ffi::api().TT_DoUnBanUser(self.ptr.0, ip.tt().as_ptr(), channel_id.raw())
+        })
     }
 
     /// Adds a user to the ban list.
@@ -70,8 +77,8 @@ impl Client {
         CommandId(unsafe {
             ffi::api().TT_DoChannelOpEx(
                 self.ptr.0,
-                user_id.0,
-                channel_id.0,
+                user_id.raw(),
+                channel_id.raw(),
                 password.tt().as_ptr(),
                 if make_op { 1 } else { 0 },
             )

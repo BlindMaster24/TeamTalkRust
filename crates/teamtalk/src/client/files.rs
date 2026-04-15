@@ -54,14 +54,14 @@ impl Client {
         unsafe {
             ffi::api().TT_GetChannelFiles(
                 self.ptr.0,
-                channel_id.0,
+                channel_id.raw(),
                 std::ptr::null_mut(),
                 &mut count,
             );
             let mut files = vec![std::mem::zeroed::<ffi::RemoteFile>(); count as usize];
             if ffi::api().TT_GetChannelFiles(
                 self.ptr.0,
-                channel_id.0,
+                channel_id.raw(),
                 files.as_mut_ptr(),
                 &mut count,
             ) == 1
@@ -76,7 +76,7 @@ impl Client {
     /// Returns one file by channel id and file id.
     pub fn get_channel_file(&self, channel_id: ChannelId, file_id: FileId) -> Option<RemoteFile> {
         self.backend()
-            .get_channel_file(self.ptr.0, channel_id.0, file_id.0)
+            .get_channel_file(self.ptr.0, channel_id, file_id)
     }
 
     /// Sends a local file to a channel.
@@ -86,7 +86,7 @@ impl Client {
         }
         CommandId(
             self.backend()
-                .do_send_file(self.ptr.0, channel_id.0, local_path),
+                .do_send_file(self.ptr.0, channel_id, local_path),
         )
     }
 
@@ -100,12 +100,10 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(self.backend().do_recv_file(
-            self.ptr.0,
-            channel_id.0,
-            remote_file_id.0,
-            local_dir,
-        ))
+        CommandId(
+            self.backend()
+                .do_recv_file(self.ptr.0, channel_id, remote_file_id, local_dir),
+        )
     }
 
     /// Deletes a remote file from a channel.
@@ -115,7 +113,7 @@ impl Client {
         }
         CommandId(
             self.backend()
-                .do_delete_file(self.ptr.0, channel_id.0, remote_file_id.0),
+                .do_delete_file(self.ptr.0, channel_id, remote_file_id),
         )
     }
 
@@ -125,13 +123,12 @@ impl Client {
         transfer_id: TransferId,
     ) -> Option<crate::types::FileTransfer> {
         self.backend()
-            .get_file_transfer_info(self.ptr.0, transfer_id.0)
+            .get_file_transfer_info(self.ptr.0, transfer_id)
     }
 
     /// Cancels an in-progress file transfer.
     pub fn cancel_file_transfer(&self, transfer_id: TransferId) -> bool {
-        self.backend()
-            .cancel_file_transfer(self.ptr.0, transfer_id.0)
+        self.backend().cancel_file_transfer(self.ptr.0, transfer_id)
     }
 
     /// Returns a tracking handle for an active transfer id.

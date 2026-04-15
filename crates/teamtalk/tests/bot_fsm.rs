@@ -1,6 +1,7 @@
 #![cfg(feature = "bot")]
 
 use std::time::Duration;
+use teamtalk::types::UserId;
 use teamtalk::{
     DialogFlow, DialogMachine, DialogState, DialogStatus, DialogTimeoutPolicy, MemoryStateStore,
 };
@@ -10,17 +11,17 @@ fn dialog_machine_roundtrip() {
     let mut store = MemoryStateStore::new();
     let mut fsm = DialogMachine::new(&mut store);
 
-    fsm.start(42, "onboarding", "ask_name");
-    let cur = fsm.current(42).expect("state exists");
+    fsm.start(UserId(42), "onboarding", "ask_name");
+    let cur = fsm.current(UserId(42)).expect("state exists");
     assert_eq!(cur.dialog, "onboarding");
     assert_eq!(cur.step, "ask_name");
 
-    let next = fsm.advance(42, "ask_email").expect("advance state");
+    let next = fsm.advance(UserId(42), "ask_email").expect("advance state");
     assert_eq!(next.step, "ask_email");
 
-    let stopped = fsm.stop(42).expect("stop state");
+    let stopped = fsm.stop(UserId(42)).expect("stop state");
     assert_eq!(stopped.dialog, "onboarding");
-    assert!(fsm.current(42).is_none());
+    assert!(fsm.current(UserId(42)).is_none());
 }
 
 #[test]
@@ -60,20 +61,22 @@ fn dialog_machine_preserves_metadata_and_timeout_state() {
     let state = DialogState::new("wizard", "ask_name")
         .with_timeout(Duration::from_secs(30))
         .with_metadata([("locale", "ru"), ("mode", "guided")]);
-    fsm.start_state(7, state);
+    fsm.start_state(UserId(7), state);
 
-    let cur = fsm.current_live(7).expect("live state exists");
+    let cur = fsm.current_live(UserId(7)).expect("live state exists");
     assert_eq!(cur.metadata("locale"), Some("ru"));
     assert_eq!(cur.metadata("mode"), Some("guided"));
     assert!(cur.deadline_unix_ms.is_some());
     assert!(cur.session_id().is_some());
 
     let updated = fsm
-        .set_metadata(7, "locale", "en")
+        .set_metadata(UserId(7), "locale", "en")
         .expect("metadata updated");
     assert_eq!(updated.metadata("locale"), Some("en"));
 
-    let (updated, removed) = fsm.remove_metadata(7, "mode").expect("metadata removed");
+    let (updated, removed) = fsm
+        .remove_metadata(UserId(7), "mode")
+        .expect("metadata removed");
     assert_eq!(removed.as_deref(), Some("guided"));
     assert_eq!(updated.metadata("mode"), None);
 }
@@ -83,15 +86,15 @@ fn dialog_machine_pause_resume_and_active_state() {
     let mut store = MemoryStateStore::new();
     let mut fsm = DialogMachine::new(&mut store);
 
-    fsm.start(9, "wizard", "step1");
-    let paused = fsm.pause(9).expect("paused");
+    fsm.start(UserId(9), "wizard", "step1");
+    let paused = fsm.pause(UserId(9)).expect("paused");
     assert_eq!(paused.status, DialogStatus::Paused);
-    assert!(fsm.current_active(9).is_none());
-    assert!(fsm.current_live(9).is_some());
+    assert!(fsm.current_active(UserId(9)).is_none());
+    assert!(fsm.current_live(UserId(9)).is_some());
 
-    let resumed = fsm.resume(9).expect("resumed");
+    let resumed = fsm.resume(UserId(9)).expect("resumed");
     assert_eq!(resumed.status, DialogStatus::Active);
-    assert_eq!(fsm.current_active(9).expect("active").step, "step1");
+    assert_eq!(fsm.current_active(UserId(9)).expect("active").step, "step1");
 }
 
 #[test]
@@ -102,10 +105,10 @@ fn dialog_machine_removes_expired_state_from_live_queries() {
     let expired = DialogState::new("wizard", "step1")
         .with_deadline_unix_ms(1)
         .with_metadata([("key", "value")]);
-    fsm.start_state(11, expired);
+    fsm.start_state(UserId(11), expired);
 
-    assert!(fsm.current_live(11).is_none());
-    assert!(fsm.current(11).is_none());
+    assert!(fsm.current_live(UserId(11)).is_none());
+    assert!(fsm.current(UserId(11)).is_none());
 }
 
 #[test]
@@ -116,13 +119,13 @@ fn dialog_machine_pauses_when_timeout_policy_requests_pause() {
     let state = DialogState::new("wizard", "step1")
         .with_deadline_unix_ms(1)
         .with_timeout_policy(DialogTimeoutPolicy::Pause);
-    fsm.start_state(12, state);
+    fsm.start_state(UserId(12), state);
 
-    let paused = fsm.current_live(12).expect("paused state kept");
+    let paused = fsm.current_live(UserId(12)).expect("paused state kept");
     assert_eq!(paused.status, DialogStatus::Paused);
     assert_eq!(paused.timeout_policy(), DialogTimeoutPolicy::Pause);
     assert_eq!(paused.deadline_unix_ms, None);
-    assert!(fsm.current_active(12).is_none());
+    assert!(fsm.current_active(UserId(12)).is_none());
 }
 
 #[test]
@@ -133,17 +136,21 @@ fn dialog_machine_advances_flow_in_order() {
         .step("ask_email")
         .step("done");
 
-    let restarted = fsm.restart_flow(21, &flow);
+    let restarted = fsm.restart_flow(UserId(21), &flow);
     assert_eq!(restarted.dialog, "wizard");
     assert_eq!(restarted.step, "ask_name");
 
-    let next = fsm.advance_flow(21, &flow).expect("advance to ask_email");
+    let next = fsm
+        .advance_flow(UserId(21), &flow)
+        .expect("advance to ask_email");
     assert_eq!(next.step, "ask_email");
 
-    let next = fsm.advance_flow(21, &flow).expect("advance to done");
+    let next = fsm
+        .advance_flow(UserId(21), &flow)
+        .expect("advance to done");
     assert_eq!(next.step, "done");
 
-    assert!(fsm.advance_flow(21, &flow).is_none());
+    assert!(fsm.advance_flow(UserId(21), &flow).is_none());
 }
 
 #[test]
@@ -152,12 +159,12 @@ fn dialog_machine_restart_flow_rotates_session_id() {
     let mut fsm = DialogMachine::new(&mut store);
     let flow = DialogFlow::new("wizard", "ask_name").step("done");
 
-    fsm.start_state(30, DialogState::new("wizard", "ask_name"));
+    fsm.start_state(UserId(30), DialogState::new("wizard", "ask_name"));
     let first = fsm
-        .current(30)
+        .current(UserId(30))
         .and_then(|state| state.session_id().map(str::to_owned));
 
-    let restarted = fsm.restart_flow(30, &flow);
+    let restarted = fsm.restart_flow(UserId(30), &flow);
     assert_eq!(restarted.step, "ask_name");
     let second = restarted.session_id().map(str::to_owned);
 

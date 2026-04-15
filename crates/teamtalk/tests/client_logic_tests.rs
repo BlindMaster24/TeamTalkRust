@@ -348,12 +348,10 @@ fn send_text_with_options_does_not_retry_non_first_chunk() {
 #[test]
 fn set_status_message_uses_current_status_when_available() {
     let backend = Arc::new(MockBackend::new());
-    backend.set_my_user_id(42);
+    backend.set_my_user_id(UserId(42));
     let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
-    let status = UserStatus {
-        presence: UserPresence::Away,
-        ..UserStatus::default()
-    };
+    let mut status = UserStatus::default();
+    status.presence = UserPresence::Away;
     user.nStatusMode = status.to_bits() as i32;
     backend.set_user(user);
 
@@ -367,7 +365,7 @@ fn set_status_message_uses_current_status_when_available() {
 #[test]
 fn set_status_message_uses_default_when_user_missing() {
     let backend = Arc::new(MockBackend::new());
-    backend.set_my_user_id(42);
+    backend.set_my_user_id(UserId(42));
     let client = Client::with_backend(backend.clone()).expect("client");
 
     let cmd_id = client.set_status_message("fallback");
@@ -380,20 +378,20 @@ fn set_status_message_uses_default_when_user_missing() {
 fn reconnect_workflow_config_roundtrip() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend).expect("client");
-    let workflow = ReconnectWorkflowConfig {
-        login: ReconnectConfig {
-            max_attempts: 3,
-            min_delay: Duration::from_millis(10),
-            max_delay: Duration::from_millis(50),
-            stability_threshold: Duration::from_millis(100),
-        },
-        join: ReconnectConfig {
-            max_attempts: 5,
-            min_delay: Duration::from_millis(20),
-            max_delay: Duration::from_millis(120),
-            stability_threshold: Duration::from_millis(200),
-        },
-    };
+    let workflow = ReconnectWorkflowConfig::new(
+        ReconnectConfig::new(
+            3,
+            Duration::from_millis(10),
+            Duration::from_millis(50),
+            Duration::from_millis(100),
+        ),
+        ReconnectConfig::new(
+            5,
+            Duration::from_millis(20),
+            Duration::from_millis(120),
+            Duration::from_millis(200),
+        ),
+    );
 
     client.set_reconnect_workflow_config(workflow.clone());
     let actual = client.reconnect_workflow_config();
@@ -418,11 +416,11 @@ fn reconnect_workflow_config_roundtrip() {
 fn reconnect_phase_timeouts_roundtrip() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend).expect("client");
-    let timeouts = ReconnectPhaseTimeouts {
-        connect: Some(Duration::from_secs(20)),
-        login: None,
-        join: Some(Duration::from_secs(5)),
-    };
+    let timeouts = ReconnectPhaseTimeouts::new(
+        Some(Duration::from_secs(20)),
+        None,
+        Some(Duration::from_secs(5)),
+    );
 
     client
         .set_reconnect_phase_timeouts(timeouts.clone())
@@ -437,11 +435,11 @@ fn reconnect_phase_timeouts_reject_zero_values() {
     let client = Client::with_backend(backend).expect("client");
 
     let err = client
-        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
-            connect: Some(Duration::ZERO),
-            login: Some(Duration::from_secs(1)),
-            join: Some(Duration::from_secs(1)),
-        })
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts::new(
+            Some(Duration::ZERO),
+            Some(Duration::from_secs(1)),
+            Some(Duration::from_secs(1)),
+        ))
         .expect_err("zero timeout should fail");
 
     assert!(matches!(err, teamtalk::events::Error::InvalidParam));
@@ -722,26 +720,26 @@ fn wait_for_file_transfer_terminal_uses_matching_transfer_id() {
 fn enable_full_auto_reconnect_sets_in_session_params() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend).expect("client");
-    let connect = ReconnectConfig {
-        max_attempts: 7,
-        min_delay: Duration::from_millis(5),
-        max_delay: Duration::from_millis(200),
-        stability_threshold: Duration::from_millis(500),
-    };
-    let workflow = ReconnectWorkflowConfig {
-        login: ReconnectConfig {
-            max_attempts: 4,
-            min_delay: Duration::from_millis(11),
-            max_delay: Duration::from_millis(60),
-            stability_threshold: Duration::from_millis(120),
-        },
-        join: ReconnectConfig {
-            max_attempts: 6,
-            min_delay: Duration::from_millis(13),
-            max_delay: Duration::from_millis(90),
-            stability_threshold: Duration::from_millis(160),
-        },
-    };
+    let connect = ReconnectConfig::new(
+        7,
+        Duration::from_millis(5),
+        Duration::from_millis(200),
+        Duration::from_millis(500),
+    );
+    let workflow = ReconnectWorkflowConfig::new(
+        ReconnectConfig::new(
+            4,
+            Duration::from_millis(11),
+            Duration::from_millis(60),
+            Duration::from_millis(120),
+        ),
+        ReconnectConfig::new(
+            6,
+            Duration::from_millis(13),
+            Duration::from_millis(90),
+            Duration::from_millis(160),
+        ),
+    );
     let connect_params = ConnectParamsOwned::new("example.org", 10333, 10334, true);
     let login_params = LoginParams::new("bot", "user", "secret", "TeamTalkRust");
 
@@ -778,18 +776,18 @@ fn enable_full_auto_reconnect_sets_in_session_params() {
 fn connect_timeout_disconnects_and_schedules_reconnect() {
     let backend = Arc::new(MockBackend::new());
     let client = Client::with_backend(backend.clone()).expect("client");
-    client.enable_auto_reconnect(ReconnectConfig {
-        max_attempts: 3,
-        min_delay: Duration::ZERO,
-        max_delay: Duration::ZERO,
-        stability_threshold: Duration::from_millis(50),
-    });
+    client.enable_auto_reconnect(ReconnectConfig::new(
+        3,
+        Duration::ZERO,
+        Duration::ZERO,
+        Duration::from_millis(50),
+    ));
     client
-        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
-            connect: Some(Duration::from_millis(10)),
-            login: None,
-            join: None,
-        })
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts::new(
+            Some(Duration::from_millis(10)),
+            None,
+            None,
+        ))
         .expect("phase timeouts");
 
     client
@@ -815,22 +813,17 @@ fn login_timeout_forces_full_recovery_disconnect() {
     backend.set_login_result(42);
     let client = Client::with_backend(backend.clone()).expect("client");
     client.enable_full_auto_reconnect(
-        ReconnectConfig {
-            max_attempts: 3,
-            min_delay: Duration::ZERO,
-            max_delay: Duration::ZERO,
-            stability_threshold: Duration::from_millis(50),
-        },
+        ReconnectConfig::new(3, Duration::ZERO, Duration::ZERO, Duration::from_millis(50)),
         ReconnectWorkflowConfig::default(),
         ConnectParamsOwned::new("example.org", 10333, 10334, false),
         LoginParams::new("bot", "user", "secret", "TeamTalkRust"),
     );
     client
-        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
-            connect: None,
-            login: Some(Duration::from_millis(10)),
-            join: None,
-        })
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts::new(
+            None,
+            Some(Duration::from_millis(10)),
+            None,
+        ))
         .expect("phase timeouts");
     client.mock_set_connection_state_for_tests(ConnectionState::Connected);
 
@@ -852,22 +845,17 @@ fn join_timeout_forces_full_recovery_disconnect() {
     backend.set_join_result(55);
     let client = Client::with_backend(backend.clone()).expect("client");
     client.enable_full_auto_reconnect(
-        ReconnectConfig {
-            max_attempts: 3,
-            min_delay: Duration::ZERO,
-            max_delay: Duration::ZERO,
-            stability_threshold: Duration::from_millis(50),
-        },
+        ReconnectConfig::new(3, Duration::ZERO, Duration::ZERO, Duration::from_millis(50)),
         ReconnectWorkflowConfig::default(),
         ConnectParamsOwned::new("example.org", 10333, 10334, false),
         LoginParams::new("bot", "user", "secret", "TeamTalkRust"),
     );
     client
-        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts {
-            connect: None,
-            login: None,
-            join: Some(Duration::from_millis(10)),
-        })
+        .set_reconnect_phase_timeouts(ReconnectPhaseTimeouts::new(
+            None,
+            None,
+            Some(Duration::from_millis(10)),
+        ))
         .expect("phase timeouts");
     client.set_last_channel(ChannelId(7), Some("secret"));
     client.mock_set_connection_state_for_tests(ConnectionState::LoggedIn);
@@ -1150,7 +1138,7 @@ fn channel_queries_use_backend_results() {
 #[test]
 fn user_queries_use_backend_results() {
     let backend = Arc::new(MockBackend::new());
-    backend.set_my_user_id(42);
+    backend.set_my_user_id(UserId(42));
     backend.set_user(raw_user(42, "me", 0x1234));
     backend.set_user_by_id(77, raw_user(77, "by-id", 0));
     backend.set_user_by_username("lookup", raw_user(88, "lookup", 0));

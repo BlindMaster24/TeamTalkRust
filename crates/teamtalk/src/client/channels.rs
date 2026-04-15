@@ -38,18 +38,18 @@ impl Client {
 
     /// Returns a channel by id.
     pub fn get_channel(&self, id: ChannelId) -> Option<Channel> {
-        self.backend().get_channel(self.ptr.0, id.0)
+        self.backend().get_channel(self.ptr.0, id)
     }
 
     /// Returns a channel path by id.
     pub fn get_channel_path(&self, id: ChannelId) -> Option<String> {
-        self.backend().get_channel_path(self.ptr.0, id.0)
+        self.backend().get_channel_path(self.ptr.0, id)
     }
 
     /// Returns a channel by path.
     pub fn get_channel_by_path(&self, path: &str) -> Option<Channel> {
         let id = self.get_channel_id_from_path(path);
-        (id.0 > 0).then(|| self.get_channel(id)).flatten()
+        (id.raw() > 0).then(|| self.get_channel(id)).flatten()
     }
 
     /// Returns a channel id from a path.
@@ -64,7 +64,7 @@ impl Client {
         }
         let cmd_id = CommandId(
             self.backend()
-                .do_join_channel_by_id(self.ptr.0, id.0, password),
+                .do_join_channel_by_id(self.ptr.0, id, password),
         );
         if cmd_id.is_ok() {
             let mut auto = self.auto_reconnect.lock();
@@ -169,7 +169,7 @@ impl Client {
     /// Joins a channel path.
     pub fn join_channel_path(&self, path: &str, password: &str) -> CommandId {
         let id = self.get_channel_id_from_path(path);
-        if id.0 > 0 {
+        if id.raw() > 0 {
             self.join_channel(id, password)
         } else {
             CommandId::ZERO
@@ -219,7 +219,7 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(self.backend().do_remove_channel(self.ptr.0, id.0))
+        CommandId(self.backend().do_remove_channel(self.ptr.0, id))
     }
 
     /// Moves a user to a different channel.
@@ -227,16 +227,13 @@ impl Client {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(
-            self.backend()
-                .do_move_user(self.ptr.0, user_id.0, channel_id.0),
-        )
+        CommandId(self.backend().do_move_user(self.ptr.0, user_id, channel_id))
     }
 
     /// Checks if a user is an operator in a channel.
     pub fn is_channel_operator(&self, user_id: UserId, channel_id: ChannelId) -> bool {
         self.backend()
-            .is_channel_operator(self.ptr.0, user_id.0, channel_id.0)
+            .is_channel_operator(self.ptr.0, user_id, channel_id)
     }
 
     /// Joins the root channel.
@@ -259,11 +256,11 @@ impl Client {
     /// Returns the current channel for the local user, if any.
     pub fn my_channel(&self) -> Option<Channel> {
         let id = self.my_channel_id();
-        (id.0 > 0).then(|| self.get_channel(id)).flatten()
+        (id.raw() > 0).then(|| self.get_channel(id)).flatten()
     }
 
     /// Returns users in a channel.
     pub fn get_channel_users(&self, channel_id: ChannelId) -> Vec<crate::types::User> {
-        self.backend().get_channel_users(self.ptr.0, channel_id.0)
+        self.backend().get_channel_users(self.ptr.0, channel_id)
     }
 }

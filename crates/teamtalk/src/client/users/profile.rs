@@ -4,7 +4,7 @@ use crate::types::UserRights;
 impl Client {
     /// Returns the current user id.
     pub fn my_id(&self) -> UserId {
-        UserId(self.backend().get_my_user_id(self.ptr.0))
+        self.backend().get_my_user_id(self.ptr.0)
     }
 
     /// Returns the account of the current user.
@@ -57,7 +57,7 @@ impl Client {
         }
         let mut user = unsafe { std::mem::zeroed::<ffi::User>() };
         let my_id = self.my_id();
-        let bits = if self.backend().get_user(self.ptr.0, my_id.0, &mut user) {
+        let bits = if self.backend().get_user(self.ptr.0, my_id, &mut user) {
             user.nStatusMode as u32
         } else {
             UserStatus::default().to_bits()

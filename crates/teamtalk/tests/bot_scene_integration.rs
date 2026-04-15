@@ -60,7 +60,7 @@ fn router_scene_flow_advances_and_uses_dialog_scoped_state() {
         .expect("dialog dispatch");
 
     let mut machine = DialogMachine::new(&mut store);
-    let state = machine.current_live(7).expect("dialog state");
+    let state = machine.current_live(UserId(7)).expect("dialog state");
     assert_eq!(state.dialog, "wizard");
     assert_eq!(state.step, "ask_email");
     assert_eq!(state.metadata("name"), Some("Alice"));
@@ -91,7 +91,7 @@ fn router_scene_restart_rotates_dialog_scoped_state_namespace() {
         .dispatch(&client, Event::TextMessage, &start, &mut store)
         .expect("first start");
     let first_session = DialogMachine::new(&mut store)
-        .current(7)
+        .current(UserId(7))
         .and_then(|state| state.session_id().map(str::to_owned))
         .expect("first session");
 
@@ -99,7 +99,7 @@ fn router_scene_restart_rotates_dialog_scoped_state_namespace() {
         .dispatch(&client, Event::TextMessage, &start, &mut store)
         .expect("second start");
     let second_session = DialogMachine::new(&mut store)
-        .current(7)
+        .current(UserId(7))
         .and_then(|state| state.session_id().map(str::to_owned))
         .expect("second session");
 

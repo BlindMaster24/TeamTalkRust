@@ -5,7 +5,7 @@ fn main() -> teamtalk::Result<()> {
     let client = Client::new()?;
 
     for device in client.get_sound_devices() {
-        println!("{} ({})", device.name, device.id);
+        println!("{} ({})", device.name, device.id.0);
     }
 
     // Keep polling to avoid early exit in environments expecting an event loop.

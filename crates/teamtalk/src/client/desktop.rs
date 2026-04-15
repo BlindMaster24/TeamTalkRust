@@ -32,7 +32,7 @@ impl Client {
 
     /// Sends keyboard or mouse input to the desktop sharer.
     pub fn send_desktop_input(&self, user_id: UserId, input: &ffi::DesktopInput) -> bool {
-        unsafe { ffi::api().TT_SendDesktopInput(self.ptr.0, user_id.0, input, 1) == 1 }
+        unsafe { ffi::api().TT_SendDesktopInput(self.ptr.0, user_id.raw(), input, 1) == 1 }
     }
 
     /// Sends a batch of keyboard or mouse input packets to the desktop sharer.
@@ -44,7 +44,7 @@ impl Client {
         unsafe {
             ffi::api().TT_SendDesktopInput(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 raw_inputs.as_ptr(),
                 raw_inputs.len() as i32,
             ) == 1
@@ -160,7 +160,7 @@ impl Client {
         unsafe {
             ffi::api().TT_PaintDesktopWindow(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 hdc,
                 x_dest,
                 y_dest,
@@ -192,7 +192,7 @@ impl Client {
         unsafe {
             ffi::api().TT_PaintDesktopWindowEx(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 hdc,
                 x_dest,
                 y_dest,
@@ -209,7 +209,7 @@ impl Client {
     /// Acquires a desktop window update bitmap.
     pub fn acquire_user_desktop_window(&self, user_id: UserId) -> Option<*mut ffi::DesktopWindow> {
         unsafe {
-            let ptr = ffi::api().TT_AcquireUserDesktopWindow(self.ptr.0, user_id.0);
+            let ptr = ffi::api().TT_AcquireUserDesktopWindow(self.ptr.0, user_id.raw());
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }
@@ -231,7 +231,7 @@ impl Client {
     ) -> Option<*mut ffi::DesktopWindow> {
         unsafe {
             let ptr =
-                ffi::api().TT_AcquireUserDesktopWindowEx(self.ptr.0, user_id.0, bitmap_format);
+                ffi::api().TT_AcquireUserDesktopWindowEx(self.ptr.0, user_id.raw(), bitmap_format);
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }

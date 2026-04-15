@@ -1,5 +1,6 @@
 //! Global hotkey management.
 use super::Client;
+use crate::types::HotkeyId;
 use teamtalk_sys as ffi;
 
 impl Client {
@@ -7,34 +8,38 @@ impl Client {
     ///
     /// Returns `false` when the client was created with `Client::new()` instead of
     /// `Client::with_hwnd()`.
-    pub fn register_hotkey(&self, id: i32, vk_codes: &[i32]) -> bool {
+    pub fn register_hotkey(&self, id: HotkeyId, vk_codes: &[i32]) -> bool {
         if !self.is_hwnd_client() {
             return false;
         }
         unsafe {
-            ffi::api().TT_HotKey_Register(self.ptr.0, id, vk_codes.as_ptr(), vk_codes.len() as i32)
-                == 1
+            ffi::api().TT_HotKey_Register(
+                self.ptr.0,
+                id.raw(),
+                vk_codes.as_ptr(),
+                vk_codes.len() as i32,
+            ) == 1
         }
     }
 
     /// Unregisters a global hotkey.
     ///
     /// Returns `false` when the client is not HWND-backed.
-    pub fn unregister_hotkey(&self, id: i32) -> bool {
+    pub fn unregister_hotkey(&self, id: HotkeyId) -> bool {
         if !self.is_hwnd_client() {
             return false;
         }
-        unsafe { ffi::api().TT_HotKey_Unregister(self.ptr.0, id) == 1 }
+        unsafe { ffi::api().TT_HotKey_Unregister(self.ptr.0, id.raw()) == 1 }
     }
 
     /// Checks if a hotkey is active.
     ///
     /// Returns `false` when the client is not HWND-backed.
-    pub fn is_hotkey_active(&self, id: i32) -> bool {
+    pub fn is_hotkey_active(&self, id: HotkeyId) -> bool {
         if !self.is_hwnd_client() {
             return false;
         }
-        unsafe { ffi::api().TT_HotKey_IsActive(self.ptr.0, id) == 1 }
+        unsafe { ffi::api().TT_HotKey_IsActive(self.ptr.0, id.raw()) == 1 }
     }
 
     /// Installs a hotkey test hook (Windows only).
