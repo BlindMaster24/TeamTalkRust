@@ -1,6 +1,7 @@
 use super::writer::{AudioBlockGuard, UserTrack};
 use super::*;
 
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum SilencePolicy {
     Always,

@@ -7,12 +7,14 @@ const INTERNAL_SESSION_KEY: &str = "__session";
 const INTERNAL_TIMEOUT_POLICY_KEY: &str = "__timeout_policy";
 static NEXT_DIALOG_SESSION: AtomicU64 = AtomicU64::new(1);
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DialogStatus {
     Active,
     Paused,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DialogTimeoutPolicy {
     Clear,

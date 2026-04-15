@@ -12,18 +12,21 @@ use helpers::{
     edit_distance, join_command_path, match_command_route, normalize_command_name, pattern_error,
 };
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HandlerResult {
     Continue,
     Stop,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnknownCommandPolicy {
     Ignore,
     Reply(String),
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RouteMatcher {
     Any,

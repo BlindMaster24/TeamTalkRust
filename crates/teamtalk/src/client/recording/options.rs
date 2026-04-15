@@ -2,6 +2,7 @@ use crate::types::{AudioCodec, ChannelId};
 use std::time::Duration;
 use teamtalk_sys as ffi;
 
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum RecordingSampleFormat {
     PcmS16Le,
@@ -9,6 +10,7 @@ pub enum RecordingSampleFormat {
 }
 
 /// Target for a managed recording session.
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum RecordingTarget {
     /// Record the current channel audio (server codec).

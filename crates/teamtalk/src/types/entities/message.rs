@@ -55,6 +55,7 @@ impl TextMessage {
 }
 
 /// Destination for sending text messages.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageTarget {
     User(UserId),
