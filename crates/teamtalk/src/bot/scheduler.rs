@@ -3,6 +3,7 @@ use crate::client::Client;
 use crate::events::Result;
 use std::time::{Duration, Instant};
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobErrorPolicy {
     KeepRunning,

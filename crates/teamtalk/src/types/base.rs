@@ -194,6 +194,7 @@ impl ChannelType {
 }
 
 /// Presence status of a user.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UserPresence {
     #[default]
@@ -203,6 +204,7 @@ pub enum UserPresence {
 }
 
 /// Gender metadata for a user profile.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UserGender {
     Male,

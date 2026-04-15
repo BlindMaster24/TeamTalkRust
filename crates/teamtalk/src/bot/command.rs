@@ -164,6 +164,7 @@ impl CommandPattern {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommandPatternError {
     EmptyPattern,

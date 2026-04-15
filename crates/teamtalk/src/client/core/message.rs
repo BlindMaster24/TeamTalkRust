@@ -7,6 +7,7 @@ pub struct Message {
 }
 
 /// Typed payload extracted from a TeamTalk message.
+#[non_exhaustive]
 pub enum EventData {
     TextMessage(crate::types::TextMessage),
     Channel(crate::types::Channel),
