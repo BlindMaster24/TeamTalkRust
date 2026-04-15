@@ -13,7 +13,7 @@ use teamtalk::client::users::LoginParams;
 use teamtalk::client::users::SendTextOptions;
 use teamtalk::events::ConnectionState;
 use teamtalk::types::{
-    Channel, ChannelId, CommandId, FileId, MessageTarget, TT_STRLEN, TransferId, UserId,
+    BanType, Channel, ChannelId, CommandId, FileId, MessageTarget, TT_STRLEN, TransferId, UserId,
     UserPresence, UserStatus,
 };
 use teamtalk::utils::strings::ToTT;
@@ -1206,7 +1206,7 @@ fn mock_command_wrappers_stay_on_backend_path() {
     );
     assert_eq!(client.delete_user_account("user"), 1);
     assert_eq!(client.change_nickname("nick"), 1);
-    assert_eq!(client.ban_ip("127.0.0.1", 1), 1);
+    assert_eq!(client.ban_ip("127.0.0.1", BanType::CHANNEL), 1);
     assert_eq!(client.list_bans(ChannelId(1), 0, 10), 1);
     let server_props = teamtalk::types::ServerProperties::from(unsafe {
         std::mem::zeroed::<ffi::ServerProperties>()

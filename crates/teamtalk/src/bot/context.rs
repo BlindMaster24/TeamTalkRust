@@ -62,7 +62,7 @@ impl<'a> Context<'a> {
 
     #[must_use]
     pub fn sender_id(&self) -> UserId {
-        UserId(self.message.source())
+        self.message.user_id()
     }
 
     #[allow(clippy::must_use_candidate)]
@@ -100,7 +100,7 @@ impl<'a> Context<'a> {
         self.client
             .poll_until(
                 timeout.as_millis().min(i32::MAX as u128) as i32,
-                |event, msg| event == Event::TextMessage && msg.source() == from.raw(),
+                |event, msg| event == Event::TextMessage && msg.user_id() == from,
             )
             .map(|(_, msg)| msg)
     }
@@ -111,13 +111,13 @@ impl<'a> Context<'a> {
         command_name: &str,
         timeout: Duration,
     ) -> Option<Message> {
-        let sender = self.sender_id().raw();
+        let sender = self.sender_id();
         let expected = command_name.to_ascii_lowercase();
         self.client
             .poll_until(
                 timeout.as_millis().min(i32::MAX as u128) as i32,
                 |event, msg| {
-                    if event != Event::TextMessage || msg.source() != sender {
+                    if event != Event::TextMessage || msg.user_id() != sender {
                         return false;
                     }
                     let Some(text) = msg.text() else {

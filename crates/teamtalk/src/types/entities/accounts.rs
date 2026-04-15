@@ -202,7 +202,7 @@ pub struct BannedUser {
     pub nickname: String,
     pub username: String,
     pub ban_time: String,
-    pub ban_types: u32,
+    pub ban_types: crate::types::BanType,
     pub owner: String,
 }
 
@@ -214,7 +214,7 @@ impl From<ffi::BannedUser> for BannedUser {
             nickname: crate::utils::strings::to_string(&b.szNickname),
             username: crate::utils::strings::to_string(&b.szUsername),
             ban_time: crate::utils::strings::to_string(&b.szBanTime),
-            ban_types: b.uBanTypes,
+            ban_types: crate::types::BanType::from_bits_truncate(b.uBanTypes),
             owner: crate::utils::strings::to_string(&b.szOwner),
         }
     }
@@ -228,7 +228,7 @@ impl BannedUser {
         nickname: impl Into<String>,
         username: impl Into<String>,
         ban_time: impl Into<String>,
-        ban_types: u32,
+        ban_types: crate::types::BanType,
         owner: impl Into<String>,
     ) -> Self {
         Self {
@@ -262,7 +262,7 @@ impl BannedUser {
             let owner_len = owner.len().min(511);
             std::ptr::copy_nonoverlapping(owner.as_ptr(), raw.szOwner.as_mut_ptr(), owner_len);
         }
-        raw.uBanTypes = self.ban_types;
+        raw.uBanTypes = self.ban_types.bits();
         raw
     }
 }

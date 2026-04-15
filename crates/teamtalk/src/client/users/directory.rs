@@ -64,10 +64,10 @@ impl Client {
                                 accounts.push(account);
                             }
                         }
-                        crate::events::Event::CmdSuccess if cmd_id == message.source() => {
+                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
                             return Ok(accounts);
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "user account list command failed".to_string(),
@@ -92,10 +92,10 @@ impl Client {
                             accounts.push(account);
                         }
                     }
-                    crate::events::Event::CmdSuccess if cmd_id == message.source() => {
+                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
                         return Ok(accounts);
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "user account list command failed".to_string(),
@@ -140,7 +140,7 @@ impl Client {
                                 return Ok(created);
                             }
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "create user account command failed".to_string(),
@@ -167,7 +167,7 @@ impl Client {
                             return Ok(created);
                         }
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "create user account command failed".to_string(),
@@ -212,7 +212,7 @@ impl Client {
                                 return Ok(removed);
                             }
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "delete user account command failed".to_string(),
@@ -239,7 +239,7 @@ impl Client {
                             return Ok(removed);
                         }
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "delete user account command failed".to_string(),

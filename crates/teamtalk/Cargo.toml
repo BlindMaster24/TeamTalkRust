@@ -34,6 +34,7 @@ rand = "0.10"
 regex = "1.12.3"
 reqwest = { version = "0.13.2", default-features = false, features = ["blocking"] }
 sevenz-rust2 = "0.20.2"
+bitflags = "2.9"
 futures = { version = "0.3", optional = true }
 tokio = { version = "1.52", features = ["rt", "sync", "time"], optional = true }
 tracing = { version = "0.1.44", optional = true }

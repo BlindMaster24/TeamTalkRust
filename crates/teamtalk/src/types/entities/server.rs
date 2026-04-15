@@ -16,8 +16,8 @@ pub struct ServerProperties {
     pub max_desktop_tx: i32,
     pub max_total_tx: i32,
     pub auto_save: bool,
-    pub tcp_port: i32,
-    pub udp_port: i32,
+    pub tcp_port: crate::types::Port,
+    pub udp_port: crate::types::Port,
     pub user_timeout: i32,
     pub version: String,
     pub protocol_version: String,
@@ -41,8 +41,8 @@ impl From<ffi::ServerProperties> for ServerProperties {
             max_desktop_tx: p.nMaxDesktopTxPerSecond,
             max_total_tx: p.nMaxTotalTxPerSecond,
             auto_save: p.bAutoSave != 0,
-            tcp_port: p.nTcpPort,
-            udp_port: p.nUdpPort,
+            tcp_port: crate::types::Port(p.nTcpPort as u16),
+            udp_port: crate::types::Port(p.nUdpPort as u16),
             user_timeout: p.nUserTimeout,
             version: crate::utils::strings::to_string(&p.szServerVersion),
             protocol_version: crate::utils::strings::to_string(&p.szServerProtocolVersion),
@@ -69,8 +69,8 @@ impl ServerProperties {
         max_desktop_tx: i32,
         max_total_tx: i32,
         auto_save: bool,
-        tcp_port: i32,
-        udp_port: i32,
+        tcp_port: crate::types::Port,
+        udp_port: crate::types::Port,
         user_timeout: i32,
         version: impl Into<String>,
         protocol_version: impl Into<String>,
@@ -122,8 +122,8 @@ impl ServerProperties {
         raw.nMaxDesktopTxPerSecond = self.max_desktop_tx;
         raw.nMaxTotalTxPerSecond = self.max_total_tx;
         raw.bAutoSave = i32::from(self.auto_save);
-        raw.nTcpPort = self.tcp_port;
-        raw.nUdpPort = self.udp_port;
+        raw.nTcpPort = i32::from(self.tcp_port.raw());
+        raw.nUdpPort = i32::from(self.udp_port.raw());
         raw.nUserTimeout = self.user_timeout;
         raw.nLoginDelayMSec = self.login_delay;
         raw.uServerLogEvents = self.log_events;

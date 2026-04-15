@@ -1,5 +1,5 @@
 use teamtalk::client::ffi;
-use teamtalk::types::ServerProperties;
+use teamtalk::types::{Port, ServerProperties};
 use teamtalk::utils::strings::ToTT;
 
 fn copy_tt(src: &str, dst: &mut [ffi::TTCHAR]) {
@@ -49,8 +49,8 @@ fn server_properties_from_ffi() {
     assert_eq!(props.max_desktop_tx, 8);
     assert_eq!(props.max_total_tx, 9);
     assert!(props.auto_save);
-    assert_eq!(props.tcp_port, 10);
-    assert_eq!(props.udp_port, 11);
+    assert_eq!(props.tcp_port, Port(10));
+    assert_eq!(props.udp_port, Port(11));
     assert_eq!(props.user_timeout, 12);
     assert_eq!(props.login_delay, 13);
     assert_eq!(props.log_events, 14);

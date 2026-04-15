@@ -39,10 +39,10 @@ impl Client {
             loop {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
-                        crate::events::Event::CmdSuccess if cmd_id == message.source() => {
+                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
                             return Ok(());
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "command failed".to_string(),
@@ -62,8 +62,10 @@ impl Client {
             }
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
-                    crate::events::Event::CmdSuccess if cmd_id == message.source() => return Ok(()),
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
+                        return Ok(());
+                    }
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "command failed".to_string(),
@@ -86,11 +88,14 @@ impl Client {
     }
 
     /// Bans an IP address.
-    pub fn ban_ip(&self, ip: &str, ban_type: i32) -> CommandId {
+    pub fn ban_ip(&self, ip: &str, ban_type: crate::types::BanType) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(self.backend().do_ban_ip_address(self.ptr.0, ip, ban_type))
+        CommandId(
+            self.backend()
+                .do_ban_ip_address(self.ptr.0, ip, ban_type.bits() as i32),
+        )
     }
 
     /// Returns client statistics.
@@ -134,10 +139,10 @@ impl Client {
                                 items.push(entry);
                             }
                         }
-                        crate::events::Event::CmdSuccess if cmd_id == message.source() => {
+                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
                             return Ok(items);
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "ban list command failed".to_string(),
@@ -162,10 +167,10 @@ impl Client {
                             items.push(entry);
                         }
                     }
-                    crate::events::Event::CmdSuccess if cmd_id == message.source() => {
+                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
                         return Ok(items);
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "ban list command failed".to_string(),
@@ -207,7 +212,7 @@ impl Client {
                                 return Ok(updated);
                             }
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "server update command failed".to_string(),
@@ -232,7 +237,7 @@ impl Client {
                             return Ok(updated);
                         }
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "server update command failed".to_string(),
@@ -294,7 +299,7 @@ impl Client {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
                         crate::events::Event::ServerStatistics => return Ok(message),
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "server statistics query failed".to_string(),
@@ -315,7 +320,7 @@ impl Client {
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
                     crate::events::Event::ServerStatistics => return Ok(message),
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "server statistics query failed".to_string(),

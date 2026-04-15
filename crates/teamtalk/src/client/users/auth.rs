@@ -81,7 +81,7 @@ impl Client {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
                         crate::events::Event::MySelfLoggedIn => return Ok(message),
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::AuthFailed);
                         }
                         _ => {}
@@ -102,7 +102,7 @@ impl Client {
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
                     crate::events::Event::MySelfLoggedIn => return Ok(message),
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::AuthFailed);
                     }
                     _ => {}

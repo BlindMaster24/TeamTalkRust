@@ -109,7 +109,7 @@ impl Client {
                         {
                             return Ok(message);
                         }
-                        crate::events::Event::CmdError if cmd_id == message.source() => {
+                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
                             return Err(crate::events::Error::CommandFailed {
                                 code: message.source(),
                                 message: "join command failed".to_string(),
@@ -140,7 +140,7 @@ impl Client {
                     {
                         return Ok(message);
                     }
-                    crate::events::Event::CmdError if cmd_id == message.source() => {
+                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
                         return Err(crate::events::Error::CommandFailed {
                             code: message.source(),
                             message: "join command failed".to_string(),

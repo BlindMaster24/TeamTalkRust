@@ -41,10 +41,22 @@ impl Message {
         self.event
     }
 
-    /// Returns the source user id for the message.
+    /// Returns the raw source identifier for the message.
     #[must_use]
     pub fn source(&self) -> i32 {
         self.raw.nSource
+    }
+
+    /// Returns the source as a command ID (for command completion/error events).
+    #[must_use]
+    pub fn command_id(&self) -> crate::types::CommandId {
+        crate::types::CommandId(self.raw.nSource)
+    }
+
+    /// Returns the source as a user ID (for user-originated events).
+    #[must_use]
+    pub fn user_id(&self) -> crate::types::UserId {
+        crate::types::UserId(self.raw.nSource)
     }
 
     /// Returns the text message payload if present.

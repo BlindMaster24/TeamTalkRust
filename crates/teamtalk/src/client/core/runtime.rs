@@ -215,7 +215,7 @@ impl Client {
                 }
             }
             Event::CmdError => {
-                let source = msg.source();
+                let source = msg.command_id().raw();
                 let mut next_state = None;
                 let mut auto = self.auto_reconnect.lock();
 
@@ -238,7 +238,7 @@ impl Client {
                 }
             }
             Event::CmdSuccess => {
-                let source = msg.source();
+                let source = msg.command_id().raw();
                 let mut auto = self.auto_reconnect.lock();
 
                 if auto.pending_login_cmd == Some(source) {

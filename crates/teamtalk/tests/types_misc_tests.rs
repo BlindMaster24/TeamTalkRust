@@ -1,6 +1,6 @@
 use teamtalk::client::ffi;
 use teamtalk::types::{
-    AudioInputProgress, BannedUser, ChannelId, FileTransfer, TransferId, VideoFrame,
+    AudioInputProgress, BanType, BannedUser, ChannelId, FileTransfer, TransferId, VideoFrame,
 };
 use teamtalk::utils::strings::ToTT;
 
@@ -60,7 +60,7 @@ fn banned_user_from_ffi() {
     assert_eq!(user.username, "user");
     assert_eq!(user.ban_time, "now");
     assert_eq!(user.owner, "owner");
-    assert_eq!(user.ban_types, 5);
+    assert_eq!(user.ban_types, BanType::IP_ADDR | BanType::USERNAME);
 }
 
 #[test]

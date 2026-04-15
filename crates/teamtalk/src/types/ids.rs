@@ -86,3 +86,18 @@ impl CommandId {
         self.0 == 0
     }
 }
+
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+    pub struct BanType: u32 {
+        const NONE     = 0x00;
+        const CHANNEL = 0x01;
+        const IP_ADDR = 0x02;
+        const USERNAME = 0x04;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Port(pub u16);
+
+impl_id_type!(Port, u16);

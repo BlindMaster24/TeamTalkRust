@@ -1,9 +1,17 @@
-use teamtalk::types::BannedUser;
+use teamtalk::types::{BanType, BannedUser};
 use teamtalk::utils::strings::to_string;
 
 #[test]
 fn banned_user_to_ffi_copies_fields() {
-    let user = BannedUser::new("1.2.3.4", "/root", "nick", "user", "now", 7, "admin");
+    let user = BannedUser::new(
+        "1.2.3.4",
+        "/root",
+        "nick",
+        "user",
+        "now",
+        BanType::CHANNEL | BanType::IP_ADDR | BanType::USERNAME,
+        "admin",
+    );
     let raw = user.to_ffi();
     assert_eq!(to_string(&raw.szIPAddress), "1.2.3.4");
     assert_eq!(to_string(&raw.szChannelPath), "/root");

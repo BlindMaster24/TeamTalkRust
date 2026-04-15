@@ -251,8 +251,8 @@ impl ScriptManager {
         table.set("max_total_tx", props.max_total_tx)?;
         table.set("user_timeout", props.user_timeout)?;
         table.set("auto_save", props.auto_save)?;
-        table.set("tcp_port", props.tcp_port)?;
-        table.set("udp_port", props.udp_port)?;
+        table.set("tcp_port", i64::from(props.tcp_port.raw()))?;
+        table.set("udp_port", i64::from(props.udp_port.raw()))?;
         table.set("version", props.version.clone())?;
         table.set("protocol_version", props.protocol_version.clone())?;
         table.set("login_delay", props.login_delay)?;
@@ -309,7 +309,7 @@ impl ScriptManager {
         table.set("nickname", banned_user.nickname.clone())?;
         table.set("username", banned_user.username.clone())?;
         table.set("ban_time", banned_user.ban_time.clone())?;
-        table.set("ban_types", i64::from(banned_user.ban_types))?;
+        table.set("ban_types", i64::from(banned_user.ban_types.bits()))?;
         table.set("owner", banned_user.owner.clone())?;
         Ok(table)
     }

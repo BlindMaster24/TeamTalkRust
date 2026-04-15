@@ -35,11 +35,11 @@ impl Client {
 
     /// Bans a user with custom ban types.
     #[must_use]
-    pub fn ban_user_ex(&self, user_id: UserId, ban_types: u32) -> CommandId {
+    pub fn ban_user_ex(&self, user_id: UserId, ban_types: crate::types::BanType) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
         }
-        CommandId(unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.raw(), ban_types) })
+        CommandId(unsafe { ffi::api().TT_DoBanUserEx(self.ptr.0, user_id.raw(), ban_types.bits()) })
     }
 
     /// Removes a ban by IP address.

@@ -104,7 +104,7 @@ impl ClientManager {
                     if let Some((event, msg)) = client.poll(self.poll_timeout_ms) {
                         let command_id = match event {
                             Event::CmdProcessing | Event::CmdError | Event::CmdSuccess => {
-                                Some(CommandId(msg.source()))
+                                Some(msg.command_id())
                             }
                             _ => None,
                         };

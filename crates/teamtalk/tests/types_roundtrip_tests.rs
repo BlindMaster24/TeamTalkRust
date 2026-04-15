@@ -298,7 +298,26 @@ fn encryption_context_to_ffi_copies_fields() {
 #[test]
 fn server_properties_to_ffi_copies_fields() {
     let props = teamtalk::types::ServerProperties::new(
-        "srv", "", "motd", 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, "", "", 0, "", 7,
+        "srv",
+        "",
+        "motd",
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        false,
+        teamtalk::types::Port(0),
+        teamtalk::types::Port(0),
+        0,
+        "",
+        "",
+        0,
+        "",
+        7,
     );
     let raw = props.to_ffi();
     assert_eq!(to_string(&raw.szServerName), "srv");

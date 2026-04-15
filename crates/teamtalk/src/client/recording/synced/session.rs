@@ -145,13 +145,13 @@ impl SyncedUserRecordingSession {
                 }
             }
             Event::UserLeft => {
-                let user_id = message.user().map_or(UserId(message.source()), |u| u.id);
+                let user_id = message.user().map_or(message.user_id(), |u| u.id);
                 if user_id.raw() > 0 {
                     self.stop_user(client, user_id);
                 }
             }
             Event::AudioBlock => {
-                let user_id = UserId(message.source());
+                let user_id = message.user_id();
                 if user_id.raw() > 0 {
                     self.connected = true;
                     self.on_audio_block(client, user_id)?;
