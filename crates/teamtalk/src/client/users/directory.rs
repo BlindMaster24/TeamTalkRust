@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Client, CommandId, Subscriptions, User, UserAccount, UserId, UserStatistics,
+    can_issue_logged_in_command,
+};
 use std::time::{Duration, Instant};
 
 fn wait_slice(deadline: Instant) -> i32 {
@@ -26,6 +29,7 @@ impl Client {
     }
 
     /// Requests a list of user accounts.
+    #[must_use]
     pub fn list_user_accounts(&self, index: i32, count: i32) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -104,6 +108,7 @@ impl Client {
     }
 
     /// Creates a user account.
+    #[must_use]
     pub fn create_user_account(&self, account: &UserAccount) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -175,6 +180,7 @@ impl Client {
     }
 
     /// Deletes a user account by username.
+    #[must_use]
     pub fn delete_user_account(&self, username: &str) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -246,6 +252,7 @@ impl Client {
     }
 
     /// Returns the current user's subscription mask.
+    #[must_use]
     pub fn my_subscriptions(&self) -> Subscriptions {
         self.backend().get_my_local_subscriptions(self.ptr.0)
     }

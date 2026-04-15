@@ -1,4 +1,4 @@
-//! Event dispatcher built on top of Client::poll.
+//! Event dispatcher built on top of `Client::poll`.
 use crate::client::{Client, ConnectParams, Message, ReconnectConfig, ReconnectHandler};
 use crate::events::Event;
 use std::mem;

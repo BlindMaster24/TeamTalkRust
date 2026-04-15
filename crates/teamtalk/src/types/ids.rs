@@ -36,6 +36,7 @@ pub const MUXED_USER_ID: UserId = UserId(4097);
 macro_rules! impl_id_type {
     ($ty:ident, $inner:ty) => {
         impl $ty {
+            #[must_use]
             pub fn raw(self) -> $inner {
                 self.0
             }
@@ -75,10 +76,12 @@ impl CommandId {
     /// Command ID indicating the command was rejected.
     pub const ZERO: Self = Self(0);
 
+    #[must_use]
     pub fn is_ok(self) -> bool {
         self.0 > 0
     }
 
+    #[must_use]
     pub fn is_zero(self) -> bool {
         self.0 == 0
     }

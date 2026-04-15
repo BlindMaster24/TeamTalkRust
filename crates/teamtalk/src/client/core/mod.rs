@@ -53,6 +53,7 @@ pub struct ClientEvents(pub Arc<Client>);
 
 impl ClientEvents {
     /// Polls the client for the next event.
+    #[must_use]
     pub fn poll(&self, timeout_ms: i32) -> Option<(Event, Message)> {
         self.0.poll(timeout_ms)
     }
@@ -106,6 +107,7 @@ impl Client {
     }
 
     /// Splits the client into event polling and command execution parts.
+    #[must_use]
     pub fn split(self) -> (ClientEvents, ClientCommands) {
         let shared = Arc::new(self);
         (ClientEvents(shared.clone()), ClientCommands(shared))
@@ -184,18 +186,21 @@ impl Client {
     }
 
     /// Sets the client name used for login.
+    #[must_use]
     pub fn with_name(mut self, name: &str) -> Self {
         self.name = Some(name.to_string());
         self
     }
 
     /// Sets a human-friendly label for the client instance.
+    #[must_use]
     pub fn with_label(self, label: &str) -> Self {
         *self.label.lock() = Some(label.to_string());
         self
     }
 
     /// Returns the client instance id.
+    #[must_use]
     pub fn id(&self) -> ClientId {
         self.id
     }
@@ -207,10 +212,11 @@ impl Client {
 
     /// Sets or clears the client label.
     pub fn set_label(&self, label: Option<&str>) {
-        *self.label.lock() = label.map(|value| value.to_string());
+        *self.label.lock() = label.map(std::string::ToString::to_string);
     }
 
     /// Returns the current connection state.
+    #[must_use]
     pub fn connection_state(&self) -> ConnectionState {
         *self.state.lock()
     }
@@ -226,6 +232,7 @@ impl Client {
     }
 
     /// Removes an event subscription.
+    #[must_use]
     pub fn unsubscribe_event(&self, id: bus::EventSubscriptionId) -> bool {
         let removed = self.bus.lock().unsubscribe(id);
         if removed {
@@ -244,6 +251,7 @@ impl Client {
     }
 
     /// Removes all subscriptions in the specified group.
+    #[must_use]
     pub fn unsubscribe_event_group(&self, group: impl AsRef<str>) -> usize {
         let group = bus::EventSubscriptionGroup::new(group.as_ref());
         let removed = self.bus.lock().unsubscribe_group(&group);
@@ -254,6 +262,7 @@ impl Client {
     }
 
     /// Returns the number of active event subscriptions.
+    #[must_use]
     pub fn event_subscription_count(&self) -> usize {
         self.bus.lock().len()
     }

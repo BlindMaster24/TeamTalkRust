@@ -397,7 +397,12 @@ impl TeamTalkBackend for FfiBackend {
         let p = file_path.tt();
         let raw_codec = codec.to_ffi();
         unsafe {
-            ffi::api().TT_StartRecordingMuxedAudioFile(ptr, &raw_codec, p.as_ptr(), format) == 1
+            ffi::api().TT_StartRecordingMuxedAudioFile(
+                ptr,
+                &raw const raw_codec,
+                p.as_ptr(),
+                format,
+            ) == 1
         }
     }
 
@@ -429,7 +434,7 @@ impl TeamTalkBackend for FfiBackend {
             ffi::api().TT_StartRecordingMuxedStreams(
                 ptr,
                 stream_types,
-                &raw_codec,
+                &raw const raw_codec,
                 p.as_ptr(),
                 format,
             ) == 1
@@ -521,7 +526,7 @@ impl TeamTalkBackend for FfiBackend {
         transfer_id: TransferId,
     ) -> Option<crate::types::FileTransfer> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::FileTransfer>() };
-        if unsafe { ffi::api().TT_GetFileTransferInfo(ptr, transfer_id.raw(), &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetFileTransferInfo(ptr, transfer_id.raw(), &raw mut raw) } == 1 {
             Some(crate::types::FileTransfer::from(raw))
         } else {
             None
@@ -542,7 +547,7 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_channel(&self, ptr: *mut ffi::TTInstance, channel_id: ChannelId) -> Option<Channel> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::Channel>() };
-        if unsafe { ffi::api().TT_GetChannel(ptr, channel_id.raw(), &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetChannel(ptr, channel_id.raw(), &raw mut raw) } == 1 {
             Some(Channel::from(raw))
         } else {
             None
@@ -552,9 +557,9 @@ impl TeamTalkBackend for FfiBackend {
     fn get_server_channels(&self, ptr: *mut ffi::TTInstance) -> Vec<Channel> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetServerChannels(ptr, std::ptr::null_mut(), &mut count);
+            ffi::api().TT_GetServerChannels(ptr, std::ptr::null_mut(), &raw mut count);
             let mut channels = vec![std::mem::zeroed::<ffi::Channel>(); count as usize];
-            if ffi::api().TT_GetServerChannels(ptr, channels.as_mut_ptr(), &mut count) == 1 {
+            if ffi::api().TT_GetServerChannels(ptr, channels.as_mut_ptr(), &raw mut count) == 1 {
                 channels.into_iter().map(Channel::from).collect()
             } else {
                 vec![]
@@ -569,8 +574,9 @@ impl TeamTalkBackend for FfiBackend {
         file_id: FileId,
     ) -> Option<RemoteFile> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::RemoteFile>() };
-        if unsafe { ffi::api().TT_GetChannelFile(ptr, channel_id.raw(), file_id.raw(), &mut raw) }
-            == 1
+        if unsafe {
+            ffi::api().TT_GetChannelFile(ptr, channel_id.raw(), file_id.raw(), &raw mut raw)
+        } == 1
         {
             Some(RemoteFile::from(raw))
         } else {
@@ -609,7 +615,7 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_user_by_id(&self, ptr: *mut ffi::TTInstance, user_id: UserId) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
-        if unsafe { ffi::api().TT_GetUser(ptr, user_id.raw(), &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetUser(ptr, user_id.raw(), &raw mut raw) } == 1 {
             Some(User::from(raw))
         } else {
             None
@@ -618,7 +624,9 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_user_by_username(&self, ptr: *mut ffi::TTInstance, username: &str) -> Option<User> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::User>() };
-        if unsafe { ffi::api().TT_GetUserByUsername(ptr, username.tt().as_ptr(), &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetUserByUsername(ptr, username.tt().as_ptr(), &raw mut raw) }
+            == 1
+        {
             Some(User::from(raw))
         } else {
             None
@@ -631,7 +639,7 @@ impl TeamTalkBackend for FfiBackend {
         user_id: UserId,
     ) -> Option<UserStatistics> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserStatistics>() };
-        if unsafe { ffi::api().TT_GetUserStatistics(ptr, user_id.raw(), &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetUserStatistics(ptr, user_id.raw(), &raw mut raw) } == 1 {
             Some(UserStatistics::from(raw))
         } else {
             None
@@ -641,9 +649,9 @@ impl TeamTalkBackend for FfiBackend {
     fn get_server_users(&self, ptr: *mut ffi::TTInstance) -> Vec<User> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetServerUsers(ptr, std::ptr::null_mut(), &mut count);
+            ffi::api().TT_GetServerUsers(ptr, std::ptr::null_mut(), &raw mut count);
             let mut users = vec![std::mem::zeroed::<ffi::User>(); count as usize];
-            if ffi::api().TT_GetServerUsers(ptr, users.as_mut_ptr(), &mut count) == 1 {
+            if ffi::api().TT_GetServerUsers(ptr, users.as_mut_ptr(), &raw mut count) == 1 {
                 users.into_iter().map(User::from).collect()
             } else {
                 vec![]
@@ -653,7 +661,7 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_server_properties(&self, ptr: *mut ffi::TTInstance) -> Option<ServerProperties> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ServerProperties>() };
-        if unsafe { ffi::api().TT_GetServerProperties(ptr, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetServerProperties(ptr, &raw mut raw) } == 1 {
             Some(ServerProperties::from(raw))
         } else {
             None
@@ -662,7 +670,7 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_client_statistics(&self, ptr: *mut ffi::TTInstance) -> Option<ClientStatistics> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ClientStatistics>() };
-        if unsafe { ffi::api().TT_GetClientStatistics(ptr, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetClientStatistics(ptr, &raw mut raw) } == 1 {
             Some(ClientStatistics::from(raw))
         } else {
             None
@@ -671,7 +679,7 @@ impl TeamTalkBackend for FfiBackend {
 
     fn get_my_user_account(&self, ptr: *mut ffi::TTInstance) -> Option<UserAccount> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::UserAccount>() };
-        if unsafe { ffi::api().TT_GetMyUserAccount(ptr, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetMyUserAccount(ptr, &raw mut raw) } == 1 {
             Some(UserAccount::from(raw))
         } else {
             None
@@ -716,7 +724,7 @@ impl TeamTalkBackend for FfiBackend {
                 udp,
                 0,
                 0,
-                if encrypted { 1 } else { 0 },
+                i32::from(encrypted),
             ) == 1
         }
     }
@@ -738,7 +746,7 @@ impl TeamTalkBackend for FfiBackend {
                 udp,
                 0,
                 0,
-                if encrypted { 1 } else { 0 },
+                i32::from(encrypted),
                 sys_id.tt().as_ptr(),
             ) == 1
         }
@@ -762,7 +770,7 @@ impl TeamTalkBackend for FfiBackend {
                 bind_ip.tt().as_ptr(),
                 0,
                 0,
-                if encrypted { 1 } else { 0 },
+                i32::from(encrypted),
             ) == 1
         }
     }
@@ -812,10 +820,19 @@ impl TeamTalkBackend for FfiBackend {
     fn get_channel_users(&self, ptr: *mut ffi::TTInstance, channel_id: ChannelId) -> Vec<User> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetChannelUsers(ptr, channel_id.raw(), std::ptr::null_mut(), &mut count);
+            ffi::api().TT_GetChannelUsers(
+                ptr,
+                channel_id.raw(),
+                std::ptr::null_mut(),
+                &raw mut count,
+            );
             let mut users = vec![std::mem::zeroed::<ffi::User>(); count as usize];
-            if ffi::api().TT_GetChannelUsers(ptr, channel_id.raw(), users.as_mut_ptr(), &mut count)
-                == 1
+            if ffi::api().TT_GetChannelUsers(
+                ptr,
+                channel_id.raw(),
+                users.as_mut_ptr(),
+                &raw mut count,
+            ) == 1
             {
                 users.into_iter().map(User::from).collect()
             } else {

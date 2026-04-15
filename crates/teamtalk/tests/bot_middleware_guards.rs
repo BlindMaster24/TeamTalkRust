@@ -52,7 +52,7 @@ fn require_channel_message_allows_channel_dispatch() {
     let mut router = Router::new()
         .use_middleware(RequireChannelMessage)
         .on_any(|ctx| {
-            ctx.channel_state_set("ran", "yes");
+            let _ = ctx.channel_state_set("ran", "yes");
             Ok(HandlerResult::Continue)
         });
 

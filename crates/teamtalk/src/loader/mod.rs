@@ -1,4 +1,4 @@
-//! Runtime loader for TeamTalk SDK binaries.
+//! Runtime loader for `TeamTalk` SDK binaries.
 use reqwest::blocking::Client;
 use sevenz_rust2::decompress;
 use std::fs;
@@ -17,6 +17,7 @@ use versions::{
 mod download;
 use download::{documentation_is_complete, download_and_extract};
 
+#[derive(Clone, Copy)]
 enum LoaderLogLevel {
     Info,
     Warn,
@@ -33,7 +34,8 @@ fn loader_log(level: LoaderLogLevel, message: &str) {
     let _ = (level, message);
 }
 
-/// Finds the TeamTalk SDK binaries or downloads them if missing.
+/// Finds the `TeamTalk` SDK binaries or downloads them if missing.
+#[allow(clippy::too_many_lines)]
 pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let dll_name = if cfg!(windows) {
         "TeamTalk5.dll"
@@ -99,8 +101,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
             loader_log(
                 LoaderLogLevel::Warn,
                 &format!(
-                    "Failed to download requested SDK version {}: {}. Falling back to latest.",
-                    version, err
+                    "Failed to download requested SDK version {version}: {err}. Falling back to latest."
                 ),
             );
         } else {
@@ -110,7 +111,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         let latest = latest_version()?;
         loader_log(
             LoaderLogLevel::Info,
-            &format!("Downloading latest SDK: {}", latest),
+            &format!("Downloading latest SDK: {latest}"),
         );
         download_version(&latest)?;
         return Ok(dll_path);
@@ -121,8 +122,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
             loader_log(
                 LoaderLogLevel::Info,
                 &format!(
-                    "Documentation missing or incomplete. Re-downloading SDK: {}",
-                    current_version
+                    "Documentation missing or incomplete. Re-downloading SDK: {current_version}"
                 ),
             );
             download_version(&current_version)?;
@@ -135,7 +135,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         }
         loader_log(
             LoaderLogLevel::Info,
-            &format!("Updating SDK: {} -> {}", current_version, latest),
+            &format!("Updating SDK: {current_version} -> {latest}"),
         );
         download_version(&latest)?;
         return Ok(dll_path);
@@ -156,7 +156,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
         };
         loader_log(
             LoaderLogLevel::Info,
-            &format!("{}. Downloading SDK: {}", repair_reason, repair_version),
+            &format!("{repair_reason}. Downloading SDK: {repair_version}"),
         );
         download_version(&repair_version)?;
         return Ok(dll_path);
@@ -165,7 +165,7 @@ pub fn find_or_download_dll() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let latest = latest_version()?;
     loader_log(
         LoaderLogLevel::Info,
-        &format!("Fresh SDK setup. Downloading: {}", latest),
+        &format!("Fresh SDK setup. Downloading: {latest}"),
     );
     download_version(&latest)?;
 

@@ -1,4 +1,4 @@
-use super::*;
+use super::{Client, CommandId, LoginParams, can_login_in_state, can_logout_in_state};
 use std::time::{Duration, Instant};
 
 fn wait_slice(deadline: Instant) -> i32 {
@@ -11,6 +11,7 @@ fn wait_slice(deadline: Instant) -> i32 {
 
 impl Client {
     /// Logs in to the server.
+    #[must_use]
     pub fn login(
         &self,
         nickname: &str,
@@ -114,6 +115,7 @@ impl Client {
     }
 
     /// Stores login parameters and immediately logs in.
+    #[must_use]
     pub fn login_remember(
         &self,
         nickname: &str,
@@ -126,6 +128,7 @@ impl Client {
         self.login(nickname, username, password, client_name)
     }
 
+    #[must_use]
     pub fn login_from_env(&self) -> CommandId {
         let params = LoginParams::from_env();
         self.set_login_params(params.clone());
@@ -138,6 +141,7 @@ impl Client {
     }
 
     /// Logs out from the server.
+    #[must_use]
     pub fn logout(&self) -> CommandId {
         if !can_logout_in_state(self.connection_state()) {
             return CommandId::ZERO;

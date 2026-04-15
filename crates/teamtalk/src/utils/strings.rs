@@ -1,4 +1,4 @@
-//! Helpers for TeamTalk string conversions.
+//! Helpers for `TeamTalk` string conversions.
 use std::borrow::Cow;
 use teamtalk_sys as ffi;
 
@@ -8,12 +8,13 @@ fn ttchar_bytes(slice: &[ffi::TTCHAR]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(slice.as_ptr() as *const u8, slice.len()) }
 }
 
-/// Creates a zeroed TeamTalk string buffer.
+/// Creates a zeroed `TeamTalk` string buffer.
+#[must_use]
 pub fn tt_buf<const N: usize>() -> [ffi::TTCHAR; N] {
     [0 as ffi::TTCHAR; N]
 }
 
-/// Converts Rust strings into TeamTalk UTF-16 or UTF-8 buffers.
+/// Converts Rust strings into `TeamTalk` UTF-16 or UTF-8 buffers.
 pub trait ToTT {
     fn tt(&self) -> Vec<ffi::TTCHAR>;
 }
@@ -41,10 +42,11 @@ impl ToTT for String {
     }
 }
 
-/// Converts a raw TeamTalk string pointer into `String`.
+/// Converts a raw `TeamTalk` string pointer into `String`.
 ///
 /// # Safety
-/// `ptr` must be a valid null-terminated TeamTalk string.
+/// `ptr` must be a valid null-terminated `TeamTalk` string.
+#[must_use]
 pub unsafe fn from_tt(ptr: *const ffi::TTCHAR) -> String {
     if ptr.is_null() {
         return String::new();
@@ -66,7 +68,8 @@ pub unsafe fn from_tt(ptr: *const ffi::TTCHAR) -> String {
     }
 }
 
-/// Converts a TeamTalk string buffer into `String`.
+/// Converts a `TeamTalk` string buffer into `String`.
+#[must_use]
 pub fn to_string(arr: &[ffi::TTCHAR]) -> String {
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());
     #[cfg(windows)]
@@ -79,7 +82,8 @@ pub fn to_string(arr: &[ffi::TTCHAR]) -> String {
     }
 }
 
-/// Converts a TeamTalk string buffer into a `Cow<str>`.
+/// Converts a `TeamTalk` string buffer into a `Cow<str>`.
+#[must_use]
 pub fn to_cow(arr: &[ffi::TTCHAR]) -> Cow<'_, str> {
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());
     #[cfg(windows)]
@@ -92,7 +96,7 @@ pub fn to_cow(arr: &[ffi::TTCHAR]) -> Cow<'_, str> {
     }
 }
 
-/// Copies a TeamTalk string buffer into a reusable `String`.
+/// Copies a `TeamTalk` string buffer into a reusable `String`.
 pub fn copy_to_string(arr: &[ffi::TTCHAR], out: &mut String) {
     out.clear();
     let len = arr.iter().position(|&c| c == 0).unwrap_or(arr.len());

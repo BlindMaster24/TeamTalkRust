@@ -31,10 +31,10 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, _)) = client.poll(100) {
             match event {
                 teamtalk::Event::ConnectSuccess => {
-                    client.login(&nickname, &username, &password, &client_name);
+                    let _ = client.login(&nickname, &username, &password, &client_name);
                 }
                 teamtalk::Event::MySelfLoggedIn => {
-                    client.join_channel(root_channel, "");
+                    let _ = client.join_channel(root_channel, "");
                     break;
                 }
                 teamtalk::Event::ConnectionLost | teamtalk::Event::ConnectFailed => return Ok(()),

@@ -4,7 +4,7 @@ use crate::utils::UnpoisonedMutex;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn sanitize_filename_replaces_path_separators_and_reserved_chars() {
         assert_eq!(
-            sanitized_filename("..\\evil/name:bad*file?".to_string()),
+            sanitized_filename("..\\evil/name:bad*file?"),
             "_evil_name_bad_file_"
         );
     }

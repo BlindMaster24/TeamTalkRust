@@ -40,7 +40,7 @@ fn main() -> teamtalk::Result<()> {
             && matches!(event, Event::MySelfLoggedIn)
         {
             // Auto-join stores the password once, then reuses it on reconnect.
-            client.join_channel(root_channel, &channel_password);
+            let _ = client.join_channel(root_channel, &channel_password);
         }
     }
 }

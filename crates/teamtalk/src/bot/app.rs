@@ -25,25 +25,30 @@ impl Default for BotApp {
 }
 
 impl BotApp {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_router(mut self, router: Router) -> Self {
         self.router = router;
         self
     }
 
+    #[must_use]
     pub fn with_scheduler(mut self, scheduler: Scheduler) -> Self {
         self.scheduler = scheduler;
         self
     }
 
+    #[must_use]
     pub fn with_state_store(mut self, store: impl StateStore + 'static) -> Self {
         self.state = Box::new(store);
         self
     }
 
+    #[must_use]
     pub fn with_config(mut self, config: BotConfig) -> Self {
         self.config = config;
         self
@@ -66,6 +71,7 @@ impl BotApp {
     }
 
     #[cfg(feature = "async")]
+    #[must_use]
     pub fn into_async_bot(self, client: crate::async_api::AsyncClient) -> super::AsyncBot {
         super::AsyncBotBuilder::new(client)
             .with_router(self.router)

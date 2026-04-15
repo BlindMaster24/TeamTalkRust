@@ -4,6 +4,7 @@ use crate::events::Event;
 use crate::types::ChannelId;
 
 impl ClientHooks {
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn fire(&mut self, client: &Client, event: Event, msg: &Message) {
         match event {
             Event::ConnectSuccess => {

@@ -8,6 +8,7 @@ pub struct Args<'a> {
 }
 
 impl<'a> Args<'a> {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(args: &'a [String]) -> Self {
         Self { args }
     }
@@ -42,6 +43,7 @@ impl<'a> Args<'a> {
     }
 
     /// Returns arguments from `index` to the end as one space-separated string.
+    #[allow(clippy::must_use_candidate)]
     pub fn rest(&self, index: usize) -> Option<String> {
         if index >= self.args.len() {
             return None;
@@ -50,6 +52,7 @@ impl<'a> Args<'a> {
     }
 
     /// Returns all raw arguments.
+    #[must_use]
     pub fn all(&self) -> &'a [String] {
         self.args
     }

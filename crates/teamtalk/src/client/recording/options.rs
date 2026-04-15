@@ -3,7 +3,7 @@ use std::time::Duration;
 use teamtalk_sys as ffi;
 
 #[non_exhaustive]
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum RecordingSampleFormat {
     PcmS16Le,
     WavS16Le,
@@ -61,12 +61,14 @@ impl RecordingOptions {
     }
 
     /// Sets a maximum segment duration.
+    #[must_use]
     pub fn with_max_duration(mut self, duration: Duration) -> Self {
         self.max_duration = Some(duration);
         self
     }
 
     /// Sets a maximum segment size in bytes.
+    #[must_use]
     pub fn with_max_size_bytes(mut self, size: u64) -> Self {
         self.max_size_bytes = Some(size);
         self

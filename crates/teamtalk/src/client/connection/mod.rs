@@ -19,6 +19,7 @@ pub struct ReconnectConfig {
 
 impl ReconnectConfig {
     /// Creates a new reconnect configuration.
+    #[must_use]
     pub fn new(
         max_attempts: u32,
         min_delay: Duration,
@@ -57,6 +58,7 @@ pub struct ReconnectWorkflowConfig {
 
 impl ReconnectWorkflowConfig {
     /// Creates a new workflow configuration.
+    #[must_use]
     pub fn new(login: ReconnectConfig, join: ReconnectConfig) -> Self {
         Self { login, join }
     }
@@ -86,6 +88,7 @@ pub struct ReconnectPhaseTimeouts {
 
 impl ReconnectPhaseTimeouts {
     /// Creates new phase timeouts.
+    #[must_use]
     pub fn new(connect: Option<Duration>, login: Option<Duration>, join: Option<Duration>) -> Self {
         Self {
             connect,
@@ -94,6 +97,7 @@ impl ReconnectPhaseTimeouts {
         }
     }
     /// Disables phase watchdogs for all built-in recovery phases.
+    #[must_use]
     pub const fn disabled() -> Self {
         Self {
             connect: None,
@@ -124,6 +128,7 @@ pub struct ReconnectHandler {
 
 impl ReconnectHandler {
     /// Creates a new reconnect handler.
+    #[must_use]
     pub fn new(config: ReconnectConfig) -> Self {
         let backoff = ExponentialBackoff::new(config.min_delay, config.max_delay, 1.6, 1.0);
         Self {
@@ -152,6 +157,7 @@ impl ReconnectHandler {
     }
 
     /// Returns true when a reconnect attempt is allowed.
+    #[must_use]
     pub fn can_attempt(&self) -> bool {
         if self.attempts >= self.config.max_attempts {
             return false;
@@ -166,7 +172,7 @@ impl ReconnectHandler {
     pub fn record_attempt(&mut self) {
         self.last_attempt = Some(Instant::now());
         self.attempts += 1;
-        self.backoff.next_delay();
+        let _ = self.backoff.next_delay();
     }
 
     /// Resets attempts and backoff state.
@@ -178,16 +184,19 @@ impl ReconnectHandler {
     }
 
     /// Returns the current backoff delay.
+    #[must_use]
     pub fn current_delay(&self) -> Duration {
         self.backoff.current_delay()
     }
 
     /// Returns the number of attempts.
+    #[must_use]
     pub fn attempts(&self) -> u32 {
         self.attempts
     }
 
     /// Returns true when no more attempts are allowed.
+    #[must_use]
     pub fn exhausted(&self) -> bool {
         self.attempts >= self.config.max_attempts
     }
@@ -223,20 +232,20 @@ impl ConnectParamsOwned {
         }
     }
 
+    #[must_use]
     pub fn from_env() -> Self {
         let host = env::var("TT_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let tcp = env::var("TT_TCP")
             .ok()
             .and_then(|value| value.parse::<i32>().ok())
-            .unwrap_or(10333);
+            .unwrap_or(10_333);
         let udp = env::var("TT_UDP")
             .ok()
             .and_then(|value| value.parse::<i32>().ok())
-            .unwrap_or(10333);
+            .unwrap_or(10_333);
         let encrypted = env::var("TT_ENCRYPTED")
             .ok()
-            .map(|value| matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
-            .unwrap_or(false);
+            .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"));
         Self::new(host, tcp, udp, encrypted)
     }
 }

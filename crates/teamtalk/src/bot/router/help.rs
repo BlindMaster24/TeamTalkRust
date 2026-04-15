@@ -3,14 +3,14 @@ use super::*;
 impl Router {
     pub(super) fn push_command_route<F>(
         &mut self,
-        command: String,
+        command: &str,
         command_pattern: Option<CommandPattern>,
         handler: F,
     ) where
         F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
     {
         self.routes.push(Route {
-            matcher: RouteMatcher::Command(command.clone()),
+            matcher: RouteMatcher::Command(command.to_string()),
             command_pattern,
             dialog_filter: None,
             handler: Box::new(handler),

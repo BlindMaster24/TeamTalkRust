@@ -4,7 +4,8 @@ use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 impl Client {
-    /// Returns the TeamTalk SDK version string.
+    /// Returns the `TeamTalk` SDK version string.
+    #[must_use]
     pub fn get_version() -> String {
         unsafe {
             let ptr = ffi::api().TT_GetVersion();
@@ -15,7 +16,7 @@ impl Client {
     /// Sets license information for the SDK.
     ///
     /// Prefer calling [`crate::set_license`] before creating a `Client`, since
-    /// TeamTalk C-API requires license configuration before `TT_InitTeamTalk`.
+    /// `TeamTalk` C-API requires license configuration before `TT_InitTeamTalk`.
     /// Calling this method on an already-created client may be too late for
     /// that client instance.
     pub fn set_license(&self, name: &str, key: &str) -> bool {
@@ -37,7 +38,7 @@ impl Client {
     #[cfg(windows)]
     /// Enables or disables the Windows firewall.
     pub fn enable_firewall(&self, enable: bool) -> bool {
-        unsafe { ffi::api().TT_Firewall_Enable(if enable { 1 } else { 0 }) == 1 }
+        unsafe { ffi::api().TT_Firewall_Enable(i32::from(enable)) == 1 }
     }
 
     #[cfg(windows)]

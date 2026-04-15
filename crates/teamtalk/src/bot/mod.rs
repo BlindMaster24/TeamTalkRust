@@ -1,4 +1,4 @@
-//! High-level bot framework built on top of TeamTalk client polling.
+//! High-level bot framework built on top of `TeamTalk` client polling.
 
 mod app;
 mod args;

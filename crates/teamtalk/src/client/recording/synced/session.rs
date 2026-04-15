@@ -1,5 +1,9 @@
 use super::writer::{AudioBlockGuard, UserTrack};
-use super::*;
+use super::{
+    Arc, AudioBlockView, Client, Duration, Error, Event, HashMap, Instant, Message,
+    RecordingSampleFormat, Result, UnpoisonedMutex, User, UserId, ffi, fs, is_synced_bus_event,
+    should_warn_missing_audio_subscriptions, synced_audio_subscription_mask,
+};
 
 #[non_exhaustive]
 #[derive(Clone, Debug)]
@@ -38,37 +42,44 @@ impl SyncedUserRecordingOptions {
         }
     }
 
+    #[must_use]
     pub fn with_format(mut self, format: RecordingSampleFormat) -> Self {
         self.format = format;
         self
     }
 
+    #[must_use]
     pub fn with_file_vars(mut self, vars: impl Into<String>) -> Self {
         self.file_vars = vars.into();
         self
     }
 
+    #[must_use]
     pub fn with_stream_types(mut self, types: u32) -> Self {
         self.stream_types = types;
         self
     }
 
+    #[must_use]
     pub fn with_tick_interval(mut self, interval: Duration) -> Self {
         self.tick_interval = interval;
         self
     }
 
+    #[must_use]
     pub fn with_default_audio_format(mut self, sample_rate: i32, channels: i32) -> Self {
         self.default_sample_rate = Some(sample_rate);
         self.default_channels = Some(channels);
         self
     }
 
+    #[must_use]
     pub fn with_subscribe_audio(mut self, enabled: bool) -> Self {
         self.subscribe_audio = enabled;
         self
     }
 
+    #[must_use]
     pub fn with_silence_policy(mut self, policy: SilencePolicy) -> Self {
         self.silence_policy = policy;
         self
@@ -134,10 +145,7 @@ impl SyncedUserRecordingSession {
                 }
             }
             Event::UserLeft => {
-                let user_id = message
-                    .user()
-                    .map(|u| u.id)
-                    .unwrap_or(UserId(message.source()));
+                let user_id = message.user().map_or(UserId(message.source()), |u| u.id);
                 if user_id.raw() > 0 {
                     self.stop_user(client, user_id);
                 }
@@ -186,7 +194,7 @@ impl SyncedUserRecordingSession {
         let track = UserTrack::new(
             &self.options.folder,
             &self.options.file_vars,
-            self.options.format.clone(),
+            self.options.format,
             user_id,
             user,
             self.options.default_sample_rate,
@@ -197,7 +205,7 @@ impl SyncedUserRecordingSession {
         if self.options.subscribe_audio {
             let _ = client.subscribe(user_id, synced_audio_subscription_mask());
         }
-        client.enable_audio_block_event(user_id, self.options.stream_types, true);
+        let _ = client.enable_audio_block_event(user_id, self.options.stream_types, true);
 
         if let Err(err) = self.drain_pending_blocks(client, user_id) {
             self.stop_user(client, user_id);
@@ -207,7 +215,7 @@ impl SyncedUserRecordingSession {
     }
 
     fn stop_user(&mut self, client: &Client, user_id: UserId) {
-        client.enable_audio_block_event(user_id, self.options.stream_types, false);
+        let _ = client.enable_audio_block_event(user_id, self.options.stream_types, false);
         if self.options.subscribe_audio {
             let _ = client.unsubscribe(user_id, synced_audio_subscription_mask());
         }
@@ -323,6 +331,7 @@ impl<'a> SyncedUserRecordingBus<'a> {
         }
     }
 
+    #[must_use]
     pub fn stop_on_drop(mut self, stop: bool) -> Self {
         self.stop_on_drop = stop;
         self

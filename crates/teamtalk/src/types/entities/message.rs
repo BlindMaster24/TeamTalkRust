@@ -29,10 +29,12 @@ impl From<ffi::TextMessage> for TextMessage {
 }
 
 impl TextMessage {
+    #[must_use]
     pub fn send_to_user(client: &crate::client::Client, user_id: UserId, text: &str) -> CommandId {
         MessageBuilder::new(user_id).text(text).send_cmd(client)
     }
 
+    #[must_use]
     pub fn send_to_channel(
         client: &crate::client::Client,
         channel_id: ChannelId,
@@ -41,6 +43,7 @@ impl TextMessage {
         MessageBuilder::new(channel_id).text(text).send_cmd(client)
     }
 
+    #[must_use]
     pub fn send_broadcast(client: &crate::client::Client, text: &str) -> CommandId {
         MessageBuilder::new(MessageTarget::Broadcast)
             .text(text)
@@ -48,6 +51,7 @@ impl TextMessage {
     }
 
     /// Sends a private reply to the sender of this message.
+    #[must_use]
     pub fn send_private(&self, client: &crate::client::Client, text: &str) -> CommandId {
         MessageBuilder::new(self.from_id)
             .text(text)
@@ -96,17 +100,20 @@ impl MessageBuilder {
     }
 
     /// Sets the message body.
+    #[must_use]
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = text.into();
         self
     }
 
     /// Sends the message using the provided client.
+    #[must_use]
     pub fn send(self, client: &crate::client::Client) -> CommandId {
         client.send_text(self.target, &self.text)
     }
 
-    /// Sends the message and wraps the result in a CommandId.
+    /// Sends the message and wraps the result in a `CommandId`.
+    #[must_use]
     pub fn send_cmd(self, client: &crate::client::Client) -> CommandId {
         self.send(client)
     }

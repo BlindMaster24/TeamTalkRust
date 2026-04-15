@@ -30,17 +30,20 @@ impl Default for AsyncConfig {
 
 impl AsyncConfig {
     /// Creates a configuration with defaults.
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Sets the polling timeout in milliseconds.
+    #[must_use]
     pub fn poll_timeout_ms(mut self, timeout_ms: i32) -> Self {
         self.poll_timeout_ms = timeout_ms;
         self
     }
 
     /// Sets the channel buffer size for events.
+    #[must_use]
     pub fn buffer(mut self, buffer: usize) -> Self {
         self.buffer = buffer;
         self
@@ -138,6 +141,7 @@ impl AsyncClient {
     }
 
     /// Stops the loop and returns the underlying client.
+    #[allow(clippy::must_use_candidate)]
     pub fn into_client(mut self) -> Option<Client> {
         self.shutdown();
         Arc::try_unwrap(self.client.take()?).ok()

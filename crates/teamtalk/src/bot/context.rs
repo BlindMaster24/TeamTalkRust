@@ -35,43 +35,53 @@ impl<'a> Context<'a> {
             state,
         }
     }
+    #[must_use]
     pub fn is_command(&self, name: &str) -> bool {
         self.command_name() == Some(name)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn command_name(&self) -> Option<&str> {
         self.command.as_ref().map(|c| c.name.as_str())
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn args(&self) -> Option<Args<'_>> {
         self.command.as_ref().map(|c| Args::new(&c.args))
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn command_arg(&self, index: usize) -> Option<&str> {
         self.command.as_ref()?.arg(index)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn text(&self) -> Option<String> {
         self.message.text().map(|text| text.text)
     }
 
+    #[must_use]
     pub fn sender_id(&self) -> UserId {
         UserId(self.message.source())
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn channel_id(&self) -> Option<ChannelId> {
         self.message.text().map(|text| text.channel_id)
     }
 
+    #[must_use]
     pub fn reply_private(&self, text: &str) -> CommandId {
         self.client.send_to_user(self.sender_id(), text)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn reply_channel(&self, text: &str) -> Option<CommandId> {
         self.channel_id()
             .map(|channel_id| self.client.send_to_channel(channel_id, text))
     }
 
+    #[must_use]
     pub fn reply(&self, text: &str) -> CommandId {
         if let Some(channel_id) = self.channel_id() {
             return self.client.send_to_channel(channel_id, text);
@@ -79,11 +89,13 @@ impl<'a> Context<'a> {
         self.reply_private(text)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn wait_for_event(&self, event: Event, timeout: Duration) -> Option<Message> {
         self.client
             .wait_for(event, timeout.as_millis().min(i32::MAX as u128) as i32)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn wait_text_from(&self, from: UserId, timeout: Duration) -> Option<Message> {
         self.client
             .poll_until(
@@ -93,6 +105,7 @@ impl<'a> Context<'a> {
             .map(|(_, msg)| msg)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn wait_command_from_sender(
         &self,
         command_name: &str,
@@ -119,6 +132,7 @@ impl<'a> Context<'a> {
             .map(|(_, msg)| msg)
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn state_get(&self, key: &str) -> Option<String> {
         self.state.get(key)
     }
@@ -183,19 +197,23 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
+    #[must_use]
     pub fn user_state_key(&self, key: &str) -> String {
         format!("u:{}:{key}", self.sender_id().raw())
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn channel_state_key(&self, key: &str) -> Option<String> {
         self.channel_id()
             .map(|channel| format!("c:{}:{key}", channel.raw()))
     }
 
+    #[must_use]
     pub fn global_state_key(&self, key: &str) -> String {
         format!("g:{key}")
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn user_state_get(&self, key: &str) -> Option<String> {
         self.state_get(&self.user_state_key(key))
     }
@@ -252,11 +270,13 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn channel_state_get(&self, key: &str) -> Option<String> {
         let full = self.channel_state_key(key)?;
         self.state_get(&full)
     }
 
+    #[must_use]
     pub fn channel_state_set(&mut self, key: &str, value: impl Into<String>) -> bool {
         let Some(full) = self.channel_state_key(key) else {
             return false;
@@ -279,6 +299,7 @@ impl<'a> Context<'a> {
             .transpose()
     }
 
+    #[must_use]
     pub fn channel_state_set_typed<T>(&mut self, key: &str, value: T) -> bool
     where
         T: Display,
@@ -313,6 +334,7 @@ impl<'a> Context<'a> {
         Ok(self.channel_state_set(key, value))
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn global_state_get(&self, key: &str) -> Option<String> {
         self.state_get(&self.global_state_key(key))
     }
@@ -385,6 +407,7 @@ impl<'a> Context<'a> {
         self.state_get(&full)
     }
 
+    #[must_use]
     pub fn dialog_state_set(&mut self, key: &str, value: impl Into<String>) -> bool {
         let Some(full) = self.dialog_state_key(key) else {
             return false;
@@ -407,6 +430,7 @@ impl<'a> Context<'a> {
             .transpose()
     }
 
+    #[must_use]
     pub fn dialog_state_set_typed<T>(&mut self, key: &str, value: T) -> bool
     where
         T: Display,
@@ -441,6 +465,7 @@ impl<'a> Context<'a> {
         Ok(self.dialog_state_set(key, value))
     }
 
+    #[must_use]
     pub fn dialog(&mut self) -> DialogMachine<'_> {
         DialogMachine::new(self.state)
     }
@@ -589,11 +614,13 @@ impl<'a> Context<'a> {
             .transpose()
     }
 
+    #[must_use]
     pub fn dialog_is_paused(&mut self) -> bool {
         self.dialog_current_live()
             .is_some_and(|state| state.status == DialogStatus::Paused)
     }
 
+    #[must_use]
     pub fn dialog_is(&mut self, dialog: &str, step: &str) -> bool {
         let source = self.sender_id();
         self.dialog().is_in(source, dialog, step)

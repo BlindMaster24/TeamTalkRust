@@ -20,10 +20,12 @@ impl Default for BotConfig {
 }
 
 impl BotConfig {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn poll_timeout_ms(mut self, timeout_ms: i32) -> Self {
         self.poll_timeout_ms = timeout_ms;
         self
@@ -58,26 +60,31 @@ impl BotBuilder {
         }
     }
 
+    #[must_use]
     pub fn with_router(mut self, router: Router) -> Self {
         self.router = router;
         self
     }
 
+    #[must_use]
     pub fn with_scheduler(mut self, scheduler: Scheduler) -> Self {
         self.scheduler = scheduler;
         self
     }
 
+    #[must_use]
     pub fn with_state_store(mut self, store: impl StateStore + 'static) -> Self {
         self.state = Box::new(store);
         self
     }
 
+    #[must_use]
     pub fn with_boxed_state_store(mut self, store: Box<dyn StateStore>) -> Self {
         self.state = store;
         self
     }
 
+    #[must_use]
     pub fn with_config(mut self, config: BotConfig) -> Self {
         self.config = config;
         self

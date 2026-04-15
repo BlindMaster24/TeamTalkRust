@@ -26,6 +26,7 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }

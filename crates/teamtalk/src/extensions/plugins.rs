@@ -21,6 +21,7 @@ type PluginInit = unsafe extern "C" fn();
 
 #[cfg(feature = "plugins")]
 impl PluginManager {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self {
             plugins: HashMap::new(),

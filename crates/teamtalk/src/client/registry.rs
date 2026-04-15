@@ -21,6 +21,7 @@ pub struct ClientRegistry {
 }
 
 impl ClientRegistry {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -70,11 +71,13 @@ impl ClientRegistry {
         entry.state = client.connection_state();
     }
 
+    #[must_use]
     pub fn list(&self) -> Vec<ClientInfo> {
         let map = self.inner.lock();
         map.values().cloned().collect()
     }
 
+    #[must_use]
     pub fn get(&self, id: ClientId) -> Option<ClientInfo> {
         let map = self.inner.lock();
         map.get(&id).cloned()

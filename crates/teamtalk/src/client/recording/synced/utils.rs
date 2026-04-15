@@ -41,7 +41,7 @@ pub(super) fn render_vars(template: &str, user_id: UserId, username: &str) -> St
         .replace("%username%", username)
 }
 
-pub(super) fn sanitized_filename(raw: String) -> String {
+pub(super) fn sanitized_filename(raw: &str) -> String {
     const FORBIDDEN: [char; 9] = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
     let mut sanitized = String::with_capacity(raw.len());
     for ch in raw.chars() {

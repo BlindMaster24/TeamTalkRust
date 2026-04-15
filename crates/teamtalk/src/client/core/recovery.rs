@@ -1,4 +1,4 @@
-use super::*;
+use super::{Client, ConnectionState, Event, Message, ffi};
 
 impl Client {
     fn empty_message(event: Event) -> Message {
@@ -57,9 +57,8 @@ impl Client {
                 return;
             }
 
-            let handler = match auto.handler.as_mut() {
-                Some(handler) => handler,
-                None => return,
+            let Some(handler) = auto.handler.as_mut() else {
+                return;
             };
             if !handler.can_attempt() {
                 return;
@@ -131,7 +130,11 @@ impl Client {
             &params.password,
             &params.client_name,
         );
-        if !cmd_id.is_ok() {
+        if cmd_id.is_ok() {
+            let mut auto = self.auto_reconnect.lock();
+
+            auto.pending_login_cmd = Some(cmd_id.raw());
+        } else {
             let mut auto = self.auto_reconnect.lock();
 
             auto.clear_login_phase();
@@ -140,10 +143,6 @@ impl Client {
             let failed = Event::AutoLoginFailed { attempts: attempt };
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
-        } else {
-            let mut auto = self.auto_reconnect.lock();
-
-            auto.pending_login_cmd = Some(cmd_id.raw());
         }
     }
 
@@ -155,9 +154,8 @@ impl Client {
                 return;
             }
 
-            let channel = match auto.last_channel {
-                Some(channel) => channel,
-                None => return,
+            let Some(channel) = auto.last_channel else {
+                return;
             };
             let password = auto.last_channel_password.clone();
 
@@ -192,7 +190,11 @@ impl Client {
         self.invoke_hooks(before_event, &msg);
 
         let cmd_id = self.join_channel(channel, password.as_deref().unwrap_or(""));
-        if !cmd_id.is_ok() {
+        if cmd_id.is_ok() {
+            let mut auto = self.auto_reconnect.lock();
+
+            auto.pending_join_cmd = Some(cmd_id.raw());
+        } else {
             let mut auto = self.auto_reconnect.lock();
 
             auto.clear_join_phase();
@@ -201,10 +203,6 @@ impl Client {
             let failed = Event::AutoJoinFailed { attempts: attempt };
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
-        } else {
-            let mut auto = self.auto_reconnect.lock();
-
-            auto.pending_join_cmd = Some(cmd_id.raw());
         }
     }
 
@@ -222,15 +220,15 @@ impl Client {
             let reconnect_attempts = auto
                 .handler
                 .as_ref()
-                .map_or(0, |handler| handler.attempts());
+                .map_or(0, super::super::connection::ReconnectHandler::attempts);
             let login_attempts = auto
                 .login_handler
                 .as_ref()
-                .map_or(0, |handler| handler.attempts());
+                .map_or(0, super::super::connection::ReconnectHandler::attempts);
             let join_attempts = auto
                 .join_handler
                 .as_ref()
-                .map_or(0, |handler| handler.attempts());
+                .map_or(0, super::super::connection::ReconnectHandler::attempts);
             if let Some(handler) = auto.login_handler.as_mut() {
                 handler.reset();
             }

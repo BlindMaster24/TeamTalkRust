@@ -33,10 +33,10 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, msg)) = client.poll(100) {
             match event {
                 Event::ConnectSuccess => {
-                    client.login(&nickname, &username, &password, &client_name);
+                    let _ = client.login(&nickname, &username, &password, &client_name);
                 }
                 Event::MySelfLoggedIn => {
-                    client.join_channel(root_channel, "");
+                    let _ = client.join_channel(root_channel, "");
                 }
                 Event::TextMessage => {
                     if let Some(text) = msg.text()
@@ -44,7 +44,7 @@ fn main() -> teamtalk::Result<()> {
                         && text.channel_id == root_channel
                     {
                         let reply = format!("echo: {}", text.text);
-                        client.send_text(MessageTarget::Channel(root_channel), &reply);
+                        let _ = client.send_text(MessageTarget::Channel(root_channel), &reply);
                     }
                 }
                 Event::ConnectionLost | Event::ConnectFailed => break,

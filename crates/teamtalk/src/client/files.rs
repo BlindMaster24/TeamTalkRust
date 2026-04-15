@@ -29,14 +29,17 @@ pub struct FileTransferHandle<'a> {
 }
 
 impl FileTransferHandle<'_> {
+    #[must_use]
     pub fn transfer_id(&self) -> TransferId {
         self.transfer_id
     }
 
+    #[must_use]
     pub fn refresh(&self) -> Option<crate::types::FileTransfer> {
         self.client.get_file_transfer_info(self.transfer_id)
     }
 
+    #[must_use]
     pub fn cancel(&self) -> bool {
         self.client.cancel_file_transfer(self.transfer_id)
     }
@@ -56,14 +59,14 @@ impl Client {
                 self.ptr.0,
                 channel_id.raw(),
                 std::ptr::null_mut(),
-                &mut count,
+                &raw mut count,
             );
             let mut files = vec![std::mem::zeroed::<ffi::RemoteFile>(); count as usize];
             if ffi::api().TT_GetChannelFiles(
                 self.ptr.0,
                 channel_id.raw(),
                 files.as_mut_ptr(),
-                &mut count,
+                &raw mut count,
             ) == 1
             {
                 files.into_iter().map(RemoteFile::from).collect()

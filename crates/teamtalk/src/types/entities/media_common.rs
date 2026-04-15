@@ -23,6 +23,7 @@ impl From<ffi::JitterConfig> for JitterConfig {
 
 impl JitterConfig {
     /// Creates a new jitter configuration.
+    #[must_use]
     pub fn new(
         fixed_delay_ms: i32,
         use_adaptive: bool,
@@ -36,11 +37,12 @@ impl JitterConfig {
             active_adaptive_delay_ms,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::JitterConfig {
         ffi::JitterConfig {
             nFixedDelayMSec: self.fixed_delay_ms,
-            bUseAdativeDejitter: self.use_adaptive as i32,
+            bUseAdativeDejitter: i32::from(self.use_adaptive),
             nMaxAdaptiveDelayMSec: self.max_adaptive_delay_ms,
             nActiveAdaptiveDelayMSec: self.active_adaptive_delay_ms,
         }
@@ -84,6 +86,7 @@ impl From<ffi::VideoFormat> for VideoFormat {
 
 impl VideoFormat {
     /// Creates a new video format.
+    #[must_use]
     pub fn new(
         width: i32,
         height: i32,
@@ -99,7 +102,8 @@ impl VideoFormat {
             fourcc,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::VideoFormat {
         ffi::VideoFormat {
             nWidth: self.width,
@@ -135,10 +139,12 @@ impl From<ffi::VideoCodec> for VideoCodec {
 
 impl VideoCodec {
     /// Creates a new video codec configuration.
+    #[must_use]
     pub fn new(bitrate: i32, deadline: u32) -> Self {
         Self { bitrate, deadline }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::VideoCodec {
         let mut raw = ffi::VideoCodec {
             nCodec: ffi::Codec::WEBM_VP8_CODEC,
@@ -187,7 +193,8 @@ impl EncryptionContext {
             verify_depth,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::EncryptionContext {
         let mut raw = ffi::EncryptionContext::default();
         let cert = crate::utils::ToTT::tt(&self.cert_file);
@@ -201,11 +208,11 @@ impl EncryptionContext {
             std::ptr::copy_nonoverlapping(key.as_ptr(), raw.szPrivateKeyFile.as_mut_ptr(), k_len);
             let ca_len = ca.len().min(511);
             std::ptr::copy_nonoverlapping(ca.as_ptr(), raw.szCAFile.as_mut_ptr(), ca_len);
-            let cd_len = cadir.len().min(511);
-            std::ptr::copy_nonoverlapping(cadir.as_ptr(), raw.szCADir.as_mut_ptr(), cd_len);
+            let cadir_len = cadir.len().min(511);
+            std::ptr::copy_nonoverlapping(cadir.as_ptr(), raw.szCADir.as_mut_ptr(), cadir_len);
         }
-        raw.bVerifyPeer = self.verify_peer as i32;
-        raw.bVerifyClientOnce = self.verify_client_once as i32;
+        raw.bVerifyPeer = i32::from(self.verify_peer);
+        raw.bVerifyClientOnce = i32::from(self.verify_client_once);
         raw.nVerifyDepth = self.verify_depth;
         raw
     }
@@ -238,6 +245,7 @@ impl From<ffi::ClientKeepAlive> for ClientKeepAlive {
 
 impl ClientKeepAlive {
     /// Creates a new keep-alive configuration.
+    #[must_use]
     pub fn new(
         lost_ms: i32,
         tcp_interval_ms: i32,
@@ -255,7 +263,8 @@ impl ClientKeepAlive {
             udp_timeout_ms,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::ClientKeepAlive {
         ffi::ClientKeepAlive {
             nConnectionLostMSec: self.lost_ms,
@@ -287,13 +296,15 @@ impl From<ffi::AbusePrevention> for AbusePrevention {
 
 impl AbusePrevention {
     /// Creates a new abuse prevention configuration.
+    #[must_use]
     pub fn new(commands_limit: i32, commands_interval_ms: i32) -> Self {
         Self {
             commands_limit,
             commands_interval_ms,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::AbusePrevention {
         ffi::AbusePrevention {
             nCommandsLimit: self.commands_limit,
@@ -333,6 +344,7 @@ impl From<ffi::AudioFormat> for AudioFormat {
 
 impl AudioFormat {
     /// Creates a new audio format.
+    #[must_use]
     pub fn new(format: ffi::AudioFileFormat, sample_rate: i32, channels: i32) -> Self {
         Self {
             format,
@@ -340,7 +352,8 @@ impl AudioFormat {
             channels,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::AudioFormat {
         ffi::AudioFormat {
             nAudioFmt: self.format,
@@ -415,7 +428,8 @@ impl From<ffi::DesktopInput> for DesktopInput {
 }
 
 impl DesktopInput {
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::DesktopInput {
         ffi::DesktopInput {
             uMousePosX: self.mouse_pos_x,

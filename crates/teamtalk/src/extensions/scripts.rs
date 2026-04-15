@@ -34,6 +34,7 @@ struct ScriptEntry {
 
 #[cfg(feature = "scripts")]
 impl ScriptManager {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         let mut manager = Self {
             lua: Lua::new(),
@@ -69,7 +70,7 @@ impl ScriptManager {
             self.with_timeout(|| self.lua.load(&contents).exec())
         });
         if let Err(err) = result {
-            return Err(self.wrap_error(name, "load_script", err));
+            return Err(Self::wrap_error(name, "load_script", &err));
         }
         let globals_after = self.collect_global_keys()?;
         let globals = diff_globals(&globals_before, &globals_after);
@@ -108,14 +109,12 @@ impl ScriptManager {
         self.ensure_ready()?;
         let globals = self.lua.globals();
         let handlers: Value = globals.get("commands")?;
-        let handlers = match handlers {
-            Value::Table(table) => table,
-            _ => return Ok(false),
+        let Value::Table(handlers) = handlers else {
+            return Ok(false);
         };
         let func: Value = handlers.get(command)?;
-        let func = match func {
-            Value::Function(func) => func,
-            _ => return Ok(false),
+        let Value::Function(func) = func else {
+            return Ok(false);
         };
         let args_table = self.lua.create_table()?;
         for (idx, arg) in args.iter().enumerate() {
@@ -123,7 +122,7 @@ impl ScriptManager {
         }
         let result = self
             .with_timeout(|| func.call::<bool>(args_table))
-            .map_err(|err| self.wrap_error(command, "call_command", err))?;
+            .map_err(|err| Self::wrap_error(command, "call_command", &err))?;
         Ok(result)
     }
 
@@ -148,7 +147,7 @@ impl ScriptManager {
             let event_table = self.event_table(event, message)?;
             let result = self
                 .with_timeout(|| func.call::<bool>(event_table))
-                .map_err(|err| self.wrap_error(event_name(event), "on_event", err))?;
+                .map_err(|err| Self::wrap_error(event_name(event), "on_event", &err))?;
             handled |= result;
         }
         if let Ok(Value::Table(table)) = globals.get::<Value>("events") {
@@ -157,7 +156,7 @@ impl ScriptManager {
                 let event_table = self.event_table(event, message)?;
                 let result = self
                     .with_timeout(|| func.call::<bool>(event_table))
-                    .map_err(|err| self.wrap_error(key, "event", err))?;
+                    .map_err(|err| Self::wrap_error(key, "event", &err))?;
                 handled |= result;
             }
         }
@@ -168,9 +167,8 @@ impl ScriptManager {
     where
         F: FnOnce() -> mlua::Result<R>,
     {
-        let max_exec_time = match self.max_exec_time {
-            Some(max_exec_time) => max_exec_time,
-            None => return func(),
+        let Some(max_exec_time) = self.max_exec_time else {
+            return func();
         };
         let start = Instant::now();
         let triggers = HookTriggers::new().every_nth_instruction(self.hook_instruction_count);
@@ -217,32 +215,31 @@ impl ScriptManager {
             .lua
             .create_function(|lua, (name, func): (String, mlua::Function)| {
                 let globals = lua.globals();
-                let commands = match globals.get::<Value>("commands")? {
-                    Value::Table(table) => table,
-                    _ => {
-                        let table = lua.create_table()?;
-                        globals.set("commands", table.clone())?;
-                        table
-                    }
+                let commands = if let Value::Table(table) = globals.get::<Value>("commands")? {
+                    table
+                } else {
+                    let table = lua.create_table()?;
+                    globals.set("commands", table.clone())?;
+                    table
                 };
                 commands.set(name.clone(), func)?;
                 if let Ok(Value::String(script)) = globals.get::<Value>("_SCRIPT_NAME") {
-                    let by_script = match globals.get::<Value>("__tt_commands_by_script")? {
-                        Value::Table(table) => table,
-                        _ => {
-                            let table = lua.create_table()?;
-                            globals.set("__tt_commands_by_script", table.clone())?;
-                            table
-                        }
+                    let by_script = if let Value::Table(table) =
+                        globals.get::<Value>("__tt_commands_by_script")?
+                    {
+                        table
+                    } else {
+                        let table = lua.create_table()?;
+                        globals.set("__tt_commands_by_script", table.clone())?;
+                        table
                     };
                     let key = script.to_str()?.to_string();
-                    let list = match by_script.get::<Value>(key.clone())? {
-                        Value::Table(table) => table,
-                        _ => {
-                            let table = lua.create_table()?;
-                            by_script.set(key, table.clone())?;
-                            table
-                        }
+                    let list = if let Value::Table(table) = by_script.get::<Value>(key.clone())? {
+                        table
+                    } else {
+                        let table = lua.create_table()?;
+                        by_script.set(key, table.clone())?;
+                        table
                     };
                     let idx = list.len()? + 1;
                     list.set(idx, name)?;
@@ -257,17 +254,14 @@ impl ScriptManager {
     fn remove_registered_commands(&self, name: &str) -> mlua::Result<()> {
         self.ensure_ready()?;
         let globals = self.lua.globals();
-        let by_script = match globals.get::<Value>("__tt_commands_by_script")? {
-            Value::Table(table) => table,
-            _ => return Ok(()),
+        let Value::Table(by_script) = globals.get::<Value>("__tt_commands_by_script")? else {
+            return Ok(());
         };
-        let list = match by_script.get::<Value>(name) {
-            Ok(Value::Table(table)) => table,
-            _ => return Ok(()),
+        let Ok(Value::Table(list)) = by_script.get::<Value>(name) else {
+            return Ok(());
         };
-        let commands = match globals.get::<Value>("commands")? {
-            Value::Table(table) => table,
-            _ => return Ok(()),
+        let Value::Table(commands) = globals.get::<Value>("commands")? else {
+            return Ok(());
         };
         for pair in list.sequence_values::<String>() {
             let cmd = pair?;
@@ -277,7 +271,7 @@ impl ScriptManager {
         Ok(())
     }
 
-    fn wrap_error(&self, name: &str, context: &str, err: mlua::Error) -> mlua::Error {
+    fn wrap_error(name: &str, context: &str, err: &mlua::Error) -> mlua::Error {
         mlua::Error::RuntimeError(format!("lua {context} error ({name}): {err}"))
     }
 

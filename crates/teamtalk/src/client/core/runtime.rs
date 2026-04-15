@@ -7,12 +7,14 @@ impl Drop for Client {
 }
 
 impl Client {
-    /// Returns the raw TeamTalk instance pointer.
+    /// Returns the raw `TeamTalk` instance pointer.
+    #[must_use]
     pub fn raw_ptr(&self) -> *mut ffi::TTInstance {
         self.ptr.0
     }
 
     /// Returns the SDK version string.
+    #[must_use]
     pub fn version() -> String {
         let _ = crate::init();
         unsafe {
@@ -110,6 +112,7 @@ impl Client {
         self.wait_for(event, timeout_ms)
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(super) fn update_state_for_event(&self, event: Event, msg: &Message) {
         #[cfg(feature = "logging")]
         let prev_state = self.connection_state();
@@ -127,7 +130,10 @@ impl Client {
                 if auto.enabled {
                     let msg =
                         Message::from_raw(event, unsafe { std::mem::zeroed::<ffi::TTMessage>() });
-                    let attempts = auto.handler.as_ref().map(|h| h.attempts()).unwrap_or(0);
+                    let attempts = auto
+                        .handler
+                        .as_ref()
+                        .map_or(0, super::super::connection::ReconnectHandler::attempts);
                     drop(auto);
                     if attempts > 0 {
                         self.invoke_hooks(Event::AfterReconnect { attempt: attempts }, &msg);
@@ -267,11 +273,13 @@ impl Client {
     }
 
     /// Returns the current client flags.
+    #[must_use]
     pub fn get_flags(&self) -> crate::types::ClientFlags {
         crate::types::ClientFlags::from_raw(self.backend().get_flags(self.ptr.0))
     }
 
-    /// Returns a human-readable error message for a TeamTalk error code.
+    /// Returns a human-readable error message for a `TeamTalk` error code.
+    #[must_use]
     pub fn get_error_message(&self, code: i32) -> String {
         use crate::types::TT_STRLEN;
         use crate::utils::strings::tt_buf;
@@ -283,6 +291,7 @@ impl Client {
     }
 
     /// Builds a typed SDK error with the resolved message.
+    #[must_use]
     pub fn client_error(&self, code: i32) -> crate::events::Error {
         crate::events::Error::ClientError {
             code,

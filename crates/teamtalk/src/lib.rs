@@ -1,4 +1,13 @@
 #![doc = include_str!("../README.md")]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::fn_params_excessive_bools)]
+#![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::wildcard_imports)]
 use std::path::Path;
 use utils::ToTT;
 
@@ -73,7 +82,7 @@ pub use teamtalk_macros::{
 };
 pub use types::{ClientId, MessageBuilder, UserRights};
 
-/// Initializes the TeamTalk SDK by loading the runtime DLL from the default location.
+/// Initializes the `TeamTalk` SDK by loading the runtime DLL from the default location.
 pub fn init() -> Result<()> {
     let dll_path = loader::find_or_download_dll().map_err(|_| Error::InitFailed)?;
     let dll_path = dll_path.to_str().ok_or(Error::InitFailed)?;
@@ -81,9 +90,9 @@ pub fn init() -> Result<()> {
     Ok(())
 }
 
-/// Sets TeamTalk license information before creating any `Client`.
+/// Sets `TeamTalk` license information before creating any `Client`.
 ///
-/// TeamTalk C-API requires license information to be configured before
+/// `TeamTalk` C-API requires license information to be configured before
 /// `TT_InitTeamTalk`/`TT_InitTeamTalkPoll`, which in this crate happens inside
 /// `Client::new()` and `Client::with_hwnd()`.
 pub fn set_license(name: &str, key: &str) -> Result<bool> {
@@ -93,7 +102,7 @@ pub fn set_license(name: &str, key: &str) -> Result<bool> {
     })
 }
 
-/// Initializes the TeamTalk SDK using a custom DLL path.
+/// Initializes the `TeamTalk` SDK using a custom DLL path.
 pub fn init_with_path<P: AsRef<Path>>(path: P) -> Result<()> {
     teamtalk_sys::load(path.as_ref().to_str().ok_or(Error::InitFailed)?)
         .map_err(|_| Error::InitFailed)?;

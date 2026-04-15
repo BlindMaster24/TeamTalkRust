@@ -1,6 +1,7 @@
 use super::*;
 
 impl Router {
+    #[allow(clippy::too_many_lines)]
     pub fn dispatch(
         &mut self,
         client: &Client,
@@ -42,7 +43,7 @@ impl Router {
         let primary_prefix = self.primary_command_prefix();
 
         for route in &mut self.routes {
-            ctx.command = parsed_command.clone();
+            ctx.command.clone_from(&parsed_command);
 
             if has_command && matched_command && route.dialog_filter.is_some() {
                 continue;
@@ -56,16 +57,16 @@ impl Router {
                         if let Some(adjusted) = match_command_route(command, name) {
                             matched_command_path = true;
                             if let Some(pattern) = route.command_pattern.as_ref() {
-                                if !pattern.accepts(&adjusted.args) {
+                                if pattern.accepts(&adjusted.args) {
+                                    matched_command = true;
+                                    ctx.command = Some(adjusted);
+                                    true
+                                } else {
                                     if usage_hint.is_none() {
                                         usage_hint =
                                             Some(pattern.usage_with_prefix(primary_prefix));
                                     }
                                     false
-                                } else {
-                                    matched_command = true;
-                                    ctx.command = Some(adjusted);
-                                    true
                                 }
                             } else {
                                 matched_command = true;

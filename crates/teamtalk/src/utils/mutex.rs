@@ -9,18 +9,25 @@ impl<T> UnpoisonedMutex<T> {
     }
 
     #[doc(hidden)]
+    #[must_use = "the guard must be used to access the mutex data"]
     pub fn lock(&self) -> std::sync::MutexGuard<'_, T> {
-        self.0.lock().unwrap_or_else(|e| e.into_inner())
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     #[doc(hidden)]
+    #[must_use]
     pub fn get_mut(&mut self) -> &mut T {
         self.0.get_mut().unwrap_or_else(|e| e.into_inner())
     }
 
     #[doc(hidden)]
+    #[must_use]
     pub fn into_inner(self) -> T {
-        self.0.into_inner().unwrap_or_else(|e| e.into_inner())
+        self.0
+            .into_inner()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 

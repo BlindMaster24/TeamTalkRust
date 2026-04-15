@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Client, Cursor, DOCS_CAPI_DIR_NAME, DOCS_DIR_NAME, DOCS_MANIFEST_NAME, Path, PathBuf,
+    decompress, fs,
+};
 
 pub(super) fn download_and_extract(
     target_dir: &Path,
@@ -11,15 +14,9 @@ pub(super) fn download_and_extract(
     }
     fs::create_dir_all(&temp_dir)?;
     let url = if cfg!(windows) {
-        format!(
-            "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_win64.7z",
-            version, version
-        )
+        format!("https://bearware.dk/teamtalksdk/{version}/tt5sdk_{version}_win64.7z")
     } else {
-        format!(
-            "https://bearware.dk/teamtalksdk/{}/tt5sdk_{}_ubuntu22_x86_64.7z",
-            version, version
-        )
+        format!("https://bearware.dk/teamtalksdk/{version}/tt5sdk_{version}_ubuntu22_x86_64.7z")
     };
     let response = Client::builder()
         .timeout(std::time::Duration::from_secs(300))
@@ -186,9 +183,8 @@ pub(super) fn documentation_is_complete(sdk_dir: &Path) -> bool {
     if !docs_dir.is_dir() {
         return false;
     }
-    let manifest = match fs::read_to_string(docs_manifest_path(sdk_dir)) {
-        Ok(manifest) => manifest,
-        Err(_) => return false,
+    let Ok(manifest) = fs::read_to_string(docs_manifest_path(sdk_dir)) else {
+        return false;
     };
     let mut has_entries = false;
     for line in manifest.lines() {

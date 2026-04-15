@@ -7,6 +7,7 @@ mod dispatch;
 
 /// Event hooks for reacting to client activity.
 #[derive(Default)]
+#[allow(clippy::struct_field_names)]
 pub struct ClientHooks {
     on_event: Option<EventHook>,
     on_connect_success: Option<ClientHook>,

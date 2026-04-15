@@ -33,6 +33,7 @@ impl FnMiddleware {
         }
     }
 
+    #[must_use]
     pub fn with_after<F, A>(before: F, after: A) -> Self
     where
         F: FnMut(&mut super::Context<'_>) -> Result<HandlerResult> + Send + 'static,
@@ -121,6 +122,7 @@ pub struct RequireCommandPrefix {
 }
 
 impl RequireCommandPrefix {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(prefix: char) -> Self {
         Self { prefix }
     }
@@ -199,6 +201,7 @@ pub struct RequireClientRightsAny {
 }
 
 impl RequireClientRightsAny {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(rights: UserRights) -> Self {
         Self { rights }
     }
@@ -219,6 +222,7 @@ pub struct RequireClientRightsAll {
 }
 
 impl RequireClientRightsAll {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(rights: UserRights) -> Self {
         Self { rights }
     }
@@ -240,6 +244,7 @@ pub struct RateLimitBySource {
 }
 
 impl RateLimitBySource {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(period: Duration) -> Self {
         Self {
             period: period.max(Duration::from_millis(50)),

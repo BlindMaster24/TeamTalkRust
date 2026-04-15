@@ -28,14 +28,17 @@ pub struct CommandArgPattern {
 }
 
 impl CommandArgPattern {
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    #[must_use]
     pub fn required(&self) -> bool {
         self.required
     }
 
+    #[must_use]
     pub fn variadic(&self) -> bool {
         self.variadic
     }
@@ -67,26 +70,23 @@ impl CommandPattern {
                 });
             }
 
-            match parse_arg_token(token)? {
-                Some(arg) => {
-                    if optional_seen && arg.required {
-                        return Err(CommandPatternError::RequiredAfterOptional {
-                            token: token.to_owned(),
-                        });
-                    }
+            if let Some(arg) = parse_arg_token(token)? {
+                if optional_seen && arg.required {
+                    return Err(CommandPatternError::RequiredAfterOptional {
+                        token: token.to_owned(),
+                    });
+                }
 
-                    optional_seen |= !arg.required;
-                    variadic_seen = arg.variadic;
-                    args.push(arg);
+                optional_seen |= !arg.required;
+                variadic_seen = arg.variadic;
+                args.push(arg);
+            } else {
+                if !args.is_empty() {
+                    return Err(CommandPatternError::CommandTokenAfterArgs {
+                        token: token.to_owned(),
+                    });
                 }
-                None => {
-                    if !args.is_empty() {
-                        return Err(CommandPatternError::CommandTokenAfterArgs {
-                            token: token.to_owned(),
-                        });
-                    }
-                    command_parts.push(token.to_ascii_lowercase());
-                }
+                command_parts.push(token.to_ascii_lowercase());
             }
         }
 
@@ -101,18 +101,22 @@ impl CommandPattern {
         })
     }
 
+    #[must_use]
     pub fn command(&self) -> &str {
         &self.command
     }
 
+    #[must_use]
     pub fn command_parts(&self) -> &[String] {
         &self.command_parts
     }
 
+    #[must_use]
     pub fn args(&self) -> &[CommandArgPattern] {
         &self.args
     }
 
+    #[must_use]
     pub fn min_args(&self) -> usize {
         self.args.iter().filter(|arg| arg.required).count()
     }
@@ -125,6 +129,7 @@ impl CommandPattern {
         }
     }
 
+    #[must_use]
     pub fn accepts(&self, args: &[String]) -> bool {
         if args.len() < self.min_args() {
             return false;
@@ -136,12 +141,14 @@ impl CommandPattern {
         }
     }
 
+    #[must_use]
     pub fn usage_with_prefix(&self, prefix: char) -> String {
         let mut usage = self.usage();
         usage.insert(0, prefix);
         usage
     }
 
+    #[must_use]
     pub fn usage(&self) -> String {
         let mut usage = self.command.clone();
         for arg in &self.args {

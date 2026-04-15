@@ -29,13 +29,13 @@ impl From<ffi::SoundDevice> for SoundDevice {
                 .inputSampleRates
                 .iter()
                 .take_while(|&&r| r != 0)
-                .cloned()
+                .copied()
                 .collect(),
             output_sample_rates: d
                 .outputSampleRates
                 .iter()
                 .take_while(|&&r| r != 0)
-                .cloned()
+                .copied()
                 .collect(),
             default_sample_rate: d.nDefaultSampleRate,
             features: d.uSoundDeviceFeatures,
@@ -64,18 +64,22 @@ impl From<ffi::FileTransferStatus> for FileTransferStatus {
 }
 
 impl FileTransferStatus {
+    #[must_use]
     pub fn is_active(self) -> bool {
         matches!(self, Self::Active)
     }
 
+    #[must_use]
     pub fn is_finished(self) -> bool {
         matches!(self, Self::Finished)
     }
 
+    #[must_use]
     pub fn is_error(self) -> bool {
         matches!(self, Self::Error)
     }
 
+    #[must_use]
     pub fn is_terminal(self) -> bool {
         !self.is_active()
     }
@@ -119,6 +123,7 @@ impl FileTransfer {
         }
     }
     /// Returns transfer progress as a 0.0-1.0 fraction.
+    #[must_use]
     pub fn progress(&self) -> f32 {
         if self.size == 0 {
             0.0
@@ -128,16 +133,19 @@ impl FileTransfer {
     }
 
     /// Returns remaining bytes to transfer.
+    #[must_use]
     pub fn remaining_bytes(&self) -> i64 {
         self.size.saturating_sub(self.transferred)
     }
 
     /// Returns whether the transfer reached a terminal state.
+    #[must_use]
     pub fn is_terminal(&self) -> bool {
         self.status.is_terminal()
     }
 
     /// Returns whether the transfer finished successfully.
+    #[must_use]
     pub fn is_finished(&self) -> bool {
         self.status.is_finished()
     }

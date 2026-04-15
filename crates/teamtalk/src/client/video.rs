@@ -34,10 +34,12 @@ pub struct VideoFrameGuard<'a> {
 }
 
 impl VideoFrameGuard<'_> {
+    #[must_use]
     pub fn frame(&self) -> &ffi::VideoFrame {
         unsafe { &*self.ptr }
     }
 
+    #[must_use]
     pub fn as_ptr(&self) -> *mut ffi::VideoFrame {
         self.ptr
     }
@@ -48,9 +50,9 @@ impl Client {
     pub fn get_video_capture_devices(&self) -> Vec<VideoCaptureDevice> {
         let mut count: i32 = 0;
         unsafe {
-            ffi::api().TT_GetVideoCaptureDevices(std::ptr::null_mut(), &mut count);
+            ffi::api().TT_GetVideoCaptureDevices(std::ptr::null_mut(), &raw mut count);
             let mut devices = vec![std::mem::zeroed::<ffi::VideoCaptureDevice>(); count as usize];
-            if ffi::api().TT_GetVideoCaptureDevices(devices.as_mut_ptr(), &mut count) == 1 {
+            if ffi::api().TT_GetVideoCaptureDevices(devices.as_mut_ptr(), &raw mut count) == 1 {
                 devices.into_iter().map(VideoCaptureDevice::from).collect()
             } else {
                 vec![]
@@ -62,7 +64,9 @@ impl Client {
     pub fn init_video_capture_device(&self, device_id: &str, format: &VideoFormat) -> bool {
         let id = crate::utils::ToTT::tt(device_id);
         let raw_fmt = format.to_ffi();
-        unsafe { ffi::api().TT_InitVideoCaptureDevice(self.ptr.0, id.as_ptr(), &raw_fmt) == 1 }
+        unsafe {
+            ffi::api().TT_InitVideoCaptureDevice(self.ptr.0, id.as_ptr(), &raw const raw_fmt) == 1
+        }
     }
 
     /// Closes the active video capture device.

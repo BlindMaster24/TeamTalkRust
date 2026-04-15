@@ -66,7 +66,7 @@ impl ReconnectState {
             self.handler.mark_disconnected();
             if let Some(client) = client {
                 let params = self.params.as_params();
-                client.handle_reconnect(&params, &mut self.handler);
+                let _ = client.handle_reconnect(&params, &mut self.handler);
             }
         }
     }

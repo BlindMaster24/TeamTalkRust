@@ -33,7 +33,7 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, _)) = client.poll(100)
             && matches!(event, Event::ConnectSuccess)
         {
-            client.login_remember(&nickname, &username, &password, &client_name);
+            let _ = client.login_remember(&nickname, &username, &password, &client_name);
         }
     }
 }

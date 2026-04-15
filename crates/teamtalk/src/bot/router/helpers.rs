@@ -4,7 +4,7 @@ use crate::events::Error;
 pub(super) fn normalize_command_name(name: impl AsRef<str>) -> String {
     name.as_ref()
         .split_whitespace()
-        .map(|part| part.to_ascii_lowercase())
+        .map(str::to_ascii_lowercase)
         .collect::<Vec<_>>()
         .join(" ")
 }
@@ -50,7 +50,7 @@ pub(super) fn match_command_route(command: &Command, route_name: &str) -> Option
     })
 }
 
-pub(super) fn pattern_error(err: CommandPatternError) -> Error {
+pub(super) fn pattern_error(err: &CommandPatternError) -> Error {
     Error::IoError {
         message: err.to_string(),
     }

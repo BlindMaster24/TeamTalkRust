@@ -1,4 +1,4 @@
-use super::*;
+use super::{Client, ffi};
 
 impl Client {
     /// Sends a debug input tone to the SDK.
@@ -16,16 +16,17 @@ impl Client {
                 info.szFileName.as_mut_ptr(),
                 p.len().min(511),
             );
-            ffi::api().TT_DBG_WriteAudioFileTone(&info, freq) == 1
+            ffi::api().TT_DBG_WriteAudioFileTone(&raw const info, freq) == 1
         }
     }
 
-    /// Returns the SDK-reported size for a TeamTalk type.
+    /// Returns the SDK-reported size for a `TeamTalk` type.
+    #[must_use]
     pub fn dbg_sizeof(n_type: ffi::TTType) -> i32 {
         unsafe { ffi::api().TT_DBG_SIZEOF(n_type) }
     }
 
-    /// Returns a data pointer for a TeamTalk message.
+    /// Returns a data pointer for a `TeamTalk` message.
     pub fn dbg_get_data_ptr(msg: &mut ffi::TTMessage) -> *mut std::ffi::c_void {
         unsafe { ffi::api().TT_DBG_GETDATAPTR(msg) }
     }

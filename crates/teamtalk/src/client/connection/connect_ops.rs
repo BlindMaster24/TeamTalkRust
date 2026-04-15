@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Client, ConnectParams, ConnectParamsOwned, ConnectionState, Error, ReconnectHandler,
+    ensure_connect_not_busy, ffi,
+};
 
 impl Client {
     fn disconnect_connect_barrier_if_needed(&self) {
@@ -46,7 +49,7 @@ impl Client {
         self.connect_remember(&params.host, params.tcp, params.udp, params.encrypted)
     }
 
-    /// Connects to a TeamTalk server.
+    /// Connects to a `TeamTalk` server.
     pub fn connect(
         &self,
         host: &str,
@@ -74,12 +77,14 @@ impl Client {
     }
 
     /// Returns true when the client is connected.
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         let flags = self.backend().get_flags(self.ptr.0);
         (flags & ffi::ClientFlag::CLIENT_CONNECTED as u32) != 0
     }
 
     /// Returns true when the client is attempting to connect.
+    #[must_use]
     pub fn is_connecting(&self) -> bool {
         let flags = self.backend().get_flags(self.ptr.0);
         (flags & ffi::ClientFlag::CLIENT_CONNECTING as u32) != 0
@@ -90,6 +95,7 @@ impl Client {
     }
 
     /// Handles reconnect logic using provided parameters.
+    #[must_use]
     pub fn handle_reconnect(&self, params: &ConnectParams, handler: &mut ReconnectHandler) -> bool {
         if !handler.can_attempt() {
             return true;
@@ -104,7 +110,7 @@ impl Client {
         true
     }
 
-    /// Reconnects to a TeamTalk server using a disconnect barrier first.
+    /// Reconnects to a `TeamTalk` server using a disconnect barrier first.
     pub fn reconnect(
         &self,
         host: &str,

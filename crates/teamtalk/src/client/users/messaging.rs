@@ -1,12 +1,17 @@
-use super::*;
+use super::{
+    ChannelId, Client, CommandId, MessageTarget, SendTextOptions, TT_TEXT_MAX_PAYLOAD, ToTT,
+    UserId, can_issue_logged_in_command, split_text_chunks, text_message_for_target,
+};
 
 impl Client {
     /// Sends a text message to a target.
+    #[must_use]
     pub fn send_text<T: Into<MessageTarget>>(&self, target: T, text: &str) -> CommandId {
         self.send_text_with_options(target, text, SendTextOptions::default())
     }
 
     /// Sends a text message to a target using explicit options.
+    #[must_use]
     pub fn send_text_with_options<T: Into<MessageTarget>>(
         &self,
         target: T,
@@ -23,7 +28,7 @@ impl Client {
 
         for (index, chunk) in chunks.into_iter().enumerate() {
             let mut msg = text_message_for_target(target);
-            msg.bMore = if index + 1 < total_chunks { 1 } else { 0 };
+            msg.bMore = i32::from(index + 1 < total_chunks);
             let tt = chunk.tt();
             unsafe {
                 let len = tt.len().min(TT_TEXT_MAX_PAYLOAD);
@@ -52,16 +57,19 @@ impl Client {
     }
 
     /// Sends a text message to a user.
+    #[must_use]
     pub fn send_to_user(&self, user_id: UserId, text: &str) -> CommandId {
         self.send_text(MessageTarget::User(user_id), text)
     }
 
     /// Sends a text message to a channel.
+    #[must_use]
     pub fn send_to_channel(&self, channel_id: ChannelId, text: &str) -> CommandId {
         self.send_text(MessageTarget::Channel(channel_id), text)
     }
 
     /// Sends a text message to all users.
+    #[must_use]
     pub fn send_to_all(&self, text: &str) -> CommandId {
         self.send_text(MessageTarget::Broadcast, text)
     }

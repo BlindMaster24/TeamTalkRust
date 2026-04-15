@@ -31,31 +31,37 @@ pub struct EventContext<'a> {
 
 impl<'a> EventContext<'a> {
     /// Returns the event.
+    #[must_use]
     pub fn event(&self) -> Event {
         self.event
     }
 
     /// Returns the raw message.
+    #[must_use]
     pub fn message(&self) -> &'a Message {
         self.message
     }
 
     /// Returns the client which emitted the event.
+    #[must_use]
     pub fn client(&self) -> &'a Client {
         self.client
     }
 
     /// Returns the user payload if present.
+    #[must_use]
     pub fn user(&self) -> Option<User> {
         self.message.user()
     }
 
     /// Returns the text payload if present.
+    #[must_use]
     pub fn text(&self) -> Option<TextMessage> {
         self.message.text()
     }
 
     /// Returns the source user id if present.
+    #[must_use]
     pub fn user_id(&self) -> Option<UserId> {
         self.message
             .user()
@@ -64,6 +70,7 @@ impl<'a> EventContext<'a> {
     }
 
     /// Returns the channel id if present.
+    #[must_use]
     pub fn channel_id(&self) -> Option<ChannelId> {
         self.message
             .user()
@@ -135,7 +142,7 @@ impl EventBus {
     }
 
     pub(crate) fn dispatch(&mut self, client: &Client, event: Event, message: &Message) {
-        for sub in self.subscriptions.iter_mut() {
+        for sub in &mut self.subscriptions {
             if !sub.matches(client, event, message) {
                 continue;
             }
@@ -195,26 +202,19 @@ impl Subscription {
         if let Some(ref username) = self.username {
             let matches_username = text
                 .as_ref()
-                .map(|text| text.from_username == *username)
-                .unwrap_or(false);
+                .is_some_and(|text| text.from_username == *username);
             if !matches_username {
                 return false;
             }
         }
         if let Some(ref nickname) = self.nickname {
-            let matches_nickname = user
-                .as_ref()
-                .map(|u| u.nickname == *nickname)
-                .unwrap_or(false);
+            let matches_nickname = user.as_ref().is_some_and(|u| u.nickname == *nickname);
             if !matches_nickname {
                 return false;
             }
         }
         if let Some(text_type) = self.text_type {
-            let matches_type = text
-                .as_ref()
-                .map(|text| text.msg_type == text_type)
-                .unwrap_or(false);
+            let matches_type = text.as_ref().is_some_and(|text| text.msg_type == text_type);
             if !matches_type {
                 return false;
             }
@@ -262,42 +262,49 @@ impl<'a> SubscriptionBuilder<'a> {
     }
 
     /// Filters by a specific user id.
+    #[must_use]
     pub fn filter_user(mut self, user_id: UserId) -> Self {
         self.user_id = Some(user_id);
         self
     }
 
     /// Filters by a specific channel id.
+    #[must_use]
     pub fn filter_channel(mut self, channel_id: ChannelId) -> Self {
         self.channel_id = Some(channel_id);
         self
     }
 
     /// Filters by a text message type.
+    #[must_use]
     pub fn filter_text_type(mut self, msg_type: ffi::TextMsgType) -> Self {
         self.text_type = Some(msg_type);
         self
     }
 
     /// Filters by the sender username in text events.
+    #[must_use]
     pub fn filter_username(mut self, username: impl Into<String>) -> Self {
         self.username = Some(username.into());
         self
     }
 
     /// Filters by nickname (user events).
+    #[must_use]
     pub fn filter_nickname(mut self, nickname: impl Into<String>) -> Self {
         self.nickname = Some(nickname.into());
         self
     }
 
     /// Attaches the subscription to a group id for bulk removal.
+    #[must_use]
     pub fn group(mut self, group: impl Into<String>) -> Self {
         self.group = Some(EventSubscriptionGroup::new(group.into()));
         self
     }
 
     /// Filters by a custom predicate.
+    #[must_use]
     pub fn filter(mut self, predicate: impl FnMut(&EventContext) -> bool + Send + 'static) -> Self {
         self.predicate = Some(Box::new(predicate));
         self

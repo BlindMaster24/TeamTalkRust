@@ -25,6 +25,7 @@ pub struct Channel {
 
 impl Channel {
     /// Creates a channel builder with a name.
+    #[must_use]
     pub fn builder(name: &str) -> ChannelBuilder {
         ChannelBuilder::new(name)
     }
@@ -37,6 +38,7 @@ pub struct ChannelBuilder {
 
 impl ChannelBuilder {
     /// Creates a new builder with the channel name.
+    #[must_use]
     pub fn new(name: &str) -> Self {
         Self {
             inner: Channel {
@@ -61,36 +63,42 @@ impl ChannelBuilder {
     }
 
     /// Sets the parent channel id.
+    #[must_use]
     pub fn parent(mut self, id: ChannelId) -> Self {
         self.inner.parent_id = id;
         self
     }
 
     /// Sets the channel topic.
+    #[must_use]
     pub fn topic(mut self, topic: &str) -> Self {
         self.inner.topic = topic.to_string();
         self
     }
 
     /// Sets the channel type flags.
+    #[must_use]
     pub fn channel_type(mut self, t: ChannelType) -> Self {
         self.inner.channel_type = t;
         self
     }
 
     /// Sets the maximum number of users.
+    #[must_use]
     pub fn max_users(mut self, max: i32) -> Self {
         self.inner.max_users = max;
         self
     }
 
     /// Sets the audio codec configuration.
+    #[must_use]
     pub fn codec(mut self, codec: AudioCodec) -> Self {
         self.inner.audio_codec = codec;
         self
     }
 
     /// Builds the channel.
+    #[must_use]
     pub fn build(self) -> Channel {
         self.inner
     }
@@ -134,7 +142,8 @@ impl From<ffi::Channel> for Channel {
 }
 
 impl Channel {
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::Channel {
         let mut raw = ffi::Channel {
             nChannelID: self.id.raw(),

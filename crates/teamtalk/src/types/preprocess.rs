@@ -35,7 +35,8 @@ impl From<ffi::SpeexDSP> for SpeexDSP {
 
 impl SpeexDSP {
     /// Creates new Speex DSP preprocessing settings.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::similar_names)]
+    #[must_use]
     pub fn new(
         enable_agc: bool,
         gain_level: i32,
@@ -61,17 +62,18 @@ impl SpeexDSP {
             echo_suppress_active,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::SpeexDSP {
         ffi::SpeexDSP {
-            bEnableAGC: self.enable_agc as i32,
+            bEnableAGC: i32::from(self.enable_agc),
             nGainLevel: self.gain_level,
             nMaxIncDBSec: self.max_inc_db_sec,
             nMaxDecDBSec: self.max_dec_db_sec,
             nMaxGainDB: self.max_gain_db,
-            bEnableDenoise: self.enable_denoise as i32,
+            bEnableDenoise: i32::from(self.enable_denoise),
             nMaxNoiseSuppressDB: self.max_noise_suppress_db,
-            bEnableEchoCancellation: self.enable_aec as i32,
+            bEnableEchoCancellation: i32::from(self.enable_aec),
             nEchoSuppress: self.echo_suppress,
             nEchoSuppressActive: self.echo_suppress_active,
         }
@@ -107,6 +109,7 @@ impl From<ffi::WebRTCAudioPreprocessor> for WebRTCConfig {
 
 impl WebRTCConfig {
     /// Creates new WebRTC audio preprocessing settings.
+    #[must_use]
     pub fn new(
         preamplifier_enable: bool,
         preamplifier_gain: f32,
@@ -126,15 +129,16 @@ impl WebRTCConfig {
             agc2_gain_db,
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::WebRTCAudioPreprocessor {
         let mut raw = ffi::WebRTCAudioPreprocessor::default();
-        raw.preamplifier.bEnable = self.preamplifier_enable as i32;
+        raw.preamplifier.bEnable = i32::from(self.preamplifier_enable);
         raw.preamplifier.fFixedGainFactor = self.preamplifier_gain;
-        raw.echocanceller.bEnable = self.aec_enable as i32;
-        raw.noisesuppression.bEnable = self.ns_enable as i32;
+        raw.echocanceller.bEnable = i32::from(self.aec_enable);
+        raw.noisesuppression.bEnable = i32::from(self.ns_enable);
         raw.noisesuppression.nLevel = self.ns_level;
-        raw.gaincontroller2.bEnable = self.agc2_enable as i32;
+        raw.gaincontroller2.bEnable = i32::from(self.agc2_enable);
         raw.gaincontroller2.fixeddigital.fGainDB = self.agc2_gain_db;
         raw
     }
@@ -164,7 +168,8 @@ impl From<ffi::AudioPreprocessor> for AudioPreprocessor {
 }
 
 impl AudioPreprocessor {
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::AudioPreprocessor {
         let mut raw = ffi::AudioPreprocessor::default();
         match self {

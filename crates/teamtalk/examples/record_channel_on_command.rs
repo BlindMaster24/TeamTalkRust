@@ -52,22 +52,22 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, msg)) = client.poll(100) {
             match event {
                 Event::ConnectSuccess => {
-                    client.login(&nickname, &username, &password, &client_name);
+                    let _ = client.login(&nickname, &username, &password, &client_name);
                 }
                 Event::MySelfLoggedIn => {
                     my_id = client.my_id();
-                    client.join_channel(root_channel, "");
+                    let _ = client.join_channel(root_channel, "");
                 }
                 Event::UserJoined => {
                     if let Some(user) = msg.user()
                         && user.channel_id == root_channel
                     {
                         if user.id != my_id {
-                            client.subscribe(user.id, Subscriptions::all());
+                            let _ = client.subscribe(user.id, Subscriptions::all());
                         } else {
                             for other in client.get_channel_users(root_channel) {
                                 if other.id != my_id {
-                                    client.subscribe(other.id, Subscriptions::all());
+                                    let _ = client.subscribe(other.id, Subscriptions::all());
                                 }
                             }
                         }
@@ -75,7 +75,7 @@ fn main() -> teamtalk::Result<()> {
                 }
                 Event::UserLeft => {
                     if let Some(user) = msg.user() {
-                        client.unsubscribe_all_from_user(user.id);
+                        let _ = client.unsubscribe_all_from_user(user.id);
                     }
                 }
                 Event::TextMessage => {
@@ -97,9 +97,10 @@ fn main() -> teamtalk::Result<()> {
                                     active_path = Some(path.clone());
                                     let notice =
                                         format!("recording started: {}", path.to_string_lossy());
-                                    client.send_to_channel(root_channel, &notice);
+                                    let _ = client.send_to_channel(root_channel, &notice);
                                 } else {
-                                    client.send_to_channel(root_channel, "recording failed");
+                                    let _ =
+                                        client.send_to_channel(root_channel, "recording failed");
                                 }
                             } else {
                                 let path_text = active_path
@@ -107,7 +108,7 @@ fn main() -> teamtalk::Result<()> {
                                     .map(|p| p.to_string_lossy().to_string())
                                     .unwrap_or_else(|| "recording".to_string());
                                 let notice = format!("recording already active: {}", path_text);
-                                client.send_to_channel(root_channel, &notice);
+                                let _ = client.send_to_channel(root_channel, &notice);
                             }
                         } else if command == "/stop" {
                             if recording {
@@ -124,9 +125,10 @@ fn main() -> teamtalk::Result<()> {
                                 } else {
                                     notice = String::from("recording stop failed");
                                 }
-                                client.send_to_channel(root_channel, &notice);
+                                let _ = client.send_to_channel(root_channel, &notice);
                             } else {
-                                client.send_to_channel(root_channel, "recording not active");
+                                let _ =
+                                    client.send_to_channel(root_channel, "recording not active");
                             }
                         }
                     }

@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Client, ConnectParamsOwned, ReconnectConfig, ReconnectHandler, ReconnectPhaseTimeouts,
+    ReconnectWorkflowConfig, dedupe_events, reset_auto_recovery_handlers, validate_phase_timeouts,
+};
 
 impl Client {
     /// Enables automatic reconnection using the provided config.

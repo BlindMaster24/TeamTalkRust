@@ -82,7 +82,7 @@ fn fetch_remote_sdk_version() -> Result<String, Box<dyn std::error::Error>> {
     let body = response.text()?;
     let version = body.trim();
     if version.is_empty() {
-        return Err(format!("Remote SDK_VERSION.txt is empty at {}", url).into());
+        return Err(format!("Remote SDK_VERSION.txt is empty at {url}").into());
     }
     Ok(version.to_string())
 }
@@ -151,8 +151,7 @@ pub(super) fn resolve_requested_version(
                         loader_log(
                             LoaderLogLevel::Warn,
                             &format!(
-                                "Failed to fetch remote SDK_VERSION.txt: {}. Using installed SDK: {}",
-                                err, file_version
+                                "Failed to fetch remote SDK_VERSION.txt: {err}. Using installed SDK: {file_version}"
                             ),
                         );
                         return Ok(RequestedVersion {
@@ -161,8 +160,7 @@ pub(super) fn resolve_requested_version(
                         });
                     }
                     return Err(format!(
-                        "Failed to fetch remote SDK_VERSION.txt and no installed SDK is available: {}",
-                        err
+                        "Failed to fetch remote SDK_VERSION.txt and no installed SDK is available: {err}"
                     )
                     .into());
                 }

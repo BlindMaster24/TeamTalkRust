@@ -8,6 +8,7 @@ impl Client {
     ///
     /// Returns `false` when the client was created with `Client::new()` instead of
     /// `Client::with_hwnd()`.
+    #[must_use]
     pub fn register_hotkey(&self, id: HotkeyId, vk_codes: &[i32]) -> bool {
         if !self.is_hwnd_client() {
             return false;
@@ -25,6 +26,7 @@ impl Client {
     /// Unregisters a global hotkey.
     ///
     /// Returns `false` when the client is not HWND-backed.
+    #[must_use]
     pub fn unregister_hotkey(&self, id: HotkeyId) -> bool {
         if !self.is_hwnd_client() {
             return false;
@@ -35,6 +37,7 @@ impl Client {
     /// Checks if a hotkey is active.
     ///
     /// Returns `false` when the client is not HWND-backed.
+    #[must_use]
     pub fn is_hotkey_active(&self, id: HotkeyId) -> bool {
         if !self.is_hwnd_client() {
             return false;
@@ -49,6 +52,7 @@ impl Client {
     /// - `msg` must be a valid message ID routed to `hwnd`.
     /// - The window's message loop must remain alive while the hook is installed.
     #[cfg(windows)]
+    #[must_use]
     pub unsafe fn install_hotkey_test_hook(&self, hwnd: ffi::HWND, msg: u32) -> bool {
         if !self.is_hwnd_client() {
             return false;
@@ -59,6 +63,7 @@ impl Client {
     /// Removes the hotkey test hook.
     ///
     /// Returns `false` when the client is not HWND-backed.
+    #[must_use]
     pub fn remove_hotkey_test_hook(&self) -> bool {
         if !self.is_hwnd_client() {
             return false;
@@ -67,6 +72,7 @@ impl Client {
     }
 
     /// Returns the string representation of a key.
+    #[must_use]
     pub fn get_key_string(&self, vk_code: i32) -> String {
         use crate::types::TT_STRLEN;
         use crate::utils::strings::tt_buf;

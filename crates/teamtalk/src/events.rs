@@ -1,4 +1,4 @@
-//! Event and error types emitted by the TeamTalk client.
+//! Event and error types emitted by the `TeamTalk` client.
 use crate::types::ChannelId;
 use std::time::Duration;
 use teamtalk_sys as ffi;
@@ -189,6 +189,7 @@ impl From<ffi::ClientEvent> for Event {
 
 impl Event {
     /// Returns true when the event indicates a reconnect should be attempted.
+    #[must_use]
     pub fn is_reconnect_needed(&self) -> bool {
         matches!(
             self,
@@ -198,6 +199,7 @@ impl Event {
 
     /// Returns true when the event indicates a reconnect should be attempted,
     /// including any additional custom events.
+    #[must_use]
     pub fn is_reconnect_needed_with(&self, extra: &[Event]) -> bool {
         if self.is_reconnect_needed() {
             return true;
@@ -211,7 +213,7 @@ impl Event {
     }
 }
 
-/// Error type used across TeamTalk operations.
+/// Error type used across `TeamTalk` operations.
 #[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -237,5 +239,5 @@ pub enum Error {
     Timeout,
 }
 
-/// Convenience result type for TeamTalk operations.
+/// Convenience result type for `TeamTalk` operations.
 pub type Result<T> = std::result::Result<T, Error>;

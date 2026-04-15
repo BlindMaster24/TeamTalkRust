@@ -27,6 +27,7 @@ pub struct AsyncBotBuilder {
 }
 
 impl AsyncBotBuilder {
+    #[allow(clippy::must_use_candidate)]
     pub fn new(client: AsyncClient) -> Self {
         Self {
             client,
@@ -37,31 +38,37 @@ impl AsyncBotBuilder {
         }
     }
 
+    #[must_use]
     pub fn with_router(mut self, router: Router) -> Self {
         self.router = router;
         self
     }
 
+    #[must_use]
     pub fn with_scheduler(mut self, scheduler: Scheduler) -> Self {
         self.scheduler = scheduler;
         self
     }
 
+    #[must_use]
     pub fn with_state_store(mut self, store: impl StateStore + 'static) -> Self {
         self.state = Box::new(store);
         self
     }
 
+    #[must_use]
     pub fn with_boxed_state_store(mut self, store: Box<dyn StateStore>) -> Self {
         self.state = store;
         self
     }
 
+    #[must_use]
     pub fn with_config(mut self, config: AsyncBotConfig) -> Self {
         self.config = config;
         self
     }
 
+    #[must_use]
     pub fn build(self) -> AsyncBot {
         AsyncBot {
             client: self.client,
@@ -75,10 +82,12 @@ impl AsyncBotBuilder {
 }
 
 impl AsyncBot {
+    #[must_use]
     pub fn builder(client: AsyncClient) -> AsyncBotBuilder {
         AsyncBotBuilder::new(client)
     }
 
+    #[must_use]
     pub fn stop_handle(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.stop)
     }

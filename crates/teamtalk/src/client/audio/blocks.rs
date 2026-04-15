@@ -1,18 +1,19 @@
-use super::*;
+use super::{
+    Arc, AudioBlockSink, AudioBlockSubscription, AudioBlockView, AudioPreprocessor, Client, Event,
+    Mutex, SoundDeviceId, UserId, ffi,
+};
 
 impl Client {
+    #[must_use]
     pub fn enable_audio_block_event(&self, user_id: UserId, types: u32, enable: bool) -> bool {
         unsafe {
-            ffi::api().TT_EnableAudioBlockEvent(
-                self.ptr.0,
-                user_id.raw(),
-                types,
-                if enable { 1 } else { 0 },
-            ) == 1
+            ffi::api().TT_EnableAudioBlockEvent(self.ptr.0, user_id.raw(), types, i32::from(enable))
+                == 1
         }
     }
 
     /// Sets jitter control for a user.
+    #[must_use]
     pub fn set_user_jitter_control(&self, user_id: UserId, delay: i32) -> bool {
         let mut cfg = unsafe { std::mem::zeroed::<ffi::JitterConfig>() };
         cfg.nFixedDelayMSec = delay;
@@ -21,12 +22,13 @@ impl Client {
                 self.ptr.0,
                 user_id.raw(),
                 ffi::StreamType::STREAMTYPE_VOICE,
-                &cfg,
+                &raw const cfg,
             ) == 1
         }
     }
 
     /// Enables audio block events with a custom format.
+    #[must_use]
     pub fn enable_audio_block_event_ex(
         &self,
         user_id: UserId,
@@ -41,12 +43,13 @@ impl Client {
                 user_id.raw(),
                 types,
                 fmt_ptr,
-                if enable { 1 } else { 0 },
+                i32::from(enable),
             ) == 1
         }
     }
 
     /// Subscribes to audio blocks for a user and streams them into the sink.
+    #[must_use]
     pub fn stream_audio_blocks<S>(
         &self,
         user_id: UserId,
@@ -64,6 +67,7 @@ impl Client {
     }
 
     /// Subscribes to audio blocks with a custom format.
+    #[must_use]
     pub fn stream_audio_blocks_ex<S>(
         &self,
         user_id: UserId,
@@ -83,6 +87,7 @@ impl Client {
 
     #[allow(clippy::too_many_arguments)]
     /// Starts a sound loopback test with additional options.
+    #[must_use]
     pub fn start_sound_loopback_test_ex(
         &self,
         in_id: SoundDeviceId,
@@ -93,7 +98,7 @@ impl Client {
         preprocessor: Option<&AudioPreprocessor>,
         effects: Option<&ffi::SoundDeviceEffects>,
     ) -> *mut ffi::TTSoundLoop {
-        let prep_raw = preprocessor.map(|p| p.to_ffi());
+        let prep_raw = preprocessor.map(crate::types::preprocess::AudioPreprocessor::to_ffi);
         let prep_ptr = prep_raw.as_ref().map_or(std::ptr::null(), |p| p);
         let eff_ptr = effects.map_or(std::ptr::null(), |e| e);
         unsafe {
@@ -102,7 +107,7 @@ impl Client {
                 out_id.raw(),
                 rate,
                 chans,
-                if duplex { 1 } else { 0 },
+                i32::from(duplex),
                 prep_ptr,
                 eff_ptr,
             )
@@ -117,7 +122,7 @@ impl Client {
                 self.ptr.0,
                 user_id.raw(),
                 ffi::StreamType::STREAMTYPE_VOICE,
-                &mut raw,
+                &raw mut raw,
             ) == 1
         } {
             Some(crate::types::JitterConfig::from(raw))
@@ -139,6 +144,7 @@ impl Client {
     }
 
     /// Inserts an audio block into the mixer.
+    #[must_use]
     pub fn insert_audio_block(&self, block: &ffi::AudioBlock) -> bool {
         unsafe { ffi::api().TT_InsertAudioBlock(self.ptr.0, block) == 1 }
     }
@@ -149,6 +155,7 @@ impl Client {
     /// - `block` must be a pointer returned by `acquire_user_audio_block`.
     /// - The block must not be released more than once.
     /// - The pointer must not be used after release.
+    #[must_use]
     pub unsafe fn release_user_audio_block(&self, block: *mut ffi::AudioBlock) -> bool {
         if block.is_null() {
             return false;
@@ -157,6 +164,7 @@ impl Client {
     }
 
     /// Sets a user's stream volume.
+    #[must_use]
     pub fn set_user_volume(
         &self,
         user_id: UserId,
@@ -167,6 +175,7 @@ impl Client {
     }
 
     /// Starts a sound loopback test.
+    #[must_use]
     pub fn start_sound_loopback_test(
         &self,
         in_id: SoundDeviceId,
@@ -181,7 +190,7 @@ impl Client {
                 out_id.raw(),
                 rate,
                 chans,
-                if duplex { 1 } else { 0 },
+                i32::from(duplex),
                 std::ptr::null(),
             )
         }
@@ -192,6 +201,7 @@ impl Client {
     /// # Safety
     /// - `loopback` must be a pointer returned by `start_sound_loopback_test`.
     /// - The handle must not be closed more than once.
+    #[must_use]
     pub unsafe fn close_sound_loopback_test(&self, loopback: *mut ffi::TTSoundLoop) -> bool {
         if loopback.is_null() {
             return false;

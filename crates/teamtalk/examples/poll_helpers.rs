@@ -27,9 +27,9 @@ fn main() -> teamtalk::Result<()> {
     client.connect(&host, tcp, udp, false)?;
 
     let _ = client.wait_for(Event::ConnectSuccess, 5_000);
-    client.login(&nickname, &username, &password, &client_name);
+    let _ = client.login(&nickname, &username, &password, &client_name);
     let _ = client.wait_for_predicate(5_000, |event, _| matches!(event, Event::MySelfLoggedIn));
-    client.join_channel(root_channel, "");
+    let _ = client.join_channel(root_channel, "");
     let _ = client.wait_for_predicate(5_000, |event, msg| {
         matches!(event, Event::UserJoined) && msg.user().is_some()
     });

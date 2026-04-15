@@ -35,10 +35,10 @@ fn main() -> teamtalk::Result<()> {
 
         match client.connection_state() {
             ConnectionState::Connected => {
-                client.login(&nickname, &username, &password, &client_name);
+                let _ = client.login(&nickname, &username, &password, &client_name);
             }
             ConnectionState::LoggedIn => {
-                client.join_channel(root_channel, "");
+                let _ = client.join_channel(root_channel, "");
             }
             ConnectionState::Joined(_) => {}
             _ => {}

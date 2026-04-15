@@ -1,4 +1,4 @@
-use super::*;
+use super::{Client, CommandId, ffi, validate_client_keep_alive};
 
 impl Client {
     pub fn set_client_keep_alive(
@@ -36,7 +36,7 @@ impl Client {
     /// Returns client keep-alive parameters.
     pub fn get_client_keep_alive(&self) -> Option<crate::types::ClientKeepAlive> {
         let mut raw = unsafe { std::mem::zeroed::<ffi::ClientKeepAlive>() };
-        if unsafe { ffi::api().TT_GetClientKeepAlive(self.ptr.0, &mut raw) } == 1 {
+        if unsafe { ffi::api().TT_GetClientKeepAlive(self.ptr.0, &raw mut raw) } == 1 {
             Some(crate::types::ClientKeepAlive::from(raw))
         } else {
             None

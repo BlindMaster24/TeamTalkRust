@@ -1,6 +1,7 @@
-use super::*;
+use super::{ChannelId, Client, CommandId, ToTT, UserId, can_issue_logged_in_command, ffi};
 
 impl Client {
+    #[must_use]
     pub fn channel_op(&self, user_id: UserId, channel_id: ChannelId, make_op: bool) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -15,6 +16,7 @@ impl Client {
         })
     }
 
+    #[must_use]
     pub fn kick_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -23,6 +25,7 @@ impl Client {
     }
 
     /// Bans a user from a channel.
+    #[must_use]
     pub fn ban_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -31,6 +34,7 @@ impl Client {
     }
 
     /// Bans a user with custom ban types.
+    #[must_use]
     pub fn ban_user_ex(&self, user_id: UserId, ban_types: u32) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -39,6 +43,7 @@ impl Client {
     }
 
     /// Removes a ban by IP address.
+    #[must_use]
     pub fn unban_user(&self, ip: &str, channel_id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -49,6 +54,7 @@ impl Client {
     }
 
     /// Adds a user to the ban list.
+    #[must_use]
     pub fn ban(&self, banned_user: &crate::types::BannedUser) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -57,6 +63,7 @@ impl Client {
     }
 
     /// Removes a user from the ban list.
+    #[must_use]
     pub fn unban_ex(&self, banned_user: &crate::types::BannedUser) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -64,6 +71,7 @@ impl Client {
         CommandId(unsafe { ffi::api().TT_DoUnBanUserEx(self.ptr.0, &banned_user.to_ffi()) })
     }
 
+    #[must_use]
     pub fn channel_op_ex(
         &self,
         user_id: UserId,
@@ -80,11 +88,12 @@ impl Client {
                 user_id.raw(),
                 channel_id.raw(),
                 password.tt().as_ptr(),
-                if make_op { 1 } else { 0 },
+                i32::from(make_op),
             )
         })
     }
 
+    #[must_use]
     pub fn set_channel_operator(
         &self,
         user_id: UserId,
@@ -94,6 +103,7 @@ impl Client {
         self.channel_op(user_id, channel_id, make_op)
     }
 
+    #[must_use]
     pub fn set_user_operator(
         &self,
         user_id: UserId,
@@ -103,6 +113,7 @@ impl Client {
         self.set_channel_operator(user_id, channel_id, make_op)
     }
 
+    #[must_use]
     pub fn set_user_operator_ex(
         &self,
         user_id: UserId,
@@ -114,21 +125,25 @@ impl Client {
     }
 
     /// Grants operator status to a user in a channel.
+    #[must_use]
     pub fn op_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         self.set_channel_operator(user_id, channel_id, true)
     }
 
     /// Revokes operator status from a user in a channel.
+    #[must_use]
     pub fn deop_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         self.set_channel_operator(user_id, channel_id, false)
     }
 
     /// Grants operator status to a user in a channel (with password).
+    #[must_use]
     pub fn op_user_ex(&self, user_id: UserId, channel_id: ChannelId, password: &str) -> CommandId {
         self.set_user_operator_ex(user_id, channel_id, password, true)
     }
 
     /// Revokes operator status from a user in a channel (with password).
+    #[must_use]
     pub fn deop_user_ex(
         &self,
         user_id: UserId,

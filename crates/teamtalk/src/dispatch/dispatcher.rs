@@ -60,6 +60,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler and returns the dispatcher for chaining.
+    #[must_use]
     pub fn on_event<F>(mut self, event: Event, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -69,6 +70,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for all events and returns the dispatcher for chaining.
+    #[must_use]
     pub fn on_any<F>(mut self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -78,6 +80,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for user join events.
+    #[must_use]
     pub fn on_user_joined<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -86,6 +89,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for user left events.
+    #[must_use]
     pub fn on_user_left<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -94,6 +98,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for text messages.
+    #[must_use]
     pub fn on_text_message<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -102,6 +107,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for connection success events.
+    #[must_use]
     pub fn on_connect_success<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -110,6 +116,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for connection lost events.
+    #[must_use]
     pub fn on_connection_lost<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -118,6 +125,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for connection failure events.
+    #[must_use]
     pub fn on_connect_failed<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -126,6 +134,7 @@ impl<S: EventSource> Dispatcher<S> {
     }
 
     /// Adds a handler for command error events.
+    #[must_use]
     pub fn on_command_error<F>(self, handler: F) -> Self
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
@@ -157,25 +166,25 @@ impl<S: EventSource> Dispatcher<S> {
     /// Performs one poll/dispatch step.
     pub fn step(&mut self, timeout_ms: i32) -> DispatchFlow {
         match self.source.poll(timeout_ms) {
-            Some((event, message)) => self.process_event(event, message),
+            Some((event, message)) => self.process_event(event, &message),
             None => DispatchFlow::Continue,
         }
     }
 
-    fn process_event(&mut self, event: Event, message: Message) -> DispatchFlow {
+    fn process_event(&mut self, event: Event, message: &Message) -> DispatchFlow {
         let client = self.source.client();
         if let Some(reconnect) = self.reconnect.as_mut() {
             reconnect.on_event(client, &event);
         }
         #[cfg(feature = "logging")]
-        crate::logging::event(&event, &message);
+        crate::logging::event(&event, message);
         let ctx = EventContext {
             event,
-            message: &message,
+            message,
             client,
         };
         let mut flow = DispatchFlow::Continue;
-        for handler in self.handlers.iter_mut() {
+        for handler in &mut self.handlers {
             if handler.matches(&event) && (handler.handler)(ctx) == DispatchFlow::Stop {
                 flow = DispatchFlow::Stop;
             }

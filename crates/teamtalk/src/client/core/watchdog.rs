@@ -1,4 +1,4 @@
-use super::*;
+use super::{Client, ConnectionState};
 use std::time::Instant;
 
 impl Client {

@@ -110,21 +110,25 @@ impl<'a> RecordingSession<'a> {
     }
 
     /// Returns true if the recording is active.
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.active
     }
 
     /// Returns the current output path, if any.
+    #[must_use]
     pub fn current_path(&self) -> Option<&str> {
         self.current_path.as_deref()
     }
 
     /// Returns a list of recorded segment paths.
+    #[must_use]
     pub fn segments(&self) -> &[String] {
         &self.segments
     }
 
     /// Pauses the recording by stopping the current segment.
+    #[must_use]
     pub fn pause(&mut self) -> bool {
         if !self.active {
             return true;
@@ -148,6 +152,7 @@ impl<'a> RecordingSession<'a> {
     }
 
     /// Stops the recording permanently.
+    #[must_use]
     pub fn stop(mut self) -> bool {
         if self.active {
             let ok = self.stop_active();

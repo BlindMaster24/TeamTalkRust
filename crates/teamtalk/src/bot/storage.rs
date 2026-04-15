@@ -12,6 +12,7 @@ pub struct MemoryStateStore {
 }
 
 impl MemoryStateStore {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }

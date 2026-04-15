@@ -5,6 +5,7 @@ use teamtalk_sys as ffi;
 
 impl Client {
     /// Starts recording a muxed audio file using a codec.
+    #[must_use]
     pub fn start_recording_muxed(
         &self,
         codec: &AudioCodec,
@@ -16,6 +17,7 @@ impl Client {
     }
 
     /// Starts recording the specified channel.
+    #[must_use]
     pub fn start_recording_channel(
         &self,
         channel_id: ChannelId,
@@ -27,6 +29,7 @@ impl Client {
     }
 
     /// Starts recording a set of stream types.
+    #[must_use]
     pub fn start_recording_streams(
         &self,
         stream_types: u32,
@@ -39,11 +42,13 @@ impl Client {
     }
 
     /// Stops recording a muxed audio file.
+    #[must_use]
     pub fn stop_recording(&self) -> bool {
         self.backend().stop_recording(self.ptr.0)
     }
 
     /// Stops recording for a channel.
+    #[must_use]
     pub fn stop_recording_channel(&self, channel_id: ChannelId) -> bool {
         self.backend()
             .stop_recording_channel(self.ptr.0, channel_id)
@@ -80,6 +85,7 @@ impl<'a> RecordSession<'a> {
     }
 
     /// Stops the recording and returns whether it succeeded.
+    #[must_use]
     pub fn stop(mut self) -> bool {
         let ok = self.client.stop_recording_channel(self.channel_id);
         self.active = false;

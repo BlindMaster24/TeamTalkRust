@@ -11,7 +11,7 @@ fn can_set_encryption_context_in_state(state: ConnectionState) -> bool {
 impl Client {
     /// Sets the encryption context for future connections.
     ///
-    /// TeamTalk C-API requires this to be configured before `TT_Connect*`.
+    /// `TeamTalk` C-API requires this to be configured before `TT_Connect*`.
     /// This helper returns `false` if the client is already in a connect/login
     /// lifecycle state.
     pub fn set_encryption_context(&self, context: &EncryptionContext) -> bool {

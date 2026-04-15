@@ -22,6 +22,7 @@ impl ConnectParamsOwned {
     }
 
     /// Returns a borrowed `ConnectParams` view.
+    #[must_use]
     pub fn as_params(&self) -> ConnectParams<'_> {
         ConnectParams {
             host: &self.host,
@@ -49,6 +50,7 @@ pub struct ReconnectSettings {
 
 impl ReconnectSettings {
     /// Creates reconnect settings with default event set.
+    #[allow(clippy::must_use_candidate)]
     pub fn new(params: ConnectParamsOwned, config: ReconnectConfig) -> Self {
         Self {
             params,
@@ -58,6 +60,7 @@ impl ReconnectSettings {
     }
 
     /// Adds extra events which should trigger reconnection.
+    #[must_use]
     pub fn with_extra_events(mut self, extra_events: Vec<Event>) -> Self {
         self.extra_events = extra_events;
         self
@@ -83,23 +86,27 @@ impl Default for ClientConfig {
 
 impl ClientConfig {
     /// Creates a configuration with defaults.
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Sets the poll timeout in milliseconds.
+    #[must_use]
     pub fn poll_timeout_ms(mut self, timeout_ms: i32) -> Self {
         self.poll_timeout_ms = timeout_ms;
         self
     }
 
     /// Enables reconnect using provided connection parameters.
+    #[must_use]
     pub fn reconnect(mut self, params: ConnectParamsOwned, config: ReconnectConfig) -> Self {
         self.reconnect = Some(ReconnectSettings::new(params, config));
         self
     }
 
     /// Enables reconnect and adds extra events which trigger reconnect.
+    #[must_use]
     pub fn reconnect_with_events(
         mut self,
         params: ConnectParamsOwned,
@@ -111,6 +118,7 @@ impl ClientConfig {
         self
     }
 
+    #[must_use]
     pub fn without_reconnect(mut self) -> Self {
         self.reconnect = None;
         self
@@ -133,18 +141,21 @@ pub struct EventContext<'a> {
     pub(super) client: Option<&'a Client>,
 }
 
-impl<'a> EventContext<'a> {
+impl EventContext<'_> {
     /// Returns the event.
+    #[must_use]
     pub fn event(&self) -> Event {
         self.event
     }
 
     /// Returns the raw message.
+    #[must_use]
     pub fn message(&self) -> &Message {
         self.message
     }
 
     /// Returns the client if the source provides one.
+    #[allow(clippy::must_use_candidate)]
     pub fn client(&self) -> Option<&Client> {
         self.client
     }

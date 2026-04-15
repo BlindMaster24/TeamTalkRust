@@ -165,6 +165,7 @@ impl LoginParams {
         }
     }
 
+    #[must_use]
     pub fn from_env() -> Self {
         let nickname = env::var("TT_NICK").unwrap_or_default();
         let username = env::var("TT_USER").unwrap_or_default();

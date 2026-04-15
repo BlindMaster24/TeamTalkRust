@@ -35,7 +35,7 @@ fn main() -> teamtalk::Result<()> {
         if let Some((event, _)) = client.poll(100) {
             match event {
                 Event::ConnectSuccess => {
-                    client.login(&nickname, &username, &password, &client_name);
+                    let _ = client.login(&nickname, &username, &password, &client_name);
                 }
                 Event::ConnectionLost | Event::ConnectFailed => break,
                 _ => {}

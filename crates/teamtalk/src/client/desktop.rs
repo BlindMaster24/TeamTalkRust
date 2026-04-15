@@ -10,10 +10,12 @@ pub struct DesktopWindowGuard<'a> {
 }
 
 impl DesktopWindowGuard<'_> {
+    #[must_use]
     pub fn window(&self) -> &ffi::DesktopWindow {
         unsafe { &*self.ptr }
     }
 
+    #[must_use]
     pub fn as_ptr(&self) -> *mut ffi::DesktopWindow {
         self.ptr
     }
@@ -111,7 +113,7 @@ impl Client {
     /// Returns a desktop window handle by index.
     pub fn get_desktop_window_hwnd(&self, index: i32) -> Option<ffi::HWND> {
         let mut hwnd = std::ptr::null_mut();
-        let ok = unsafe { ffi::api().TT_Windows_GetDesktopWindowHWND(index, &mut hwnd) == 1 };
+        let ok = unsafe { ffi::api().TT_Windows_GetDesktopWindowHWND(index, &raw mut hwnd) == 1 };
         if ok { Some(hwnd) } else { None }
     }
 
@@ -122,7 +124,7 @@ impl Client {
     /// `hwnd` must be a valid live window handle.
     pub unsafe fn get_share_window(&self, hwnd: ffi::HWND) -> Option<ffi::ShareWindow> {
         let mut window = ffi::ShareWindow::default();
-        let ok = unsafe { ffi::api().TT_Windows_GetWindow(hwnd, &mut window) == 1 };
+        let ok = unsafe { ffi::api().TT_Windows_GetWindow(hwnd, &raw mut window) == 1 };
         if ok { Some(window) } else { None }
     }
 

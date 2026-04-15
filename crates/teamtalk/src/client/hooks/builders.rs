@@ -5,30 +5,35 @@ use crate::types::{ChannelId, TextMessage, User};
 
 impl ClientHooks {
     /// Registers a handler for every event.
+    #[must_use]
     pub fn on_event(mut self, hook: impl FnMut(&Client, Event, &Message) + Send + 'static) -> Self {
         self.on_event = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for successful connections.
+    #[must_use]
     pub fn on_connect_success(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_connect_success = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for failed connections.
+    #[must_use]
     pub fn on_connect_failed(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_connect_failed = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for connection encryption errors.
+    #[must_use]
     pub fn on_connect_crypt_error(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_connect_crypt_error = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for max payload updates.
+    #[must_use]
     pub fn on_connect_max_payload_updated(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -38,12 +43,14 @@ impl ClientHooks {
     }
 
     /// Registers a handler for connection loss.
+    #[must_use]
     pub fn on_connection_lost(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_connection_lost = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for command processing notifications.
+    #[must_use]
     pub fn on_cmd_processing(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -53,30 +60,35 @@ impl ClientHooks {
     }
 
     /// Registers a handler for command errors.
+    #[must_use]
     pub fn on_cmd_error(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_cmd_error = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for command success notifications.
+    #[must_use]
     pub fn on_cmd_success(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_cmd_success = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for successful login.
+    #[must_use]
     pub fn on_logged_in(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_logged_in = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for logout.
+    #[must_use]
     pub fn on_logged_out(mut self, hook: impl FnMut(&Client) + Send + 'static) -> Self {
         self.on_logged_out = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for being kicked.
+    #[must_use]
     pub fn on_myself_kicked(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -86,42 +98,49 @@ impl ClientHooks {
     }
 
     /// Registers a handler for user login events.
+    #[must_use]
     pub fn on_user_logged_in(mut self, hook: impl FnMut(&Client, User) + Send + 'static) -> Self {
         self.on_user_logged_in = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for user logout events.
+    #[must_use]
     pub fn on_user_logged_out(mut self, hook: impl FnMut(&Client, User) + Send + 'static) -> Self {
         self.on_user_logged_out = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for user updates.
+    #[must_use]
     pub fn on_user_update(mut self, hook: impl FnMut(&Client, User) + Send + 'static) -> Self {
         self.on_user_update = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for channel joins.
+    #[must_use]
     pub fn on_joined(mut self, hook: impl FnMut(&Client, ChannelId) + Send + 'static) -> Self {
         self.on_joined = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for any user join event.
+    #[must_use]
     pub fn on_user_joined(mut self, hook: impl FnMut(&Client, User) + Send + 'static) -> Self {
         self.on_user_joined = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for any user leave event.
+    #[must_use]
     pub fn on_user_left(mut self, hook: impl FnMut(&Client, User) + Send + 'static) -> Self {
         self.on_user_left = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for channel or user text messages.
+    #[must_use]
     pub fn on_text_message(
         mut self,
         hook: impl FnMut(&Client, TextMessage) + Send + 'static,
@@ -131,6 +150,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for channel creation events.
+    #[must_use]
     pub fn on_channel_created(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -140,6 +160,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for channel update events.
+    #[must_use]
     pub fn on_channel_updated(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -149,6 +170,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for channel removal events.
+    #[must_use]
     pub fn on_channel_removed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -158,6 +180,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for server updates.
+    #[must_use]
     pub fn on_server_update(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -167,6 +190,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for server statistics updates.
+    #[must_use]
     pub fn on_server_statistics(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -176,30 +200,35 @@ impl ClientHooks {
     }
 
     /// Registers a handler for new file events.
+    #[must_use]
     pub fn on_file_new(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_file_new = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for file removal events.
+    #[must_use]
     pub fn on_file_remove(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_file_remove = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for user account events.
+    #[must_use]
     pub fn on_user_account(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_user_account = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for banned user events.
+    #[must_use]
     pub fn on_banned_user(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_banned_user = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for user account creation events.
+    #[must_use]
     pub fn on_user_account_created(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -209,6 +238,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for user account removal events.
+    #[must_use]
     pub fn on_user_account_removed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -218,6 +248,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for user state changes.
+    #[must_use]
     pub fn on_user_state_change(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -227,6 +258,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for video capture frames.
+    #[must_use]
     pub fn on_video_capture_frame(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -236,6 +268,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for media file video frames.
+    #[must_use]
     pub fn on_media_file_video(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -245,6 +278,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for desktop window updates.
+    #[must_use]
     pub fn on_desktop_window(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -254,6 +288,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for desktop cursor updates.
+    #[must_use]
     pub fn on_desktop_cursor(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -263,6 +298,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for desktop input updates.
+    #[must_use]
     pub fn on_desktop_input(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -272,6 +308,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for recorded media file events.
+    #[must_use]
     pub fn on_user_record_media_file(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -281,12 +318,14 @@ impl ClientHooks {
     }
 
     /// Registers a handler for audio block events.
+    #[must_use]
     pub fn on_audio_block(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_audio_block = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for internal error events.
+    #[must_use]
     pub fn on_internal_error(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -296,6 +335,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for voice activation events.
+    #[must_use]
     pub fn on_voice_activation(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -305,18 +345,21 @@ impl ClientHooks {
     }
 
     /// Registers a handler for hotkey events.
+    #[must_use]
     pub fn on_hotkey(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_hotkey = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for hotkey test events.
+    #[must_use]
     pub fn on_hotkey_test(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_hotkey_test = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for file transfer events.
+    #[must_use]
     pub fn on_file_transfer(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -326,6 +369,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for desktop window transfer events.
+    #[must_use]
     pub fn on_desktop_window_transfer(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -335,6 +379,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for stream media file events.
+    #[must_use]
     pub fn on_stream_media_file(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -344,6 +389,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for local media file events.
+    #[must_use]
     pub fn on_local_media_file(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -353,12 +399,14 @@ impl ClientHooks {
     }
 
     /// Registers a handler for audio input events.
+    #[must_use]
     pub fn on_audio_input(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_audio_input = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler for first voice stream packet events.
+    #[must_use]
     pub fn on_user_first_voice_stream_packet(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -368,6 +416,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for sound device added events.
+    #[must_use]
     pub fn on_sound_device_added(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -377,6 +426,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for sound device removed events.
+    #[must_use]
     pub fn on_sound_device_removed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -386,6 +436,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for sound device unplugged events.
+    #[must_use]
     pub fn on_sound_device_unplugged(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -395,6 +446,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for default sound input device changes.
+    #[must_use]
     pub fn on_sound_device_new_default_input(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -404,6 +456,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for default sound output device changes.
+    #[must_use]
     pub fn on_sound_device_new_default_output(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -413,6 +466,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for default sound input communications device changes.
+    #[must_use]
     pub fn on_sound_device_new_default_input_com_device(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -422,6 +476,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler for default sound output communications device changes.
+    #[must_use]
     pub fn on_sound_device_new_default_output_com_device(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -431,12 +486,14 @@ impl ClientHooks {
     }
 
     /// Registers a handler for reconnecting notifications.
+    #[must_use]
     pub fn on_reconnecting(mut self, hook: impl FnMut(&Client, &Message) + Send + 'static) -> Self {
         self.on_reconnecting = Some(Box::new(hook));
         self
     }
 
     /// Registers a handler before an automatic reconnect attempt.
+    #[must_use]
     pub fn on_before_reconnect(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -446,6 +503,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler after an automatic reconnect succeeds.
+    #[must_use]
     pub fn on_after_reconnect(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -455,6 +513,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler when automatic reconnect gives up.
+    #[must_use]
     pub fn on_reconnect_failed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -464,6 +523,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler before an automatic login retry.
+    #[must_use]
     pub fn on_before_auto_login(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -473,6 +533,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler when automatic login gives up.
+    #[must_use]
     pub fn on_auto_login_failed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -482,6 +543,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler before an automatic join retry.
+    #[must_use]
     pub fn on_before_auto_join(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -491,6 +553,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler when automatic join gives up.
+    #[must_use]
     pub fn on_auto_join_failed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,
@@ -500,6 +563,7 @@ impl ClientHooks {
     }
 
     /// Registers a handler after full in-session recovery reaches Joined.
+    #[must_use]
     pub fn on_auto_recover_completed(
         mut self,
         hook: impl FnMut(&Client, &Message) + Send + 'static,

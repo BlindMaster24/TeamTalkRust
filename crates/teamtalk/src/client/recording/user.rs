@@ -28,6 +28,7 @@ impl UserRecordingOptions {
         }
     }
 
+    #[must_use]
     pub fn with_stop_delay(mut self, delay_ms: i32) -> Self {
         self.stop_delay_ms = delay_ms;
         self
@@ -43,6 +44,7 @@ pub struct UserRecordingSession<'a> {
 
 impl Client {
     /// Configures per-user media recording.
+    #[must_use]
     pub fn set_user_media_storage(
         &self,
         user_id: UserId,
@@ -62,6 +64,7 @@ impl Client {
     }
 
     /// Configures per-user media recording with a stop delay.
+    #[must_use]
     pub fn set_user_media_storage_ex(
         &self,
         user_id: UserId,
@@ -83,12 +86,14 @@ impl Client {
     }
 
     /// Disables per-user media recording.
+    #[must_use]
     pub fn clear_user_media_storage(&self, user_id: UserId) -> bool {
         self.set_user_media_storage_ex(user_id, "", "", ffi::AudioFileFormat::AFF_NONE, 0)
     }
 }
 
 impl<'a> UserRecordingSession<'a> {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn start(
         client: &'a Client,
         user_id: UserId,
@@ -112,6 +117,7 @@ impl<'a> UserRecordingSession<'a> {
         }
     }
 
+    #[must_use]
     pub fn stop(mut self) -> bool {
         let ok = self.client.clear_user_media_storage(self.user_id);
         self.active = false;

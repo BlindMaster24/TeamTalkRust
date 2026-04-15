@@ -68,6 +68,7 @@ struct MockBackendState {
 
 #[cfg(feature = "mock")]
 impl MockBackend {
+    #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self {
             state: crate::utils::UnpoisonedMutex::new(MockBackendState {

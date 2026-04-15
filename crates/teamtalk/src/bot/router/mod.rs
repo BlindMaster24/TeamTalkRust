@@ -96,13 +96,13 @@ pub struct RouteGroup<'a> {
     namespace: String,
 }
 
-impl<'a> RouteGroup<'a> {
+impl RouteGroup<'_> {
     pub fn on_command<F>(self, name: impl Into<String>, handler: F) -> Self
     where
         F: FnMut(&mut Context<'_>) -> Result<HandlerResult> + Send + 'static,
     {
         let full = join_command_path(&self.namespace, &normalize_command_name(name.into()));
-        self.router.push_command_route(full.clone(), None, handler);
+        self.router.push_command_route(&full, None, handler);
         self.router.register_help(full, None);
         self
     }
@@ -118,7 +118,7 @@ impl<'a> RouteGroup<'a> {
     {
         let full = join_command_path(&self.namespace, &normalize_command_name(name.into()));
         let summary = summary.into();
-        self.router.push_command_route(full.clone(), None, handler);
+        self.router.push_command_route(&full, None, handler);
         self.router.register_help(full, Some(summary));
         self
     }
@@ -189,7 +189,7 @@ mod tests {
         let router = Router::new()
             .on_command_with_help("ping", "Ping command", |_ctx| Ok(HandlerResult::Continue))
             .on_command_pattern_with_help(
-                CommandPattern::parse("ban <user> [reason...]").expect("pattern"),
+                &CommandPattern::parse("ban <user> [reason...]").expect("pattern"),
                 "Ban user",
                 |_ctx| Ok(HandlerResult::Continue),
             )

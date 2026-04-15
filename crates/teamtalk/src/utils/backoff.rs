@@ -26,6 +26,7 @@ impl Default for ExponentialBackoff {
 
 impl ExponentialBackoff {
     /// Creates a new backoff schedule.
+    #[must_use]
     pub fn new(initial: Duration, max: Duration, factor: f32, _jitter: f32) -> Self {
         Self {
             initial_delay: initial,
@@ -37,6 +38,7 @@ impl ExponentialBackoff {
     }
 
     /// Returns the next delay in the schedule.
+    #[must_use]
     pub fn next_delay(&mut self) -> Duration {
         if self.attempts == 0 && self.initial_delay.is_zero() {
             self.attempts += 1;
@@ -68,6 +70,7 @@ impl ExponentialBackoff {
     }
 
     /// Returns the current delay without advancing.
+    #[must_use]
     pub fn current_delay(&self) -> Duration {
         self.current_val
     }
@@ -79,6 +82,7 @@ impl ExponentialBackoff {
     }
 
     /// Returns the number of attempts.
+    #[must_use]
     pub fn attempts(&self) -> u32 {
         self.attempts
     }

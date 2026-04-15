@@ -19,11 +19,13 @@ pub struct UserAccount {
 
 impl UserAccount {
     /// Creates a user account builder.
+    #[must_use]
     pub fn builder(username: &str) -> UserAccountBuilder {
         UserAccountBuilder::new(username)
     }
 
     /// Returns the account rights as a typed bitmask wrapper.
+    #[must_use]
     pub fn rights(&self) -> UserRights {
         UserRights::from_raw(self.user_rights)
     }
@@ -36,6 +38,7 @@ pub struct UserAccountBuilder {
 
 impl UserAccountBuilder {
     /// Creates a new builder with the username.
+    #[must_use]
     pub fn new(username: &str) -> Self {
         Self {
             inner: UserAccount {
@@ -54,79 +57,92 @@ impl UserAccountBuilder {
     }
 
     /// Sets the account password.
+    #[must_use]
     pub fn password(mut self, pass: &str) -> Self {
         self.inner.password = pass.to_string();
         self
     }
 
     /// Sets the user type.
+    #[must_use]
     pub fn user_type(mut self, t: u32) -> Self {
         self.inner.user_type = t;
         self
     }
 
     /// Sets the user rights.
+    #[must_use]
     pub fn rights(mut self, r: u32) -> Self {
         self.inner.user_rights = r;
         self
     }
 
     /// Sets the user rights using the typed bitmask wrapper.
+    #[must_use]
     pub fn rights_typed(mut self, rights: UserRights) -> Self {
         self.inner.user_rights = rights.raw();
         self
     }
 
     /// Sets the note field.
+    #[must_use]
     pub fn note(mut self, note: &str) -> Self {
         self.inner.note = note.to_string();
         self
     }
 
     /// Sets the initial channel path.
+    #[must_use]
     pub fn init_channel(mut self, channel: &str) -> Self {
         self.inner.init_channel = channel.to_string();
         self
     }
 
     /// Sets custom user data.
+    #[must_use]
     pub fn user_data(mut self, user_data: i32) -> Self {
         self.inner.user_data = user_data;
         self
     }
 
     /// Replaces the auto-operator channel list.
+    #[must_use]
     pub fn auto_operator_channels(mut self, channels: Vec<ChannelId>) -> Self {
         self.inner.auto_operator_channels = channels;
         self
     }
 
     /// Adds one auto-operator channel.
+    #[must_use]
     pub fn add_auto_operator_channel(mut self, channel_id: ChannelId) -> Self {
         self.inner.auto_operator_channels.push(channel_id);
         self
     }
 
     /// Sets the audio codec bitrate limit.
+    #[must_use]
     pub fn audio_codec_bps_limit(mut self, limit: i32) -> Self {
         self.inner.audio_codec_bps_limit = limit;
         self
     }
 
     /// Sets abuse-prevention limits.
+    #[must_use]
     pub fn abuse_prevention(mut self, abuse_prevent: AbusePrevention) -> Self {
         self.inner.abuse_prevent = abuse_prevent;
         self
     }
 
     /// Builds the user account.
+    #[must_use]
     pub fn build(self) -> UserAccount {
         self.inner
     }
 }
 
 impl UserAccount {
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::UserAccount {
         let mut raw = ffi::UserAccount::default();
         let u = crate::utils::ToTT::tt(&self.username);
@@ -225,7 +241,8 @@ impl BannedUser {
             owner: owner.into(),
         }
     }
-    /// Converts to the raw TeamTalk struct.
+    /// Converts to the raw `TeamTalk` struct.
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::BannedUser {
         let mut raw = ffi::BannedUser::default();
         let ip = crate::utils::ToTT::tt(&self.ip);

@@ -2,6 +2,7 @@ use super::*;
 use crate::types::{AudioInputProgress, BannedUser, DesktopInput, MediaFileInfo, RemoteFile};
 
 impl ScriptManager {
+    #[allow(clippy::too_many_lines)]
     pub(super) fn event_table(&self, event: Event, message: &Message) -> mlua::Result<Table> {
         let table = self.lua.create_table()?;
         table.set("type", event_name(event))?;
@@ -141,15 +142,21 @@ impl ScriptManager {
         table.set("username", user.username.clone())?;
         table.set("nickname", user.nickname.clone())?;
         table.set("user_data", user.user_data)?;
-        table.set("user_type", user.user_type as i64)?;
+        table.set("user_type", i64::from(user.user_type))?;
         table.set("ip_address", user.ip_address.clone())?;
-        table.set("version", user.version as i64)?;
+        table.set("version", i64::from(user.version))?;
         table.set("channel_id", user.channel_id.raw())?;
-        table.set("status_mode", user.status.to_bits() as i64)?;
+        table.set("status_mode", i64::from(user.status.to_bits()))?;
         table.set("status_msg", user.status_msg.clone())?;
-        table.set("state", user.state.raw() as i64)?;
-        table.set("local_subscriptions", user.local_subscriptions.raw() as i64)?;
-        table.set("peer_subscriptions", user.peer_subscriptions.raw() as i64)?;
+        table.set("state", i64::from(user.state.raw()))?;
+        table.set(
+            "local_subscriptions",
+            i64::from(user.local_subscriptions.raw()),
+        )?;
+        table.set(
+            "peer_subscriptions",
+            i64::from(user.peer_subscriptions.raw()),
+        )?;
         table.set("media_storage_dir", user.media_storage_dir.clone())?;
         table.set("volume_voice", user.volume_voice)?;
         table.set("volume_media", user.volume_media)?;
@@ -178,7 +185,7 @@ impl ScriptManager {
         table.set("parent_id", channel.parent_id.raw())?;
         table.set("name", channel.name.clone())?;
         table.set("topic", channel.topic.clone())?;
-        table.set("channel_type", channel.channel_type.raw() as i64)?;
+        table.set("channel_type", i64::from(channel.channel_type.raw()))?;
         table.set("has_password", channel.has_password)?;
         table.set("user_data", channel.user_data)?;
         table.set("disk_quota", channel.disk_quota)?;
@@ -190,7 +197,7 @@ impl ScriptManager {
         for (idx, (user_id, stream_type)) in channel.transmit_users.iter().enumerate() {
             let entry = self.lua.create_table()?;
             entry.set("user_id", user_id.raw())?;
-            entry.set("stream_type", *stream_type as i64)?;
+            entry.set("stream_type", i64::from(*stream_type))?;
             tx.set(idx + 1, entry)?;
         }
         table.set("transmit_users", tx)?;
@@ -250,7 +257,7 @@ impl ScriptManager {
         table.set("protocol_version", props.protocol_version.clone())?;
         table.set("login_delay", props.login_delay)?;
         table.set("access_token", props.access_token.clone())?;
-        table.set("log_events", props.log_events as i64)?;
+        table.set("log_events", i64::from(props.log_events))?;
         Ok(table)
     }
 
@@ -278,8 +285,8 @@ impl ScriptManager {
         let table = self.lua.create_table()?;
         table.set("username", account.username.clone())?;
         table.set("password", account.password.clone())?;
-        table.set("user_type", account.user_type as i64)?;
-        table.set("user_rights", account.user_rights as i64)?;
+        table.set("user_type", i64::from(account.user_type))?;
+        table.set("user_rights", i64::from(account.user_rights))?;
         table.set("note", account.note.clone())?;
         table.set("init_channel", account.init_channel.clone())?;
         table.set("user_data", account.user_data)?;
@@ -302,7 +309,7 @@ impl ScriptManager {
         table.set("nickname", banned_user.nickname.clone())?;
         table.set("username", banned_user.username.clone())?;
         table.set("ban_time", banned_user.ban_time.clone())?;
-        table.set("ban_types", banned_user.ban_types as i64)?;
+        table.set("ban_types", i64::from(banned_user.ban_types))?;
         table.set("owner", banned_user.owner.clone())?;
         Ok(table)
     }
@@ -311,8 +318,8 @@ impl ScriptManager {
         let table = self.lua.create_table()?;
         table.set("mouse_pos_x", input.mouse_pos_x)?;
         table.set("mouse_pos_y", input.mouse_pos_y)?;
-        table.set("key_code", input.key_code as i64)?;
-        table.set("key_state", input.key_state as i64)?;
+        table.set("key_code", i64::from(input.key_code))?;
+        table.set("key_state", i64::from(input.key_state))?;
         Ok(table)
     }
 

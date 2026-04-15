@@ -13,10 +13,11 @@ pub struct MediaFilePlayback {
 }
 
 impl MediaFilePlayback {
+    #[must_use]
     pub fn to_ffi(&self) -> ffi::MediaFilePlayback {
         ffi::MediaFilePlayback {
             uOffsetMSec: self.offset_ms,
-            bPaused: self.paused as i32,
+            bPaused: i32::from(self.paused),
             ..Default::default()
         }
     }
@@ -29,10 +30,12 @@ pub struct MediaVideoFrameGuard<'a> {
 }
 
 impl MediaVideoFrameGuard<'_> {
+    #[must_use]
     pub fn frame(&self) -> &ffi::VideoFrame {
         unsafe { &*self.ptr }
     }
 
+    #[must_use]
     pub fn as_ptr(&self) -> *mut ffi::VideoFrame {
         self.ptr
     }
@@ -44,7 +47,7 @@ impl Client {
         let mut info = ffi::MediaFileInfo::default();
         let path = file_path.tt();
         unsafe {
-            (ffi::api().TT_GetMediaFileInfo(path.as_ptr(), &mut info) == 1)
+            (ffi::api().TT_GetMediaFileInfo(path.as_ptr(), &raw mut info) == 1)
                 .then(|| crate::types::MediaFileInfo::from(info))
         }
     }

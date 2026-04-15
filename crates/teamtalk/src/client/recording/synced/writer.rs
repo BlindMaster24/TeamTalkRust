@@ -1,4 +1,8 @@
-use super::*;
+use super::{
+    AudioBlockView, Client, Duration, Error, File, OpenOptions, Path, RecordingSampleFormat,
+    Result, Seek, SeekFrom, User, UserId, Write, ffi, render_vars, sanitized_filename,
+    unique_recording_path,
+};
 
 pub(super) struct AudioBlockGuard<'a> {
     client: &'a Client,
@@ -40,12 +44,10 @@ impl UserTrack {
         default_sample_rate: Option<i32>,
         default_channels: Option<i32>,
     ) -> Result<Self> {
-        let username = user
-            .map(|u| u.username)
-            .unwrap_or_else(|| "unknown".to_string());
-        let filename = sanitized_filename(render_vars(file_vars, user_id, &username));
+        let username = user.map_or_else(|| "unknown".to_string(), |u| u.username);
+        let filename = sanitized_filename(&render_vars(file_vars, user_id, &username));
         let path = Path::new(folder).join(filename);
-        let mut writer = TrackWriter::new(path, format)?;
+        let mut writer = TrackWriter::new(&path, format)?;
         let sample_rate = default_sample_rate;
         let channels = default_channels;
         if let (Some(rate), Some(ch)) = (sample_rate, channels) {
@@ -69,12 +71,11 @@ impl UserTrack {
     }
 
     pub(super) fn pad_to(&mut self, elapsed: Duration) -> Result<()> {
-        let sample_rate = match self.sample_rate {
-            Some(rate) => rate,
-            None => return Ok(()),
+        let Some(sample_rate) = self.sample_rate else {
+            return Ok(());
         };
         let channels = self.channels.unwrap_or(1) as u64;
-        let target_samples = (elapsed.as_secs_f64() * sample_rate as f64) as u64;
+        let target_samples = (elapsed.as_secs_f64() * f64::from(sample_rate)) as u64;
         if target_samples > self.samples_written {
             let missing = target_samples - self.samples_written;
             self.writer.write_silence(missing, channels)?;
@@ -96,8 +97,8 @@ enum TrackWriter {
 }
 
 impl TrackWriter {
-    fn new(path: PathBuf, format: RecordingSampleFormat) -> Result<Self> {
-        let path = unique_recording_path(&path);
+    fn new(path: &Path, format: RecordingSampleFormat) -> Result<Self> {
+        let path = unique_recording_path(path);
         let file = OpenOptions::new()
             .create_new(true)
             .write(true)
@@ -120,7 +121,7 @@ impl TrackWriter {
 
     fn write_pcm(&mut self, data: &[i16]) -> Result<()> {
         let bytes = unsafe {
-            std::slice::from_raw_parts(data.as_ptr() as *const u8, std::mem::size_of_val(data))
+            std::slice::from_raw_parts(data.as_ptr().cast::<u8>(), std::mem::size_of_val(data))
         };
         match self {
             TrackWriter::Pcm(file) => file.write_all(bytes).map_err(|e| Error::IoError {

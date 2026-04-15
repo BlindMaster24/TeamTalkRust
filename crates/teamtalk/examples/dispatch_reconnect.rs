@@ -80,7 +80,7 @@ fn main() -> teamtalk::Result<()> {
             if let Some(client) = ctx.client()
                 && should_join_on_login.swap(false, Ordering::Relaxed)
             {
-                client.join_channel(root_channel, &channel_password);
+                let _ = client.join_channel(root_channel, &channel_password);
             }
             DispatchFlow::Continue
         });

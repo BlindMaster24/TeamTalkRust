@@ -18,6 +18,7 @@ pub struct AudioDeviceProfile {
 
 impl AudioDeviceProfile {
     /// Creates a split input/output profile.
+    #[must_use]
     pub fn split(input_id: SoundDeviceId, output_id: SoundDeviceId) -> Self {
         Self {
             input_id,
@@ -27,6 +28,7 @@ impl AudioDeviceProfile {
     }
 
     /// Creates a duplex input/output profile.
+    #[must_use]
     pub fn duplex(input_id: SoundDeviceId, output_id: SoundDeviceId) -> Self {
         Self {
             input_id,
@@ -54,6 +56,7 @@ pub struct AudioBlockView<'a> {
 }
 
 impl<'a> AudioBlockView<'a> {
+    #[must_use]
     pub fn from_block(block: &'a ffi::AudioBlock) -> Option<Self> {
         if block.lpRawAudio.is_null() || block.nSamples <= 0 || block.nChannels <= 0 {
             return None;
@@ -118,7 +121,7 @@ where
     fn handle(&mut self, block: &AudioBlockView<'_>) {
         let bytes = unsafe {
             std::slice::from_raw_parts(
-                block.data.as_ptr() as *const u8,
+                block.data.as_ptr().cast::<u8>(),
                 std::mem::size_of_val(block.data),
             )
         };
@@ -143,7 +146,7 @@ impl AudioBlockSink for UdpSink {
     fn handle(&mut self, block: &AudioBlockView<'_>) {
         let bytes = unsafe {
             std::slice::from_raw_parts(
-                block.data.as_ptr() as *const u8,
+                block.data.as_ptr().cast::<u8>(),
                 std::mem::size_of_val(block.data),
             )
         };

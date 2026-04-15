@@ -39,6 +39,7 @@ impl Default for ClientManager {
 }
 
 impl ClientManager {
+    #[must_use]
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
         Self {
@@ -66,14 +67,10 @@ impl ClientManager {
             self.queue = self
                 .queue
                 .iter()
-                .filter_map(|&idx| {
-                    if idx == pos {
-                        None
-                    } else if idx > pos {
-                        Some(idx - 1)
-                    } else {
-                        Some(idx)
-                    }
+                .filter_map(|&idx| match idx.cmp(&pos) {
+                    std::cmp::Ordering::Equal => None,
+                    std::cmp::Ordering::Greater => Some(idx - 1),
+                    std::cmp::Ordering::Less => Some(idx),
                 })
                 .collect();
         }
@@ -87,10 +84,12 @@ impl ClientManager {
         self.tick_sleep = sleep;
     }
 
+    #[must_use]
     pub fn events(&self) -> &Receiver<ClientEvent> {
         &self.rx
     }
 
+    #[must_use]
     pub fn health_snapshot(&self, id: ClientId) -> Option<ClientHealth> {
         self.health.get(&id).cloned()
     }
@@ -140,7 +139,7 @@ impl ClientManager {
             if self.tick_sleep > Duration::ZERO {
                 let elapsed = start.elapsed();
                 if elapsed < self.tick_sleep {
-                    std::thread::sleep(self.tick_sleep - elapsed);
+                    std::thread::sleep(self.tick_sleep.checked_sub(elapsed).unwrap());
                 }
             }
         }

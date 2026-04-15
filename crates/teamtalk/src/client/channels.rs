@@ -32,6 +32,7 @@ fn wait_slice(deadline: Instant) -> i32 {
 
 impl Client {
     /// Returns available channels from the server.
+    #[must_use]
     pub fn get_server_channels(&self) -> Vec<Channel> {
         self.backend().get_server_channels(self.ptr.0)
     }
@@ -53,11 +54,13 @@ impl Client {
     }
 
     /// Returns a channel id from a path.
+    #[must_use]
     pub fn get_channel_id_from_path(&self, path: &str) -> ChannelId {
         self.backend().get_channel_id_from_path(self.ptr.0, path)
     }
 
     /// Joins a channel.
+    #[must_use]
     pub fn join_channel(&self, id: ChannelId, password: &str) -> CommandId {
         if !can_start_join(self.connection_state()) {
             return CommandId::ZERO;
@@ -102,10 +105,7 @@ impl Client {
                 if let Some((event, message)) = self.poll(50) {
                     match event {
                         crate::events::Event::UserJoined
-                            if message
-                                .user()
-                                .map(|user| user.id == self.my_id())
-                                .unwrap_or(false) =>
+                            if message.user().is_some_and(|user| user.id == self.my_id()) =>
                         {
                             return Ok(message);
                         }
@@ -136,10 +136,7 @@ impl Client {
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
                     crate::events::Event::UserJoined
-                        if message
-                            .user()
-                            .map(|user| user.id == self.my_id())
-                            .unwrap_or(false) =>
+                        if message.user().is_some_and(|user| user.id == self.my_id()) =>
                     {
                         return Ok(message);
                     }
@@ -162,11 +159,13 @@ impl Client {
     }
 
     /// Joins a channel by id without a password.
+    #[must_use]
     pub fn join_channel_unprotected(&self, channel_id: ChannelId) -> CommandId {
         self.join_channel(channel_id, "")
     }
 
     /// Joins a channel path.
+    #[must_use]
     pub fn join_channel_path(&self, path: &str, password: &str) -> CommandId {
         let id = self.get_channel_id_from_path(path);
         if id.raw() > 0 {
@@ -177,11 +176,13 @@ impl Client {
     }
 
     /// Joins a channel path without a password.
+    #[must_use]
     pub fn join_channel_path_unprotected(&self, path: &str) -> CommandId {
         self.join_channel_path(path, "")
     }
 
     /// Leaves the current channel.
+    #[must_use]
     pub fn leave_channel(&self) -> CommandId {
         if !can_leave_channel_in_state(self.connection_state()) {
             return CommandId::ZERO;
@@ -199,6 +200,7 @@ impl Client {
     }
 
     /// Creates a new channel.
+    #[must_use]
     pub fn make_channel(&self, channel: &Channel) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -207,6 +209,7 @@ impl Client {
     }
 
     /// Updates an existing channel.
+    #[must_use]
     pub fn update_channel(&self, channel: &Channel) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -215,6 +218,7 @@ impl Client {
     }
 
     /// Removes a channel.
+    #[must_use]
     pub fn remove_channel(&self, id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -223,6 +227,7 @@ impl Client {
     }
 
     /// Moves a user to a different channel.
+    #[must_use]
     pub fn move_user(&self, user_id: UserId, channel_id: ChannelId) -> CommandId {
         if !can_issue_logged_in_command(self.connection_state()) {
             return CommandId::ZERO;
@@ -231,24 +236,28 @@ impl Client {
     }
 
     /// Checks if a user is an operator in a channel.
+    #[must_use]
     pub fn is_channel_operator(&self, user_id: UserId, channel_id: ChannelId) -> bool {
         self.backend()
             .is_channel_operator(self.ptr.0, user_id, channel_id)
     }
 
     /// Joins the root channel.
+    #[must_use]
     pub fn join_root(&self) -> CommandId {
         let root = self.backend().get_root_channel_id(self.ptr.0);
         self.join_channel(root, "")
     }
 
     /// Leaves the current channel and joins the root channel.
+    #[must_use]
     pub fn leave_to_root(&self) -> CommandId {
         let _ = self.leave_channel();
         self.join_root()
     }
 
     /// Returns the channel ID where the current user is.
+    #[must_use]
     pub fn my_channel_id(&self) -> ChannelId {
         self.backend().get_my_channel_id(self.ptr.0)
     }
@@ -260,6 +269,7 @@ impl Client {
     }
 
     /// Returns users in a channel.
+    #[must_use]
     pub fn get_channel_users(&self, channel_id: ChannelId) -> Vec<crate::types::User> {
         self.backend().get_channel_users(self.ptr.0, channel_id)
     }
