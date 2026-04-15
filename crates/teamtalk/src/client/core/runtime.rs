@@ -116,10 +116,8 @@ impl Client {
         match event {
             Event::ConnectSuccess => {
                 self.set_connection_state(ConnectionState::Connected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.clear_connect_phase();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_connected();
@@ -140,10 +138,8 @@ impl Client {
             }
             Event::ConnectFailed | Event::ConnectionLost | Event::ConnectCryptError => {
                 self.set_connection_state(ConnectionState::Disconnected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.clear_phase_tracking();
                 if let Some(handler) = auto.handler.as_mut() {
                     handler.mark_disconnected();
@@ -151,10 +147,8 @@ impl Client {
             }
             Event::MySelfLoggedIn => {
                 self.set_connection_state(ConnectionState::LoggedIn);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.clear_login_phase();
                 if let Some(handler) = auto.login_handler.as_mut() {
                     handler.mark_connected();
@@ -162,10 +156,8 @@ impl Client {
             }
             Event::MySelfLoggedOut => {
                 self.set_connection_state(ConnectionState::Connected);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.clear_join_phase();
                 if let Some(handler) = auto.join_handler.as_mut() {
                     handler.mark_disconnected();
@@ -176,10 +168,8 @@ impl Client {
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::Joined(user.channel_id));
-                    let mut auto = self
-                        .auto_reconnect
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let mut auto = self.auto_reconnect.lock();
+
                     auto.clear_join_phase();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_connected();
@@ -192,10 +182,8 @@ impl Client {
                     && user.id == self.my_id()
                 {
                     self.set_connection_state(ConnectionState::LoggedIn);
-                    let mut auto = self
-                        .auto_reconnect
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let mut auto = self.auto_reconnect.lock();
+
                     auto.clear_join_phase();
                     if let Some(handler) = auto.join_handler.as_mut() {
                         handler.mark_disconnected();
@@ -205,10 +193,8 @@ impl Client {
             Event::MySelfKicked => {
                 let next_state = kicked_next_state(msg.source());
                 self.set_connection_state(next_state);
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.clear_join_phase();
                 if matches!(next_state, ConnectionState::Connected) {
                     auto.clear_login_phase();
@@ -225,10 +211,8 @@ impl Client {
             Event::CmdError => {
                 let source = msg.source();
                 let mut next_state = None;
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 if auto.pending_login_cmd == Some(source) {
                     auto.clear_login_phase();
                     if let Some(handler) = auto.login_handler.as_mut() {
@@ -249,10 +233,8 @@ impl Client {
             }
             Event::CmdSuccess => {
                 let source = msg.source();
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 if auto.pending_login_cmd == Some(source) {
                     auto.clear_login_phase();
                 }
@@ -263,10 +245,8 @@ impl Client {
             _ => {}
         }
 
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         if auto.enabled && event.is_reconnect_needed_with(&auto.extra_events) {
             auto.force_disconnect = true;
             drop(auto);

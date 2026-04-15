@@ -7,10 +7,8 @@ impl Client {
 
     pub(super) fn handle_connect_recovery(&self) {
         let params = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled {
                 return;
             }
@@ -35,10 +33,8 @@ impl Client {
                 let msg = Self::empty_message(failed_event);
                 self.invoke_hooks(failed_event, &msg);
 
-                let mut auto = self
-                    .auto_reconnect
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner());
+                let mut auto = self.auto_reconnect.lock();
+
                 auto.enabled = false;
                 auto.handler = None;
                 auto.login_handler = None;
@@ -55,10 +51,8 @@ impl Client {
         }
 
         let (attempt, delay) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled {
                 return;
             }
@@ -90,10 +84,8 @@ impl Client {
 
     pub(super) fn handle_login_recovery(&self) {
         let (params, attempt, delay, gave_up_now) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled || auto.login_gave_up {
                 return;
             }
@@ -140,10 +132,8 @@ impl Client {
             &params.client_name,
         );
         if cmd_id <= 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.clear_login_phase();
             drop(auto);
             self.set_connection_state(ConnectionState::Connected);
@@ -151,20 +141,16 @@ impl Client {
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
         } else {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.pending_login_cmd = Some(cmd_id);
         }
     }
 
     pub(super) fn handle_join_recovery(&self) {
         let (channel, password, attempt, delay, gave_up_now) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled || auto.join_gave_up {
                 return;
             }
@@ -207,10 +193,8 @@ impl Client {
 
         let cmd_id = self.join_channel(channel, password.as_deref().unwrap_or(""));
         if cmd_id <= 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.clear_join_phase();
             drop(auto);
             self.set_connection_state(ConnectionState::LoggedIn);
@@ -218,20 +202,16 @@ impl Client {
             let msg = Self::empty_message(failed);
             self.invoke_hooks(failed, &msg);
         } else {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.pending_join_cmd = Some(cmd_id);
         }
     }
 
     pub(super) fn handle_recovery_completed(&self) {
         let (reconnect_attempts, login_attempts, join_attempts) = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled || auto.recovery_completed {
                 return;
             }

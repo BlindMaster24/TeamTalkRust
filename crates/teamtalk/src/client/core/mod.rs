@@ -3,8 +3,9 @@ use crate::events::{ConnectionState, Error, Event, Result};
 #[cfg(feature = "scripts")]
 use crate::extensions::scripts::ScriptManager;
 use crate::types::ClientId;
+use crate::utils::UnpoisonedMutex;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 pub use teamtalk_sys as ffi;
 
 use super::bus;
@@ -29,17 +30,17 @@ pub struct Client {
     pub(crate) ptr: TTPtr,
     pub(crate) id: ClientId,
     pub(crate) backend: Arc<dyn super::backend::TeamTalkBackend>,
-    pub(crate) label: Mutex<Option<String>>,
-    pub(crate) state: Mutex<ConnectionState>,
-    pub(crate) hooks: Mutex<hooks::ClientHooks>,
+    pub(crate) label: UnpoisonedMutex<Option<String>>,
+    pub(crate) state: UnpoisonedMutex<ConnectionState>,
+    pub(crate) hooks: UnpoisonedMutex<hooks::ClientHooks>,
     pub(crate) hooks_revision: AtomicU64,
-    pub(crate) bus: Mutex<bus::EventBus>,
+    pub(crate) bus: UnpoisonedMutex<bus::EventBus>,
     pub(crate) bus_revision: AtomicU64,
     #[cfg(feature = "scripts")]
-    pub(crate) scripts: Mutex<Option<ScriptManager>>,
-    pub(crate) auto_reconnect: Mutex<AutoReconnectState>,
+    pub(crate) scripts: UnpoisonedMutex<Option<ScriptManager>>,
+    pub(crate) auto_reconnect: UnpoisonedMutex<AutoReconnectState>,
     #[cfg(feature = "state")]
-    pub(crate) cache: Mutex<cache::CacheState>,
+    pub(crate) cache: UnpoisonedMutex<cache::CacheState>,
     #[cfg(windows)]
     pub(crate) init_mode: ClientInitMode,
 }
@@ -82,17 +83,17 @@ impl Client {
                 ptr: TTPtr(ptr),
                 id: ClientId(NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)),
                 backend,
-                label: Mutex::new(None),
-                state: Mutex::new(ConnectionState::Idle),
-                hooks: Mutex::new(hooks::ClientHooks::default()),
+                label: UnpoisonedMutex::new(None),
+                state: UnpoisonedMutex::new(ConnectionState::Idle),
+                hooks: UnpoisonedMutex::new(hooks::ClientHooks::default()),
                 hooks_revision: AtomicU64::new(0),
-                bus: Mutex::new(bus::EventBus::default()),
+                bus: UnpoisonedMutex::new(bus::EventBus::default()),
                 bus_revision: AtomicU64::new(0),
                 #[cfg(feature = "scripts")]
-                scripts: Mutex::new(None),
-                auto_reconnect: Mutex::new(AutoReconnectState::default()),
+                scripts: UnpoisonedMutex::new(None),
+                auto_reconnect: UnpoisonedMutex::new(AutoReconnectState::default()),
                 #[cfg(feature = "state")]
-                cache: Mutex::new(cache::CacheState::default()),
+                cache: UnpoisonedMutex::new(cache::CacheState::default()),
                 #[cfg(windows)]
                 init_mode,
             })
@@ -156,30 +157,22 @@ impl Client {
 
     #[cfg(feature = "mock")]
     pub fn mock_set_pending_commands_for_tests(&self, login: Option<i32>, join: Option<i32>) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         auto.pending_login_cmd = login;
         auto.pending_join_cmd = join;
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_pending_commands_for_tests(&self) -> (Option<i32>, Option<i32>) {
-        let auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let auto = self.auto_reconnect.lock();
+
         (auto.pending_login_cmd, auto.pending_join_cmd)
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_last_channel_password_for_tests(&self) -> Option<String> {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .last_channel_password
-            .clone()
+        self.auto_reconnect.lock().last_channel_password.clone()
     }
 
     #[cfg(feature = "mock")]
@@ -198,7 +191,7 @@ impl Client {
 
     /// Sets a human-friendly label for the client instance.
     pub fn with_label(self, label: &str) -> Self {
-        *self.label.lock().unwrap_or_else(|e| e.into_inner()) = Some(label.to_string());
+        *self.label.lock() = Some(label.to_string());
         self
     }
 
@@ -209,18 +202,17 @@ impl Client {
 
     /// Returns the client label, if set.
     pub fn label(&self) -> Option<String> {
-        self.label.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.label.lock().clone()
     }
 
     /// Sets or clears the client label.
     pub fn set_label(&self, label: Option<&str>) {
-        *self.label.lock().unwrap_or_else(|e| e.into_inner()) =
-            label.map(|value| value.to_string());
+        *self.label.lock() = label.map(|value| value.to_string());
     }
 
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
-        *self.state.lock().unwrap_or_else(|e| e.into_inner())
+        *self.state.lock()
     }
 
     /// Creates a subscription for a specific event type.
@@ -235,11 +227,7 @@ impl Client {
 
     /// Removes an event subscription.
     pub fn unsubscribe_event(&self, id: bus::EventSubscriptionId) -> bool {
-        let removed = self
-            .bus
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .unsubscribe(id);
+        let removed = self.bus.lock().unsubscribe(id);
         if removed {
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
         }
@@ -248,7 +236,7 @@ impl Client {
 
     /// Clears all event subscriptions.
     pub fn clear_event_subscriptions(&self) {
-        let mut bus = self.bus.lock().unwrap_or_else(|e| e.into_inner());
+        let mut bus = self.bus.lock();
         if bus.len() > 0 {
             bus.clear();
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
@@ -258,11 +246,7 @@ impl Client {
     /// Removes all subscriptions in the specified group.
     pub fn unsubscribe_event_group(&self, group: impl AsRef<str>) -> usize {
         let group = bus::EventSubscriptionGroup::new(group.as_ref());
-        let removed = self
-            .bus
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .unsubscribe_group(&group);
+        let removed = self.bus.lock().unsubscribe_group(&group);
         if removed > 0 {
             self.bus_revision.fetch_add(1, Ordering::Relaxed);
         }
@@ -271,24 +255,24 @@ impl Client {
 
     /// Returns the number of active event subscriptions.
     pub fn event_subscription_count(&self) -> usize {
-        self.bus.lock().unwrap_or_else(|e| e.into_inner()).len()
+        self.bus.lock().len()
     }
 
     /// Replaces the current hook set.
     pub fn set_hooks(&self, hooks: hooks::ClientHooks) {
-        *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = hooks;
+        *self.hooks.lock() = hooks;
         self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Clears all hooks.
     pub fn clear_hooks(&self) {
-        *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = hooks::ClientHooks::default();
+        *self.hooks.lock() = hooks::ClientHooks::default();
         self.hooks_revision.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(feature = "scripts")]
     pub fn enable_scripts(&self) {
-        let mut scripts = self.scripts.lock().unwrap_or_else(|e| e.into_inner());
+        let mut scripts = self.scripts.lock();
         if scripts.is_none() {
             *scripts = Some(ScriptManager::new());
         }
@@ -296,12 +280,12 @@ impl Client {
 
     #[cfg(feature = "scripts")]
     pub fn set_script_manager(&self, manager: ScriptManager) {
-        *self.scripts.lock().unwrap_or_else(|e| e.into_inner()) = Some(manager);
+        *self.scripts.lock() = Some(manager);
     }
 
     #[cfg(feature = "scripts")]
     pub fn clear_scripts(&self) {
-        *self.scripts.lock().unwrap_or_else(|e| e.into_inner()) = None;
+        *self.scripts.lock() = None;
     }
 
     #[cfg(feature = "scripts")]
@@ -309,49 +293,40 @@ impl Client {
     where
         F: FnOnce(&mut ScriptManager) -> R,
     {
-        self.scripts
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .as_mut()
-            .map(f)
+        self.scripts.lock().as_mut().map(f)
     }
 
     pub(crate) fn set_connection_state(&self, state: ConnectionState) {
-        *self.state.lock().unwrap_or_else(|e| e.into_inner()) = state;
+        *self.state.lock() = state;
     }
 
     pub(crate) fn invoke_hooks(&self, event: crate::events::Event, msg: &Message) {
         let revision_before = self.hooks_revision.load(Ordering::Relaxed);
         let mut local_hooks = {
-            let mut hooks = self.hooks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut hooks = self.hooks.lock();
             std::mem::take(&mut *hooks)
         };
         local_hooks.fire(self, event, msg);
         if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
-            *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = local_hooks;
+            *self.hooks.lock() = local_hooks;
         }
     }
 
     pub(crate) fn dispatch_bus(&self, event: crate::events::Event, msg: &Message) {
         let revision_before = self.bus_revision.load(Ordering::Relaxed);
         let mut local_bus = {
-            let mut bus = self.bus.lock().unwrap_or_else(|e| e.into_inner());
+            let mut bus = self.bus.lock();
             std::mem::take(&mut *bus)
         };
         local_bus.dispatch(self, event, msg);
         if self.bus_revision.load(Ordering::Relaxed) == revision_before {
-            *self.bus.lock().unwrap_or_else(|e| e.into_inner()) = local_bus;
+            *self.bus.lock() = local_bus;
         }
     }
 
     #[cfg(feature = "scripts")]
     pub(crate) fn dispatch_scripts(&self, event: crate::events::Event, msg: &Message) {
-        if let Some(manager) = self
-            .scripts
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .as_ref()
-        {
+        if let Some(manager) = self.scripts.lock().as_ref() {
             let _ = manager.handle_event(event, msg);
         }
     }
@@ -359,12 +334,12 @@ impl Client {
     pub(crate) fn invoke_joined_hook(&self, channel_id: crate::types::ChannelId) {
         let revision_before = self.hooks_revision.load(Ordering::Relaxed);
         let mut local_hooks = {
-            let mut hooks = self.hooks.lock().unwrap_or_else(|e| e.into_inner());
+            let mut hooks = self.hooks.lock();
             std::mem::take(&mut *hooks)
         };
         local_hooks.fire_joined(self, channel_id);
         if self.hooks_revision.load(Ordering::Relaxed) == revision_before {
-            *self.hooks.lock().unwrap_or_else(|e| e.into_inner()) = local_hooks;
+            *self.hooks.lock() = local_hooks;
         }
     }
 
@@ -372,7 +347,7 @@ impl Client {
         if self.handle_pending_phase_timeout() {
             return;
         }
-        let state = *self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let state = *self.state.lock();
         match state {
             ConnectionState::Disconnected => self.handle_connect_recovery(),
             ConnectionState::Connected => self.handle_login_recovery(),

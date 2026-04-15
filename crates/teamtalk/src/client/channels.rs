@@ -66,10 +66,8 @@ impl Client {
             .backend()
             .do_join_channel_by_id(self.ptr.0, id.0, password);
         if cmd_id > 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.last_channel = Some(id);
             if password.is_empty() {
                 auto.last_channel_password = None;
@@ -189,10 +187,8 @@ impl Client {
         }
         let cmd_id = self.backend().do_leave_channel(self.ptr.0);
         if cmd_id > 0 {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             auto.last_channel = None;
             auto.last_channel_password = None;
             auto.clear_join_phase();

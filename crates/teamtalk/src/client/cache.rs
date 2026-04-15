@@ -28,38 +28,30 @@ pub type StoreSnapshot = ServerInfo;
 impl Client {
     /// Enables the user cache. When auto-sync is true, events update the cache.
     pub fn enable_user_cache(&self, auto_sync: bool) {
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock();
         cache.users_auto = auto_sync;
     }
 
     /// Enables the channel cache. When auto-sync is true, events update the cache.
     pub fn enable_channel_cache(&self, auto_sync: bool) {
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock();
         cache.channels_auto = auto_sync;
     }
 
     /// Clears the cached users.
     pub fn clear_user_cache(&self) {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .users
-            .clear();
+        self.cache.lock().users.clear();
     }
 
     /// Clears the cached channels.
     pub fn clear_channel_cache(&self) {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .channels
-            .clear();
+        self.cache.lock().channels.clear();
     }
 
     /// Refreshes the user cache from the server.
     pub fn refresh_user_cache(&self) -> Vec<User> {
         let users = self.get_server_users();
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock();
         cache.users = users.iter().map(|u| (u.id, u.clone())).collect();
         users
     }
@@ -67,37 +59,25 @@ impl Client {
     /// Refreshes the channel cache from the server.
     pub fn refresh_channel_cache(&self) -> Vec<Channel> {
         let channels = self.get_server_channels();
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock();
         cache.channels = channels.iter().map(|c| (c.id, c.clone())).collect();
         channels
     }
 
     /// Returns a cached user, if present.
     pub fn cached_user(&self, user_id: UserId) -> Option<User> {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .users
-            .get(&user_id)
-            .cloned()
+        self.cache.lock().users.get(&user_id).cloned()
     }
 
     /// Returns all cached users.
     pub fn cached_users(&self) -> Vec<User> {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .users
-            .values()
-            .cloned()
-            .collect()
+        self.cache.lock().users.values().cloned().collect()
     }
 
     /// Returns a cached user by username, if present.
     pub fn cached_user_by_username(&self, username: &str) -> Option<User> {
         self.cache
             .lock()
-            .unwrap_or_else(|e| e.into_inner())
             .users
             .values()
             .find(|u| u.username == username)
@@ -106,30 +86,18 @@ impl Client {
 
     /// Returns a cached channel, if present.
     pub fn cached_channel(&self, channel_id: ChannelId) -> Option<Channel> {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .channels
-            .get(&channel_id)
-            .cloned()
+        self.cache.lock().channels.get(&channel_id).cloned()
     }
 
     /// Returns all cached channels.
     pub fn cached_channels(&self) -> Vec<Channel> {
-        self.cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .channels
-            .values()
-            .cloned()
-            .collect()
+        self.cache.lock().channels.values().cloned().collect()
     }
 
     /// Returns a cached channel by name, if present.
     pub fn cached_channel_by_name(&self, name: &str) -> Option<Channel> {
         self.cache
             .lock()
-            .unwrap_or_else(|e| e.into_inner())
             .channels
             .values()
             .find(|c| c.name == name)
@@ -140,7 +108,6 @@ impl Client {
     pub fn cached_channel_by_path(&self, path: &str) -> Option<Channel> {
         self.cache
             .lock()
-            .unwrap_or_else(|e| e.into_inner())
             .channels
             .values()
             .find(|c| self.get_channel_path(c.id).as_deref() == Some(path))
@@ -149,7 +116,7 @@ impl Client {
 
     /// Returns the last cached server properties and statistics.
     pub fn server_info(&self) -> ServerInfo {
-        let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let cache = self.cache.lock();
         ServerInfo {
             properties: cache.server_props.clone(),
             statistics: cache.server_stats.clone(),
@@ -180,7 +147,7 @@ impl Client {
     }
 
     pub(crate) fn update_cache_for_event(&self, event: Event, msg: &super::Message) {
-        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.cache.lock();
         match event {
             Event::UserLoggedIn | Event::UserUpdate | Event::UserJoined | Event::UserLeft => {
                 if cache.users_auto

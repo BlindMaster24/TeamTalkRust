@@ -1,10 +1,11 @@
 use crate::events::{Error, Event, Result};
 use crate::types::{User, UserId};
+use crate::utils::UnpoisonedMutex;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 

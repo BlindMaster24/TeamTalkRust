@@ -1,7 +1,8 @@
 use crate::events::Event;
 use crate::types::ClientId;
+use crate::utils::UnpoisonedMutex;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
@@ -15,7 +16,7 @@ pub struct ClientInfo {
 
 #[derive(Clone, Default)]
 pub struct ClientRegistry {
-    inner: Arc<Mutex<HashMap<ClientId, ClientInfo>>>,
+    inner: Arc<UnpoisonedMutex<HashMap<ClientId, ClientInfo>>>,
 }
 
 impl ClientRegistry {
@@ -31,17 +32,17 @@ impl ClientRegistry {
             last_event: None,
             last_event_at: None,
         };
-        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self.inner.lock();
         map.insert(info.id, info);
     }
 
     pub fn unregister(&self, id: ClientId) {
-        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self.inner.lock();
         map.remove(&id);
     }
 
     pub fn update_event(&self, client: &crate::client::Client, event: Event) {
-        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self.inner.lock();
         let entry = map.entry(client.id()).or_insert(ClientInfo {
             id: client.id(),
             label: client.label(),
@@ -56,7 +57,7 @@ impl ClientRegistry {
     }
 
     pub fn update_snapshot(&self, client: &crate::client::Client) {
-        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self.inner.lock();
         let entry = map.entry(client.id()).or_insert(ClientInfo {
             id: client.id(),
             label: client.label(),
@@ -69,12 +70,12 @@ impl ClientRegistry {
     }
 
     pub fn list(&self) -> Vec<ClientInfo> {
-        let map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let map = self.inner.lock();
         map.values().cloned().collect()
     }
 
     pub fn get(&self, id: ClientId) -> Option<ClientInfo> {
-        let map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let map = self.inner.lock();
         map.get(&id).cloned()
     }
 }

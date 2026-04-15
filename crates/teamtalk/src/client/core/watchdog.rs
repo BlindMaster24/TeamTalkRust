@@ -3,10 +3,8 @@ use std::time::Instant;
 
 impl Client {
     pub(crate) fn mark_connect_phase_started(&self) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         if !auto.enabled {
             return;
         }
@@ -16,10 +14,8 @@ impl Client {
     }
 
     pub(crate) fn mark_login_phase_started(&self, cmd_id: i32) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         if !auto.enabled {
             return;
         }
@@ -30,10 +26,8 @@ impl Client {
     }
 
     pub(crate) fn mark_join_phase_started(&self, cmd_id: i32) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         if !auto.enabled {
             return;
         }
@@ -43,18 +37,13 @@ impl Client {
     }
 
     pub(crate) fn clear_all_reconnect_phase_tracking(&self) {
-        self.auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clear_phase_tracking();
+        self.auto_reconnect.lock().clear_phase_tracking();
     }
 
     pub(crate) fn handle_pending_phase_timeout(&self) -> bool {
         let timed_out = {
-            let mut auto = self
-                .auto_reconnect
-                .lock()
-                .unwrap_or_else(|e| e.into_inner());
+            let mut auto = self.auto_reconnect.lock();
+
             if !auto.enabled {
                 return false;
             }
@@ -131,28 +120,22 @@ impl Client {
 
     #[cfg(feature = "mock")]
     pub fn mock_age_connect_phase_for_tests(&self, elapsed: std::time::Duration) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         auto.connect_started_at = Instant::now().checked_sub(elapsed);
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_age_login_phase_for_tests(&self, elapsed: std::time::Duration) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         auto.login_started_at = Instant::now().checked_sub(elapsed);
     }
 
     #[cfg(feature = "mock")]
     pub fn mock_age_join_phase_for_tests(&self, elapsed: std::time::Duration) {
-        let mut auto = self
-            .auto_reconnect
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut auto = self.auto_reconnect.lock();
+
         auto.join_started_at = Instant::now().checked_sub(elapsed);
     }
 }

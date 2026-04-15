@@ -292,13 +292,13 @@ impl SyncedUserRecording {
 pub struct SyncedUserRecordingBus<'a> {
     client: &'a Client,
     group: String,
-    session: Arc<Mutex<SyncedUserRecordingSession>>,
+    session: Arc<UnpoisonedMutex<SyncedUserRecordingSession>>,
     stop_on_drop: bool,
 }
 
 impl<'a> SyncedUserRecordingBus<'a> {
     pub fn attach(
-        session: Arc<Mutex<SyncedUserRecordingSession>>,
+        session: Arc<UnpoisonedMutex<SyncedUserRecordingSession>>,
         client: &'a Client,
         group: impl Into<String>,
     ) -> Self {
@@ -310,9 +310,8 @@ impl<'a> SyncedUserRecordingBus<'a> {
             .group(group_filter)
             .filter(|ctx| is_synced_bus_event(ctx.event()))
             .subscribe(move |ctx| {
-                if let Ok(mut session) = handler_session.lock() {
-                    let _ = session.handle_event(ctx.client(), ctx.event(), ctx.message());
-                }
+                let mut session = handler_session.lock();
+                let _ = session.handle_event(ctx.client(), ctx.event(), ctx.message());
             });
         Self {
             client,
@@ -330,10 +329,8 @@ impl<'a> SyncedUserRecordingBus<'a> {
 
 impl Drop for SyncedUserRecordingBus<'_> {
     fn drop(&mut self) {
-        if self.stop_on_drop
-            && let Ok(mut session) = self.session.lock()
-        {
-            session.stop_all(self.client);
+        if self.stop_on_drop {
+            self.session.lock().stop_all(self.client);
         }
         let _ = self.client.unsubscribe_event_group(&self.group);
     }
