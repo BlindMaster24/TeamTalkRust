@@ -1,5 +1,36 @@
 # Changelog
 
+## [7.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v6.0.0...teamtalk-v7.0.0) - 2026-04-15
+
+### Breaking
+- *(types)* [**breaking**] add #[non_exhaustive] to 16 public enums - downstream match expressions on EventData,
+CommandPatternError, DialogStatus, DialogTimeoutPolicy,
+JobErrorPolicy, HandlerResult, UnknownCommandPolicy,
+RouteMatcher, WaitError, RecordingSampleFormat,
+RecordingTarget, SilencePolicy, DispatchFlow,
+UserPresence, UserGender, and MessageTarget must include
+a wildcard _ arm.
+- *(events)* [**breaking**] add #[non_exhaustive] to Event, Error, ConnectionState - downstream match expressions on Event, Error, or
+ConnectionState must include a wildcard _ arm. This prevents
+future variant additions from being semver-breaking.
+
+### Added
+- *(client)* add file transfer tracking helpers
+- *(client)* add safer file and frame helpers
+
+### Changed
+- replace once_cell with std::sync::OnceLock, remove unused dependency
+- replace Mutex unwrap_or_else poison pattern with UnpoisonedMutex<T>
+
+### Fixed
+- *(ci)* gate server ffi import on windows
+
+### Dependencies
+- *(deps)* update rusqlite requirement from 0.38 to 0.39 ([#36](https://github.com/BlindMaster24/TeamTalkRust/pull/36))
+
+### Other
+- Reduce admin-event boilerplate in the client API
+
 ## [6.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v5.0.0...teamtalk-v6.0.0) - 2026-03-10
 
 ### Changed
