@@ -2,6 +2,7 @@ use crate::types::{AbusePrevention, ChannelId, UserRights};
 use teamtalk_sys as ffi;
 
 /// User account definition.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default)]
 pub struct UserAccount {
     pub username: String,
@@ -148,7 +149,7 @@ impl UserAccount {
         raw.nAudioCodecBpsLimit = self.audio_codec_bps_limit;
         raw.abusePrevent = self.abuse_prevent.to_ffi();
         for (i, cid) in self.auto_operator_channels.iter().take(16).enumerate() {
-            raw.autoOperatorChannels[i] = cid.0;
+            raw.autoOperatorChannels[i] = cid.raw();
         }
         raw
     }
@@ -178,6 +179,7 @@ impl From<ffi::UserAccount> for UserAccount {
 
 #[derive(Debug, Clone, Default)]
 /// Banned user entry.
+#[non_exhaustive]
 pub struct BannedUser {
     pub ip: String,
     pub channel_path: String,
@@ -203,6 +205,26 @@ impl From<ffi::BannedUser> for BannedUser {
 }
 
 impl BannedUser {
+    /// Creates a new banned user entry.
+    pub fn new(
+        ip: impl Into<String>,
+        channel_path: impl Into<String>,
+        nickname: impl Into<String>,
+        username: impl Into<String>,
+        ban_time: impl Into<String>,
+        ban_types: u32,
+        owner: impl Into<String>,
+    ) -> Self {
+        Self {
+            ip: ip.into(),
+            channel_path: channel_path.into(),
+            nickname: nickname.into(),
+            username: username.into(),
+            ban_time: ban_time.into(),
+            ban_types,
+            owner: owner.into(),
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::BannedUser {
         let mut raw = ffi::BannedUser::default();

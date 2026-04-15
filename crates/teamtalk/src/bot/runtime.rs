@@ -5,6 +5,7 @@ use crate::events::Result;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct BotConfig {
     pub poll_timeout_ms: i32,

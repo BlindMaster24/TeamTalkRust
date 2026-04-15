@@ -1,10 +1,11 @@
 //! Media file playback and streaming APIs.
 use super::Client;
-use crate::types::{UserId, VideoCodec};
+use crate::types::{PlaybackSessionId, UserId, VideoCodec};
 use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 /// Controls media file playback behavior.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default)]
 pub struct MediaFilePlayback {
     pub offset_ms: u32,
@@ -118,28 +119,40 @@ impl Client {
     }
 
     /// Initializes local media playback.
-    pub fn init_local_playback(&self, file_path: &str, playback: &MediaFilePlayback) -> i32 {
+    pub fn init_local_playback(
+        &self,
+        file_path: &str,
+        playback: &MediaFilePlayback,
+    ) -> PlaybackSessionId {
         unsafe {
-            ffi::api().TT_InitLocalPlayback(self.ptr.0, file_path.tt().as_ptr(), &playback.to_ffi())
+            PlaybackSessionId(ffi::api().TT_InitLocalPlayback(
+                self.ptr.0,
+                file_path.tt().as_ptr(),
+                &playback.to_ffi(),
+            ))
         }
     }
 
     /// Updates local playback info.
-    pub fn update_local_playback(&self, session_id: i32, playback: &MediaFilePlayback) -> bool {
+    pub fn update_local_playback(
+        &self,
+        session_id: PlaybackSessionId,
+        playback: &MediaFilePlayback,
+    ) -> bool {
         unsafe {
-            ffi::api().TT_UpdateLocalPlayback(self.ptr.0, session_id, &playback.to_ffi()) == 1
+            ffi::api().TT_UpdateLocalPlayback(self.ptr.0, session_id.raw(), &playback.to_ffi()) == 1
         }
     }
 
     /// Stops local playback.
-    pub fn stop_local_playback(&self, session_id: i32) -> bool {
-        unsafe { ffi::api().TT_StopLocalPlayback(self.ptr.0, session_id) == 1 }
+    pub fn stop_local_playback(&self, session_id: PlaybackSessionId) -> bool {
+        unsafe { ffi::api().TT_StopLocalPlayback(self.ptr.0, session_id.raw()) == 1 }
     }
 
     /// Acquires a media video frame for a user.
     pub fn acquire_user_media_video_frame(&self, user_id: UserId) -> Option<*mut ffi::VideoFrame> {
         unsafe {
-            let ptr = ffi::api().TT_AcquireUserMediaVideoFrame(self.ptr.0, user_id.0);
+            let ptr = ffi::api().TT_AcquireUserMediaVideoFrame(self.ptr.0, user_id.raw());
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }

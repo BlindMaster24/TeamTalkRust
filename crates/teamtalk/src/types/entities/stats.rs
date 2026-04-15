@@ -1,6 +1,7 @@
 use teamtalk_sys as ffi;
 
 /// User statistics snapshot.
+#[non_exhaustive]
 pub struct UserStatistics {
     pub voice_recv: i64,
     pub voice_lost: i64,
@@ -36,6 +37,7 @@ impl From<ffi::UserStatistics> for UserStatistics {
 }
 
 /// Server statistics snapshot.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct ServerStatistics {
     pub total_tx: i64,

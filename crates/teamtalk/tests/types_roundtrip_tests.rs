@@ -47,14 +47,14 @@ proptest! {
             2 => UserGender::Neutral,
             _ => UserGender::Male,
         };
-        let status = UserStatus {
+        let status = UserStatus::new(
             presence,
             gender,
             video,
             desktop,
             streaming,
             media_paused,
-        };
+        );
         let bits = status.to_bits();
         let roundtrip = UserStatus::from_bits(bits);
         prop_assert_eq!(roundtrip, status);
@@ -72,10 +72,7 @@ fn user_account_builder_fields() {
         .user_data(42)
         .add_auto_operator_channel(teamtalk::types::ChannelId(5))
         .audio_codec_bps_limit(96000)
-        .abuse_prevention(AbusePrevention {
-            commands_limit: 3,
-            commands_interval_ms: 500,
-        })
+        .abuse_prevention(AbusePrevention::new(3, 500))
         .build();
     assert_eq!(account.username, "alice");
     assert_eq!(account.password, "secret");
@@ -106,10 +103,7 @@ fn user_account_to_from_ffi() {
             teamtalk::types::ChannelId(2),
         ])
         .audio_codec_bps_limit(48_000)
-        .abuse_prevention(AbusePrevention {
-            commands_limit: 2,
-            commands_interval_ms: 500,
-        })
+        .abuse_prevention(AbusePrevention::new(2, 500))
         .build();
     let raw = account.to_ffi();
     let parsed = UserAccount::from(raw);
@@ -130,18 +124,7 @@ fn user_account_to_from_ffi() {
 
 #[test]
 fn audio_preprocessor_speex_roundtrip() {
-    let cfg = SpeexDSP {
-        enable_agc: true,
-        gain_level: 10,
-        max_inc_db_sec: 2,
-        max_dec_db_sec: 3,
-        max_gain_db: 9,
-        enable_denoise: true,
-        max_noise_suppress_db: 12,
-        enable_aec: true,
-        echo_suppress: 7,
-        echo_suppress_active: 8,
-    };
+    let cfg = SpeexDSP::new(true, 10, 2, 3, 9, true, 12, true, 7, 8);
     let ap = AudioPreprocessor::Speex(cfg);
     let raw = ap.to_ffi();
     let parsed = AudioPreprocessor::from(raw);
@@ -164,15 +147,7 @@ fn audio_preprocessor_speex_roundtrip() {
 
 #[test]
 fn audio_preprocessor_webrtc_roundtrip() {
-    let cfg = WebRTCConfig {
-        preamplifier_enable: true,
-        preamplifier_gain: 1.5,
-        aec_enable: true,
-        ns_enable: true,
-        ns_level: 2,
-        agc2_enable: true,
-        agc2_gain_db: 3.2,
-    };
+    let cfg = WebRTCConfig::new(true, 1.5, true, true, 2, true, 3.2);
     let ap = AudioPreprocessor::WebRTC(cfg);
     let raw = ap.to_ffi();
     let parsed = AudioPreprocessor::from(raw);
@@ -192,12 +167,7 @@ fn audio_preprocessor_webrtc_roundtrip() {
 
 #[test]
 fn jitter_config_roundtrip() {
-    let cfg = JitterConfig {
-        fixed_delay_ms: 10,
-        use_adaptive: true,
-        max_adaptive_delay_ms: 50,
-        active_adaptive_delay_ms: 12,
-    };
+    let cfg = JitterConfig::new(10, true, 50, 12);
     let raw = cfg.to_ffi();
     let parsed = JitterConfig::from(raw);
     assert_eq!(parsed.fixed_delay_ms, cfg.fixed_delay_ms);
@@ -211,13 +181,7 @@ fn jitter_config_roundtrip() {
 
 #[test]
 fn video_format_roundtrip() {
-    let fmt = VideoFormat {
-        width: 640,
-        height: 480,
-        fps_numerator: 30,
-        fps_denominator: 1,
-        fourcc: ffi::FourCC::FOURCC_I420,
-    };
+    let fmt = VideoFormat::new(640, 480, 30, 1, ffi::FourCC::FOURCC_I420);
     let raw = fmt.to_ffi();
     let parsed = VideoFormat::from(raw);
     assert_eq!(parsed.width, fmt.width);
@@ -229,10 +193,7 @@ fn video_format_roundtrip() {
 
 #[test]
 fn video_codec_roundtrip() {
-    let codec = VideoCodec {
-        bitrate: 64_000,
-        deadline: 42,
-    };
+    let codec = VideoCodec::new(64_000, 42);
     let raw = codec.to_ffi();
     let parsed = VideoCodec::from(raw);
     assert_eq!(parsed.bitrate, codec.bitrate);
@@ -241,11 +202,7 @@ fn video_codec_roundtrip() {
 
 #[test]
 fn audio_format_roundtrip() {
-    let fmt = AudioFormat {
-        format: ffi::AudioFileFormat::AFF_WAVE_FORMAT,
-        sample_rate: 48_000,
-        channels: 2,
-    };
+    let fmt = AudioFormat::new(ffi::AudioFileFormat::AFF_WAVE_FORMAT, 48_000, 2);
     let raw = fmt.to_ffi();
     let parsed = AudioFormat::from(raw);
     assert_eq!(parsed.format, fmt.format);
@@ -255,14 +212,7 @@ fn audio_format_roundtrip() {
 
 #[test]
 fn client_keepalive_roundtrip() {
-    let keepalive = ClientKeepAlive {
-        lost_ms: 1000,
-        tcp_interval_ms: 2000,
-        udp_interval_ms: 3000,
-        udp_rtx_ms: 4000,
-        udp_connect_rtx_ms: 5000,
-        udp_timeout_ms: 6000,
-    };
+    let keepalive = ClientKeepAlive::new(1000, 2000, 3000, 4000, 5000, 6000);
     let raw = keepalive.to_ffi();
     let parsed = ClientKeepAlive::from(raw);
     assert_eq!(parsed.lost_ms, keepalive.lost_ms);
@@ -275,12 +225,7 @@ fn client_keepalive_roundtrip() {
 
 #[test]
 fn audio_codec_roundtrip_speex() {
-    let codec = AudioCodec::Speex(SpeexCodec {
-        bandmode: 1,
-        quality: 5,
-        tx_interval_msec: 40,
-        stereo_playback: true,
-    });
+    let codec = AudioCodec::Speex(SpeexCodec::new(1, 5, 40, true));
     let raw = codec.to_ffi();
     let parsed = AudioCodec::from(raw);
     assert_eq!(parsed, codec);
@@ -288,15 +233,7 @@ fn audio_codec_roundtrip_speex() {
 
 #[test]
 fn audio_codec_roundtrip_speex_vbr() {
-    let codec = AudioCodec::SpeexVBR(SpeexVBRCodec {
-        bandmode: 2,
-        quality: 4,
-        bitrate: 12_000,
-        max_bitrate: 24_000,
-        dtx: true,
-        tx_interval_msec: 60,
-        stereo_playback: false,
-    });
+    let codec = AudioCodec::SpeexVBR(SpeexVBRCodec::new(2, 4, 12_000, 24_000, true, 60, false));
     let raw = codec.to_ffi();
     let parsed = AudioCodec::from(raw);
     assert_eq!(parsed, codec);
@@ -304,19 +241,9 @@ fn audio_codec_roundtrip_speex_vbr() {
 
 #[test]
 fn audio_codec_roundtrip_opus() {
-    let codec = AudioCodec::Opus(OpusCodec {
-        sample_rate: 48_000,
-        channels: 2,
-        application: 2049,
-        complexity: 10,
-        fec: true,
-        dtx: false,
-        bitrate: 64_000,
-        vbr: true,
-        vbr_constraint: false,
-        tx_interval_msec: 20,
-        frame_size_msec: 10,
-    });
+    let codec = AudioCodec::Opus(OpusCodec::new(
+        48_000, 2, 2049, 10, true, false, 64_000, true, false, 20, 10,
+    ));
     let raw = codec.to_ffi();
     let parsed = AudioCodec::from(raw);
     assert_eq!(parsed, codec);
@@ -324,10 +251,7 @@ fn audio_codec_roundtrip_opus() {
 
 #[test]
 fn audio_config_roundtrip() {
-    let cfg = AudioConfig {
-        enable_agc: true,
-        gain_level: 7,
-    };
+    let cfg = AudioConfig::new(true, 7);
     let raw = cfg.to_ffi();
     let parsed = AudioConfig::from(raw);
     assert_eq!(parsed.enable_agc, cfg.enable_agc);
@@ -360,15 +284,7 @@ fn channel_to_from_ffi() {
 }
 #[test]
 fn encryption_context_to_ffi_copies_fields() {
-    let ctx = EncryptionContext {
-        cert_file: "cert.pem".to_string(),
-        key_file: "key.pem".to_string(),
-        ca_file: "ca.pem".to_string(),
-        ca_dir: "certs".to_string(),
-        verify_peer: true,
-        verify_client_once: false,
-        verify_depth: 3,
-    };
+    let ctx = EncryptionContext::new("cert.pem", "key.pem", "ca.pem", "certs", true, false, 3);
     let raw = ctx.to_ffi();
     assert_eq!(to_string(&raw.szCertificateFile), "cert.pem");
     assert_eq!(to_string(&raw.szPrivateKeyFile), "key.pem");
@@ -381,28 +297,9 @@ fn encryption_context_to_ffi_copies_fields() {
 
 #[test]
 fn server_properties_to_ffi_copies_fields() {
-    let props = teamtalk::types::ServerProperties {
-        name: "srv".to_string(),
-        motd: String::new(),
-        motd_raw: "motd".to_string(),
-        max_users: 0,
-        max_login_attempts: 0,
-        max_logins_per_ip: 0,
-        max_voice_tx: 0,
-        max_video_tx: 0,
-        max_media_tx: 0,
-        max_desktop_tx: 0,
-        max_total_tx: 0,
-        auto_save: false,
-        tcp_port: 0,
-        udp_port: 0,
-        user_timeout: 0,
-        version: String::new(),
-        protocol_version: String::new(),
-        login_delay: 0,
-        access_token: String::new(),
-        log_events: 7,
-    };
+    let props = teamtalk::types::ServerProperties::new(
+        "srv", "", "motd", 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, "", "", 0, "", 7,
+    );
     let raw = props.to_ffi();
     assert_eq!(to_string(&raw.szServerName), "srv");
     assert_eq!(to_string(&raw.szMOTDRaw), "motd");
@@ -411,21 +308,26 @@ fn server_properties_to_ffi_copies_fields() {
 
 #[test]
 fn file_transfer_progress_values() {
-    let zero = FileTransfer {
-        status: FileTransferStatus::Closed,
-        id: teamtalk::types::TransferId(1),
-        channel_id: teamtalk::types::ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 0,
-        transferred: 0,
-        inbound: true,
-    };
+    let zero = FileTransfer::new(
+        FileTransferStatus::Closed,
+        teamtalk::types::TransferId(1),
+        teamtalk::types::ChannelId(2),
+        "",
+        "",
+        0,
+        0,
+        true,
+    );
     assert_eq!(zero.progress(), 0.0);
-    let transfer = FileTransfer {
-        size: 100,
-        transferred: 30,
-        ..zero
-    };
+    let transfer = FileTransfer::new(
+        FileTransferStatus::Closed,
+        teamtalk::types::TransferId(1),
+        teamtalk::types::ChannelId(2),
+        "",
+        "",
+        100,
+        30,
+        true,
+    );
     assert_eq!(transfer.progress(), 0.3);
 }

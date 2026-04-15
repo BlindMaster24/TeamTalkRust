@@ -26,10 +26,8 @@ fn mock_message_text_roundtrip() {
 
 #[test]
 fn mock_user_builder_fields() {
-    let status = UserStatus {
-        presence: UserPresence::Away,
-        ..UserStatus::default()
-    };
+    let mut status = UserStatus::default();
+    status.presence = UserPresence::Away;
     let msg = MockUserBuilder::new(UserId(7))
         .username("bob")
         .nickname("b")

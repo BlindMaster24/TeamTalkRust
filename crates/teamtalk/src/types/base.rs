@@ -214,6 +214,7 @@ pub enum UserGender {
 }
 
 /// User status flags and presence metadata.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UserStatus {
     pub presence: UserPresence,
@@ -225,6 +226,24 @@ pub struct UserStatus {
 }
 
 impl UserStatus {
+    /// Creates a new user status.
+    pub fn new(
+        presence: UserPresence,
+        gender: UserGender,
+        video: bool,
+        desktop: bool,
+        streaming: bool,
+        media_paused: bool,
+    ) -> Self {
+        Self {
+            presence,
+            gender,
+            video,
+            desktop,
+            streaming,
+            media_paused,
+        }
+    }
     /// Creates a status from raw bit flags.
     pub fn from_bits(bits: u32) -> Self {
         let presence = match bits & 0xFF {

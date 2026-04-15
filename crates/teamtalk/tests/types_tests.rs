@@ -5,14 +5,14 @@ use teamtalk::types::{
 
 #[test]
 fn user_status_roundtrip() {
-    let status = UserStatus {
-        presence: UserPresence::Away,
-        gender: UserGender::Female,
-        video: true,
-        desktop: true,
-        streaming: false,
-        media_paused: true,
-    };
+    let status = UserStatus::new(
+        UserPresence::Away,
+        UserGender::Female,
+        true,
+        true,
+        false,
+        true,
+    );
     let bits = status.to_bits();
     let parsed = UserStatus::from_bits(bits);
     assert_eq!(parsed.presence, status.presence);

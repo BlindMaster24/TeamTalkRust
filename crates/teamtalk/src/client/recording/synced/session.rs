@@ -10,6 +10,7 @@ pub enum SilencePolicy {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct SyncedUserRecordingOptions {
     pub folder: String,
     pub file_vars: String,
@@ -137,13 +138,13 @@ impl SyncedUserRecordingSession {
                     .user()
                     .map(|u| u.id)
                     .unwrap_or(UserId(message.source()));
-                if user_id.0 > 0 {
+                if user_id.raw() > 0 {
                     self.stop_user(client, user_id);
                 }
             }
             Event::AudioBlock => {
                 let user_id = UserId(message.source());
-                if user_id.0 > 0 {
+                if user_id.raw() > 0 {
                     self.connected = true;
                     self.on_audio_block(client, user_id)?;
                 }
@@ -177,7 +178,7 @@ impl SyncedUserRecordingSession {
         if should_warn_missing_audio_subscriptions(self.options.subscribe_audio, user.as_ref()) {
             #[cfg(feature = "logging")]
             tracing::warn!(
-                user_id = user_id.0,
+                user_id = user_id.raw(),
                 "synced recording started with subscribe_audio=false and no local audio subscriptions"
             );
         }

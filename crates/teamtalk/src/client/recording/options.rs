@@ -27,6 +27,7 @@ pub enum RecordingTarget {
 }
 
 /// Configuration for managed recordings.
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub struct RecordingOptions {
     /// Output file template. Use `{index}` to control segment numbering.

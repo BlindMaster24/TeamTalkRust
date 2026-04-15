@@ -23,16 +23,16 @@ fn file_transfer_status_mapping() {
 
 #[test]
 fn file_transfer_progress_fraction() {
-    let t = FileTransfer {
-        status: FileTransferStatus::Active,
-        id: TransferId(1),
-        channel_id: ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 200,
-        transferred: 50,
-        inbound: false,
-    };
+    let t = FileTransfer::new(
+        FileTransferStatus::Active,
+        TransferId(1),
+        ChannelId(2),
+        "",
+        "",
+        200,
+        50,
+        false,
+    );
     assert_eq!(t.progress(), 0.25);
 }
 
@@ -48,26 +48,26 @@ fn file_transfer_status_helpers_match_terminal_states() {
 
 #[test]
 fn file_transfer_helper_methods_report_remaining_and_terminal_state() {
-    let active = FileTransfer {
-        status: FileTransferStatus::Active,
-        id: TransferId(1),
-        channel_id: ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 200,
-        transferred: 50,
-        inbound: false,
-    };
-    let finished = FileTransfer {
-        status: FileTransferStatus::Finished,
-        id: TransferId(2),
-        channel_id: ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 200,
-        transferred: 200,
-        inbound: true,
-    };
+    let active = FileTransfer::new(
+        FileTransferStatus::Active,
+        TransferId(1),
+        ChannelId(2),
+        "",
+        "",
+        200,
+        50,
+        false,
+    );
+    let finished = FileTransfer::new(
+        FileTransferStatus::Finished,
+        TransferId(2),
+        ChannelId(2),
+        "",
+        "",
+        200,
+        200,
+        true,
+    );
 
     assert_eq!(active.remaining_bytes(), 150);
     assert!(!active.is_finished());
@@ -79,26 +79,26 @@ fn file_transfer_helper_methods_report_remaining_and_terminal_state() {
 
 #[test]
 fn file_transfer_direction_helpers_match_inbound_flag() {
-    let upload = FileTransfer {
-        status: FileTransferStatus::Active,
-        id: TransferId(1),
-        channel_id: ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 1,
-        transferred: 0,
-        inbound: false,
-    };
-    let download = FileTransfer {
-        status: FileTransferStatus::Active,
-        id: TransferId(2),
-        channel_id: ChannelId(2),
-        local_path: String::new(),
-        remote_name: String::new(),
-        size: 1,
-        transferred: 0,
-        inbound: true,
-    };
+    let upload = FileTransfer::new(
+        FileTransferStatus::Active,
+        TransferId(1),
+        ChannelId(2),
+        "",
+        "",
+        1,
+        0,
+        false,
+    );
+    let download = FileTransfer::new(
+        FileTransferStatus::Active,
+        TransferId(2),
+        ChannelId(2),
+        "",
+        "",
+        1,
+        0,
+        true,
+    );
 
     assert!(!upload.inbound);
     assert!(download.inbound);

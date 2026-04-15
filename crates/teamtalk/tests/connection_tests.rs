@@ -7,12 +7,12 @@ use teamtalk::client::connection::{
 
 #[test]
 fn reconnect_handler_resets_after_stable_connection() {
-    let config = ReconnectConfig {
-        max_attempts: 10,
-        min_delay: Duration::from_millis(0),
-        max_delay: Duration::from_millis(0),
-        stability_threshold: Duration::from_millis(0),
-    };
+    let config = ReconnectConfig::new(
+        10,
+        Duration::from_millis(0),
+        Duration::from_millis(0),
+        Duration::from_millis(0),
+    );
     let mut handler = ReconnectHandler::new(config);
     handler.record_attempt();
     handler.record_attempt();
@@ -33,12 +33,12 @@ fn reconnect_handler_respects_max_attempts(
     #[case] recorded_attempts: u32,
     #[case] can_attempt: bool,
 ) {
-    let config = ReconnectConfig {
+    let config = ReconnectConfig::new(
         max_attempts,
-        min_delay: Duration::from_millis(0),
-        max_delay: Duration::from_millis(0),
-        stability_threshold: Duration::from_millis(0),
-    };
+        Duration::from_millis(0),
+        Duration::from_millis(0),
+        Duration::from_millis(0),
+    );
     let mut handler = ReconnectHandler::new(config);
     for _ in 0..recorded_attempts {
         handler.record_attempt();

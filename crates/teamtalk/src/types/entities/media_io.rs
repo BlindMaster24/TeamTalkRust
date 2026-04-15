@@ -1,9 +1,10 @@
-use crate::types::{ChannelId, FileId, TransferId};
+use crate::types::{ChannelId, FileId, SoundDeviceId, TransferId};
 use teamtalk_sys as ffi;
 
 /// Sound device description.
+#[non_exhaustive]
 pub struct SoundDevice {
-    pub id: i32,
+    pub id: SoundDeviceId,
     pub name: String,
     pub system: ffi::SoundSystem,
     pub device_uid: String,
@@ -18,7 +19,7 @@ pub struct SoundDevice {
 impl From<ffi::SoundDevice> for SoundDevice {
     fn from(d: ffi::SoundDevice) -> Self {
         Self {
-            id: d.nDeviceID,
+            id: SoundDeviceId(d.nDeviceID),
             name: crate::utils::strings::to_string(&d.szDeviceName),
             system: d.nSoundSystem,
             device_uid: crate::utils::strings::to_string(&d.szDeviceID),
@@ -81,6 +82,7 @@ impl FileTransferStatus {
 }
 
 /// File transfer information.
+#[non_exhaustive]
 pub struct FileTransfer {
     pub status: FileTransferStatus,
     pub id: TransferId,
@@ -93,6 +95,29 @@ pub struct FileTransfer {
 }
 
 impl FileTransfer {
+    /// Creates a new file transfer instance.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        status: FileTransferStatus,
+        id: TransferId,
+        channel_id: ChannelId,
+        local_path: impl Into<String>,
+        remote_name: impl Into<String>,
+        size: i64,
+        transferred: i64,
+        inbound: bool,
+    ) -> Self {
+        Self {
+            status,
+            id,
+            channel_id,
+            local_path: local_path.into(),
+            remote_name: remote_name.into(),
+            size,
+            transferred,
+            inbound,
+        }
+    }
     /// Returns transfer progress as a 0.0-1.0 fraction.
     pub fn progress(&self) -> f32 {
         if self.size == 0 {
@@ -135,6 +160,7 @@ impl From<ffi::FileTransfer> for FileTransfer {
 
 #[derive(Debug, Clone, Default)]
 /// Remote file metadata.
+#[non_exhaustive]
 pub struct RemoteFile {
     pub channel_id: ChannelId,
     pub id: FileId,
@@ -159,6 +185,7 @@ impl From<ffi::RemoteFile> for RemoteFile {
 
 #[derive(Debug, Clone)]
 /// Media file information.
+#[non_exhaustive]
 pub struct MediaFileInfo {
     pub status: ffi::MediaFileStatus,
     pub name: String,

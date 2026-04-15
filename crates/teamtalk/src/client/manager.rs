@@ -5,6 +5,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::time::{Duration, Instant, SystemTime};
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ClientEvent {
     pub client_id: ClientId,
     pub label: Option<String>,
@@ -14,6 +15,7 @@ pub struct ClientEvent {
 }
 
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct ClientHealth {
     pub last_event: Option<Event>,
     pub last_event_at: Option<SystemTime>,

@@ -2,6 +2,7 @@ use crate::types::{AudioCodec, AudioConfig, ChannelId, ChannelType, UserId};
 use teamtalk_sys as ffi;
 
 /// Channel definition and configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct Channel {
     pub id: ChannelId,
@@ -136,8 +137,8 @@ impl Channel {
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::Channel {
         let mut raw = ffi::Channel {
-            nChannelID: self.id.0,
-            nParentID: self.parent_id.0,
+            nChannelID: self.id.raw(),
+            nParentID: self.parent_id.raw(),
             ..Default::default()
         };
         let n = crate::utils::ToTT::tt(&self.name);
@@ -158,11 +159,11 @@ impl Channel {
         raw.nTimeOutTimerVoiceMSec = self.timeout_voice_ms;
         raw.nTimeOutTimerMediaFileMSec = self.timeout_media_ms;
         for (i, (uid, types)) in self.transmit_users.iter().take(128).enumerate() {
-            raw.transmitUsers[i][0] = uid.0;
+            raw.transmitUsers[i][0] = uid.raw();
             raw.transmitUsers[i][1] = *types as i32;
         }
         for (i, id) in self.transmit_users_queue.iter().take(16).enumerate() {
-            raw.transmitUsersQueue[i] = id.0;
+            raw.transmitUsersQueue[i] = id.raw();
         }
         raw
     }

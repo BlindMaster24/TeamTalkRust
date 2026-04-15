@@ -9,6 +9,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 use std::time::Duration;
 
+#[non_exhaustive]
 pub struct Context<'a> {
     pub client: &'a Client,
     pub event: Event,
@@ -18,6 +19,22 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
+    /// Creates a new bot context.
+    pub fn new(
+        client: &'a Client,
+        event: Event,
+        message: &'a Message,
+        command: Option<Command>,
+        state: &'a mut dyn StateStore,
+    ) -> Self {
+        Self {
+            client,
+            event,
+            message,
+            command,
+            state,
+        }
+    }
     pub fn is_command(&self, name: &str) -> bool {
         self.command_name() == Some(name)
     }
@@ -71,7 +88,7 @@ impl<'a> Context<'a> {
         self.client
             .poll_until(
                 timeout.as_millis().min(i32::MAX as u128) as i32,
-                |event, msg| event == Event::TextMessage && msg.source() == from.0,
+                |event, msg| event == Event::TextMessage && msg.source() == from.raw(),
             )
             .map(|(_, msg)| msg)
     }
@@ -81,7 +98,7 @@ impl<'a> Context<'a> {
         command_name: &str,
         timeout: Duration,
     ) -> Option<Message> {
-        let sender = self.sender_id().0;
+        let sender = self.sender_id().raw();
         let expected = command_name.to_ascii_lowercase();
         self.client
             .poll_until(
@@ -167,12 +184,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn user_state_key(&self, key: &str) -> String {
-        format!("u:{}:{key}", self.sender_id().0)
+        format!("u:{}:{key}", self.sender_id().raw())
     }
 
     pub fn channel_state_key(&self, key: &str) -> Option<String> {
         self.channel_id()
-            .map(|channel| format!("c:{}:{key}", channel.0))
+            .map(|channel| format!("c:{}:{key}", channel.raw()))
     }
 
     pub fn global_state_key(&self, key: &str) -> String {
@@ -357,7 +374,7 @@ impl<'a> Context<'a> {
         let session = state.session_id().unwrap_or("0");
         Some(format!(
             "d:{}:{}:{}:{key}",
-            self.sender_id().0,
+            self.sender_id().raw(),
             state.dialog,
             session
         ))
@@ -429,12 +446,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn dialog_start(&mut self, dialog: impl Into<String>, step: impl Into<String>) {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().start(source, dialog, step);
     }
 
     pub fn dialog_start_state(&mut self, state: DialogState) {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().start_state(source, state);
     }
 
@@ -451,17 +468,17 @@ impl<'a> Context<'a> {
     }
 
     pub fn dialog_current(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().current_active(source)
     }
 
     pub fn dialog_current_live(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().current_live(source)
     }
 
     pub fn dialog_advance(&mut self, step: impl Into<String>) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().advance(source, step)
     }
 
@@ -481,12 +498,12 @@ impl<'a> Context<'a> {
         if flow.name().is_empty() || flow.start_step().is_empty() {
             return Err(Error::InvalidParam);
         }
-        let source = self.message.source();
+        let source = self.sender_id();
         Ok(self.dialog().restart_flow(source, flow))
     }
 
     pub fn dialog_advance_next(&mut self, flow: &DialogFlow) -> Result<Option<DialogState>> {
-        let source = self.message.source();
+        let source = self.sender_id();
         if let Some(current) = self.dialog().current_live(source) {
             if !current.dialog.eq_ignore_ascii_case(flow.name()) {
                 return Err(Error::InvalidParam);
@@ -499,7 +516,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn dialog_stop(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().stop(source)
     }
 
@@ -512,22 +529,22 @@ impl<'a> Context<'a> {
     }
 
     pub fn dialog_pause(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().pause(source)
     }
 
     pub fn dialog_resume(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().resume(source)
     }
 
     pub fn dialog_set_timeout(&mut self, timeout: Duration) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().set_timeout(source, timeout)
     }
 
     pub fn dialog_clear_timeout(&mut self) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().clear_timeout(source)
     }
 
@@ -535,17 +552,17 @@ impl<'a> Context<'a> {
         &mut self,
         policy: DialogTimeoutPolicy,
     ) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().set_timeout_policy(source, policy)
     }
 
     pub fn dialog_timeout_policy(&mut self) -> Option<DialogTimeoutPolicy> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().timeout_policy(source)
     }
 
     pub fn dialog_metadata(&mut self, key: &str) -> Option<String> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().metadata(source, key)
     }
 
@@ -554,12 +571,12 @@ impl<'a> Context<'a> {
         key: impl Into<String>,
         value: impl Into<String>,
     ) -> Option<DialogState> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().set_metadata(source, key, value)
     }
 
     pub fn dialog_remove_metadata(&mut self, key: &str) -> Option<(DialogState, Option<String>)> {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().remove_metadata(source, key)
     }
 
@@ -578,7 +595,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn dialog_is(&mut self, dialog: &str, step: &str) -> bool {
-        let source = self.message.source();
+        let source = self.sender_id();
         self.dialog().is_in(source, dialog, step)
     }
 

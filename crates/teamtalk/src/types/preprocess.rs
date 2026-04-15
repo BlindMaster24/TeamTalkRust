@@ -1,6 +1,7 @@
 use teamtalk_sys as ffi;
 
 /// Speex DSP preprocessing settings.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SpeexDSP {
     pub enable_agc: bool,
@@ -33,6 +34,33 @@ impl From<ffi::SpeexDSP> for SpeexDSP {
 }
 
 impl SpeexDSP {
+    /// Creates new Speex DSP preprocessing settings.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        enable_agc: bool,
+        gain_level: i32,
+        max_inc_db_sec: i32,
+        max_dec_db_sec: i32,
+        max_gain_db: i32,
+        enable_denoise: bool,
+        max_noise_suppress_db: i32,
+        enable_aec: bool,
+        echo_suppress: i32,
+        echo_suppress_active: i32,
+    ) -> Self {
+        Self {
+            enable_agc,
+            gain_level,
+            max_inc_db_sec,
+            max_dec_db_sec,
+            max_gain_db,
+            enable_denoise,
+            max_noise_suppress_db,
+            enable_aec,
+            echo_suppress,
+            echo_suppress_active,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexDSP {
         ffi::SpeexDSP {
@@ -51,6 +79,7 @@ impl SpeexDSP {
 }
 
 /// WebRTC audio preprocessing settings.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WebRTCConfig {
     pub preamplifier_enable: bool,
@@ -77,6 +106,26 @@ impl From<ffi::WebRTCAudioPreprocessor> for WebRTCConfig {
 }
 
 impl WebRTCConfig {
+    /// Creates new WebRTC audio preprocessing settings.
+    pub fn new(
+        preamplifier_enable: bool,
+        preamplifier_gain: f32,
+        aec_enable: bool,
+        ns_enable: bool,
+        ns_level: i32,
+        agc2_enable: bool,
+        agc2_gain_db: f32,
+    ) -> Self {
+        Self {
+            preamplifier_enable,
+            preamplifier_gain,
+            aec_enable,
+            ns_enable,
+            ns_level,
+            agc2_enable,
+            agc2_gain_db,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::WebRTCAudioPreprocessor {
         let mut raw = ffi::WebRTCAudioPreprocessor::default();

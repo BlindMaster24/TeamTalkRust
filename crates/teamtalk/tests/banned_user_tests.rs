@@ -3,15 +3,7 @@ use teamtalk::utils::strings::to_string;
 
 #[test]
 fn banned_user_to_ffi_copies_fields() {
-    let user = BannedUser {
-        ip: "1.2.3.4".to_string(),
-        channel_path: "/root".to_string(),
-        nickname: "nick".to_string(),
-        username: "user".to_string(),
-        ban_time: "now".to_string(),
-        ban_types: 7,
-        owner: "admin".to_string(),
-    };
+    let user = BannedUser::new("1.2.3.4", "/root", "nick", "user", "now", 7, "admin");
     let raw = user.to_ffi();
     assert_eq!(to_string(&raw.szIPAddress), "1.2.3.4");
     assert_eq!(to_string(&raw.szChannelPath), "/root");

@@ -69,34 +69,11 @@ fn user_state_flags_composition() {
 
 #[test]
 fn audio_codec_fields_match() {
-    let speex = AudioCodec::Speex(SpeexCodec {
-        bandmode: 1,
-        quality: 3,
-        tx_interval_msec: 20,
-        stereo_playback: true,
-    });
-    let speex_vbr = AudioCodec::SpeexVBR(SpeexVBRCodec {
-        bandmode: 2,
-        quality: 4,
-        bitrate: 12_000,
-        max_bitrate: 16_000,
-        dtx: true,
-        tx_interval_msec: 40,
-        stereo_playback: false,
-    });
-    let opus = AudioCodec::Opus(OpusCodec {
-        sample_rate: 48_000,
-        channels: 2,
-        application: 2049,
-        complexity: 5,
-        fec: false,
-        dtx: true,
-        bitrate: 64_000,
-        vbr: true,
-        vbr_constraint: true,
-        tx_interval_msec: 20,
-        frame_size_msec: 10,
-    });
+    let speex = AudioCodec::Speex(SpeexCodec::new(1, 3, 20, true));
+    let speex_vbr = AudioCodec::SpeexVBR(SpeexVBRCodec::new(2, 4, 12_000, 16_000, true, 40, false));
+    let opus = AudioCodec::Opus(OpusCodec::new(
+        48_000, 2, 2049, 5, false, true, 64_000, true, true, 20, 10,
+    ));
     let speex_parsed = AudioCodec::from(speex.to_ffi());
     let speex_vbr_parsed = AudioCodec::from(speex_vbr.to_ffi());
     let opus_parsed = AudioCodec::from(opus.to_ffi());

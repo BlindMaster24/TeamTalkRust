@@ -4,6 +4,7 @@ use crate::types::{UserId, VideoCodec, VideoFormat};
 use teamtalk_sys as ffi;
 
 /// Video capture device with supported formats.
+#[non_exhaustive]
 pub struct VideoCaptureDevice {
     pub id: String,
     pub name: String,
@@ -82,7 +83,7 @@ impl Client {
     /// Acquires the latest video frame for a user.
     pub fn acquire_video_frame(&self, user_id: UserId) -> Option<*mut ffi::VideoFrame> {
         unsafe {
-            let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr.0, user_id.0);
+            let ptr = ffi::api().TT_AcquireUserVideoCaptureFrame(self.ptr.0, user_id.raw());
             if ptr.is_null() { None } else { Some(ptr) }
         }
     }

@@ -2,6 +2,7 @@ use crate::types::{ChannelId, CommandId, UserId};
 use teamtalk_sys as ffi;
 
 /// Text message payload.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct TextMessage {
     pub msg_type: ffi::TextMsgType,

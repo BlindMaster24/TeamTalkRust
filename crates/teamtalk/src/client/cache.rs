@@ -14,6 +14,7 @@ pub(crate) struct CacheState {
 }
 
 /// Aggregated server snapshot from cached data.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct ServerInfo {
     pub properties: Option<ServerProperties>,

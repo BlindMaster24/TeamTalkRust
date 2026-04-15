@@ -2,6 +2,7 @@ use crate::types::{ChannelId, Subscriptions, UserId, UserState, UserStatus};
 use teamtalk_sys as ffi;
 
 /// User state snapshot.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default)]
 pub struct User {
     pub id: UserId,

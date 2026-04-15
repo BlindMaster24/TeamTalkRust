@@ -1,6 +1,7 @@
 use teamtalk_sys as ffi;
 
 /// Jitter control configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct JitterConfig {
     pub fixed_delay_ms: i32,
@@ -21,6 +22,20 @@ impl From<ffi::JitterConfig> for JitterConfig {
 }
 
 impl JitterConfig {
+    /// Creates a new jitter configuration.
+    pub fn new(
+        fixed_delay_ms: i32,
+        use_adaptive: bool,
+        max_adaptive_delay_ms: i32,
+        active_adaptive_delay_ms: i32,
+    ) -> Self {
+        Self {
+            fixed_delay_ms,
+            use_adaptive,
+            max_adaptive_delay_ms,
+            active_adaptive_delay_ms,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::JitterConfig {
         ffi::JitterConfig {
@@ -33,6 +48,7 @@ impl JitterConfig {
 }
 
 /// Video format configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct VideoFormat {
     pub width: i32,
@@ -67,6 +83,22 @@ impl From<ffi::VideoFormat> for VideoFormat {
 }
 
 impl VideoFormat {
+    /// Creates a new video format.
+    pub fn new(
+        width: i32,
+        height: i32,
+        fps_numerator: i32,
+        fps_denominator: i32,
+        fourcc: ffi::FourCC,
+    ) -> Self {
+        Self {
+            width,
+            height,
+            fps_numerator,
+            fps_denominator,
+            fourcc,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::VideoFormat {
         ffi::VideoFormat {
@@ -80,6 +112,7 @@ impl VideoFormat {
 }
 
 /// Video codec configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VideoCodec {
     pub bitrate: i32,
@@ -101,6 +134,10 @@ impl From<ffi::VideoCodec> for VideoCodec {
 }
 
 impl VideoCodec {
+    /// Creates a new video codec configuration.
+    pub fn new(bitrate: i32, deadline: u32) -> Self {
+        Self { bitrate, deadline }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::VideoCodec {
         let mut raw = ffi::VideoCodec {
@@ -117,6 +154,7 @@ impl VideoCodec {
 }
 
 /// TLS encryption context settings.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default)]
 pub struct EncryptionContext {
     pub cert_file: String,
@@ -129,6 +167,26 @@ pub struct EncryptionContext {
 }
 
 impl EncryptionContext {
+    /// Creates a new encryption context.
+    pub fn new(
+        cert_file: impl Into<String>,
+        key_file: impl Into<String>,
+        ca_file: impl Into<String>,
+        ca_dir: impl Into<String>,
+        verify_peer: bool,
+        verify_client_once: bool,
+        verify_depth: i32,
+    ) -> Self {
+        Self {
+            cert_file: cert_file.into(),
+            key_file: key_file.into(),
+            ca_file: ca_file.into(),
+            ca_dir: ca_dir.into(),
+            verify_peer,
+            verify_client_once,
+            verify_depth,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::EncryptionContext {
         let mut raw = ffi::EncryptionContext::default();
@@ -154,6 +212,7 @@ impl EncryptionContext {
 }
 
 /// Keep-alive configuration for client connections.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ClientKeepAlive {
     pub lost_ms: i32,
@@ -178,6 +237,24 @@ impl From<ffi::ClientKeepAlive> for ClientKeepAlive {
 }
 
 impl ClientKeepAlive {
+    /// Creates a new keep-alive configuration.
+    pub fn new(
+        lost_ms: i32,
+        tcp_interval_ms: i32,
+        udp_interval_ms: i32,
+        udp_rtx_ms: i32,
+        udp_connect_rtx_ms: i32,
+        udp_timeout_ms: i32,
+    ) -> Self {
+        Self {
+            lost_ms,
+            tcp_interval_ms,
+            udp_interval_ms,
+            udp_rtx_ms,
+            udp_connect_rtx_ms,
+            udp_timeout_ms,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::ClientKeepAlive {
         ffi::ClientKeepAlive {
@@ -192,6 +269,7 @@ impl ClientKeepAlive {
 }
 
 /// Abuse prevention configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AbusePrevention {
     pub commands_limit: i32,
@@ -208,6 +286,13 @@ impl From<ffi::AbusePrevention> for AbusePrevention {
 }
 
 impl AbusePrevention {
+    /// Creates a new abuse prevention configuration.
+    pub fn new(commands_limit: i32, commands_interval_ms: i32) -> Self {
+        Self {
+            commands_limit,
+            commands_interval_ms,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AbusePrevention {
         ffi::AbusePrevention {
@@ -218,6 +303,7 @@ impl AbusePrevention {
 }
 
 /// Audio format description.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct AudioFormat {
     pub format: ffi::AudioFileFormat,
@@ -246,6 +332,14 @@ impl From<ffi::AudioFormat> for AudioFormat {
 }
 
 impl AudioFormat {
+    /// Creates a new audio format.
+    pub fn new(format: ffi::AudioFileFormat, sample_rate: i32, channels: i32) -> Self {
+        Self {
+            format,
+            sample_rate,
+            channels,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioFormat {
         ffi::AudioFormat {
@@ -257,6 +351,7 @@ impl AudioFormat {
 }
 
 /// Video frame metadata.
+#[non_exhaustive]
 pub struct VideoFrame {
     pub width: i32,
     pub height: i32,
@@ -280,6 +375,7 @@ impl From<ffi::VideoFrame> for VideoFrame {
 }
 
 /// Audio input progress information.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AudioInputProgress {
     pub stream_id: i32,
@@ -298,6 +394,7 @@ impl From<ffi::AudioInputProgress> for AudioInputProgress {
 }
 
 /// Desktop input packet.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DesktopInput {
     pub mouse_pos_x: u16,
@@ -330,6 +427,7 @@ impl DesktopInput {
 }
 
 /// SDK error message payload.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default)]
 pub struct ErrorMessage {
     pub code: i32,

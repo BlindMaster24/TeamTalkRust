@@ -8,12 +8,30 @@ use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
 
 /// Reconnect policy configuration.
+#[non_exhaustive]
 #[derive(Clone)]
 pub struct ReconnectConfig {
     pub max_attempts: u32,
     pub min_delay: Duration,
     pub max_delay: Duration,
     pub stability_threshold: Duration,
+}
+
+impl ReconnectConfig {
+    /// Creates a new reconnect configuration.
+    pub fn new(
+        max_attempts: u32,
+        min_delay: Duration,
+        max_delay: Duration,
+        stability_threshold: Duration,
+    ) -> Self {
+        Self {
+            max_attempts,
+            min_delay,
+            max_delay,
+            stability_threshold,
+        }
+    }
 }
 
 impl Default for ReconnectConfig {
@@ -30,10 +48,18 @@ impl Default for ReconnectConfig {
 /// Full in-session recovery workflow configuration.
 ///
 /// The default keeps login and join retries aligned with reconnect defaults.
+#[non_exhaustive]
 #[derive(Clone)]
 pub struct ReconnectWorkflowConfig {
     pub login: ReconnectConfig,
     pub join: ReconnectConfig,
+}
+
+impl ReconnectWorkflowConfig {
+    /// Creates a new workflow configuration.
+    pub fn new(login: ReconnectConfig, join: ReconnectConfig) -> Self {
+        Self { login, join }
+    }
 }
 
 impl Default for ReconnectWorkflowConfig {
@@ -47,6 +73,7 @@ impl Default for ReconnectWorkflowConfig {
 }
 
 /// Watchdog timeouts for in-progress recovery phases.
+#[non_exhaustive]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReconnectPhaseTimeouts {
     /// Maximum time to wait for `ConnectSuccess`, `ConnectFailed`, or `ConnectCryptError`.
@@ -58,6 +85,14 @@ pub struct ReconnectPhaseTimeouts {
 }
 
 impl ReconnectPhaseTimeouts {
+    /// Creates new phase timeouts.
+    pub fn new(connect: Option<Duration>, login: Option<Duration>, join: Option<Duration>) -> Self {
+        Self {
+            connect,
+            login,
+            join,
+        }
+    }
     /// Disables phase watchdogs for all built-in recovery phases.
     pub const fn disabled() -> Self {
         Self {
@@ -160,6 +195,7 @@ impl ReconnectHandler {
 
 #[derive(Debug, Clone)]
 /// Borrowed connection parameters.
+#[non_exhaustive]
 pub struct ConnectParams<'a> {
     pub host: &'a str,
     pub tcp: i32,
@@ -169,6 +205,7 @@ pub struct ConnectParams<'a> {
 
 #[derive(Debug, Clone)]
 /// Owned connection parameters.
+#[non_exhaustive]
 pub struct ConnectParamsOwned {
     pub host: String,
     pub tcp: i32,

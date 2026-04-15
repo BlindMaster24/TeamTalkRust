@@ -1,6 +1,7 @@
 use teamtalk_sys as ffi;
 
 /// Server properties snapshot.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct ServerProperties {
     pub name: String,
@@ -53,6 +54,53 @@ impl From<ffi::ServerProperties> for ServerProperties {
 }
 
 impl ServerProperties {
+    /// Creates a new server properties instance.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: impl Into<String>,
+        motd: impl Into<String>,
+        motd_raw: impl Into<String>,
+        max_users: i32,
+        max_login_attempts: i32,
+        max_logins_per_ip: i32,
+        max_voice_tx: i32,
+        max_video_tx: i32,
+        max_media_tx: i32,
+        max_desktop_tx: i32,
+        max_total_tx: i32,
+        auto_save: bool,
+        tcp_port: i32,
+        udp_port: i32,
+        user_timeout: i32,
+        version: impl Into<String>,
+        protocol_version: impl Into<String>,
+        login_delay: i32,
+        access_token: impl Into<String>,
+        log_events: u32,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            motd: motd.into(),
+            motd_raw: motd_raw.into(),
+            max_users,
+            max_login_attempts,
+            max_logins_per_ip,
+            max_voice_tx,
+            max_video_tx,
+            max_media_tx,
+            max_desktop_tx,
+            max_total_tx,
+            auto_save,
+            tcp_port,
+            udp_port,
+            user_timeout,
+            version: version.into(),
+            protocol_version: protocol_version.into(),
+            login_delay,
+            access_token: access_token.into(),
+            log_events,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::ServerProperties {
         let mut raw = ffi::ServerProperties::default();
@@ -83,6 +131,7 @@ impl ServerProperties {
 }
 
 /// Client statistics snapshot.
+#[non_exhaustive]
 pub struct ClientStatistics {
     pub udp_ping: i32,
     pub tcp_ping: i32,

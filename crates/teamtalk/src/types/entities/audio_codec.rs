@@ -1,6 +1,7 @@
 use teamtalk_sys as ffi;
 
 /// Speex audio codec configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpeexCodec {
     pub bandmode: i32,
@@ -21,6 +22,15 @@ impl From<ffi::SpeexCodec> for SpeexCodec {
 }
 
 impl SpeexCodec {
+    /// Creates a new Speex codec configuration.
+    pub fn new(bandmode: i32, quality: i32, tx_interval_msec: i32, stereo_playback: bool) -> Self {
+        Self {
+            bandmode,
+            quality,
+            tx_interval_msec,
+            stereo_playback,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexCodec {
         ffi::SpeexCodec {
@@ -33,6 +43,7 @@ impl SpeexCodec {
 }
 
 /// Speex VBR audio codec configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpeexVBRCodec {
     pub bandmode: i32,
@@ -59,6 +70,26 @@ impl From<ffi::SpeexVBRCodec> for SpeexVBRCodec {
 }
 
 impl SpeexVBRCodec {
+    /// Creates a new Speex VBR codec configuration.
+    pub fn new(
+        bandmode: i32,
+        quality: i32,
+        bitrate: i32,
+        max_bitrate: i32,
+        dtx: bool,
+        tx_interval_msec: i32,
+        stereo_playback: bool,
+    ) -> Self {
+        Self {
+            bandmode,
+            quality,
+            bitrate,
+            max_bitrate,
+            dtx,
+            tx_interval_msec,
+            stereo_playback,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::SpeexVBRCodec {
         ffi::SpeexVBRCodec {
@@ -74,6 +105,7 @@ impl SpeexVBRCodec {
 }
 
 /// Opus audio codec configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpusCodec {
     pub sample_rate: i32,
@@ -108,6 +140,35 @@ impl From<ffi::OpusCodec> for OpusCodec {
 }
 
 impl OpusCodec {
+    /// Creates a new Opus codec configuration.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        sample_rate: i32,
+        channels: i32,
+        application: i32,
+        complexity: i32,
+        fec: bool,
+        dtx: bool,
+        bitrate: i32,
+        vbr: bool,
+        vbr_constraint: bool,
+        tx_interval_msec: i32,
+        frame_size_msec: i32,
+    ) -> Self {
+        Self {
+            sample_rate,
+            channels,
+            application,
+            complexity,
+            fec,
+            dtx,
+            bitrate,
+            vbr,
+            vbr_constraint,
+            tx_interval_msec,
+            frame_size_msec,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::OpusCodec {
         ffi::OpusCodec {
@@ -177,6 +238,7 @@ impl AudioCodec {
 }
 
 /// Audio input configuration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AudioConfig {
     pub enable_agc: bool,
@@ -193,6 +255,13 @@ impl From<ffi::AudioConfig> for AudioConfig {
 }
 
 impl AudioConfig {
+    /// Creates a new audio configuration.
+    pub fn new(enable_agc: bool, gain_level: i32) -> Self {
+        Self {
+            enable_agc,
+            gain_level,
+        }
+    }
     /// Converts to the raw TeamTalk struct.
     pub fn to_ffi(&self) -> ffi::AudioConfig {
         ffi::AudioConfig {

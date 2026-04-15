@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ClientInfo {
     pub id: ClientId,
     pub label: Option<String>,

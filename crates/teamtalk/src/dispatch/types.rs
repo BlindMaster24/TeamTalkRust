@@ -1,6 +1,7 @@
 use super::*;
 
 /// Owned connection parameters for reconnect workflows.
+#[non_exhaustive]
 #[derive(Clone)]
 pub struct ConnectParamsOwned {
     pub host: String,
@@ -39,6 +40,7 @@ impl From<ConnectParams<'_>> for ConnectParamsOwned {
 
 #[derive(Clone)]
 /// Reconnect settings for dispatch flows.
+#[non_exhaustive]
 pub struct ReconnectSettings {
     pub params: ConnectParamsOwned,
     pub config: ReconnectConfig,
@@ -64,6 +66,7 @@ impl ReconnectSettings {
 
 #[derive(Clone)]
 /// Configuration for the dispatcher runtime.
+#[non_exhaustive]
 pub struct ClientConfig {
     pub poll_timeout_ms: i32,
     pub reconnect: Option<ReconnectSettings>,

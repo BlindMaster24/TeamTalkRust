@@ -1,23 +1,24 @@
 //! Audio device and audio stream APIs.
 use super::Client;
 use crate::events::Event;
-use crate::types::{AudioPreprocessor, SoundDevice, UserId};
+use crate::types::{AudioPreprocessor, SoundDevice, SoundDeviceId, UserId};
 use std::io::Write;
 use std::net::UdpSocket;
 use std::sync::{Arc, Mutex};
 use teamtalk_sys as ffi;
 
 /// Audio device selection preset.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy)]
 pub struct AudioDeviceProfile {
-    pub input_id: i32,
-    pub output_id: i32,
+    pub input_id: SoundDeviceId,
+    pub output_id: SoundDeviceId,
     pub duplex: bool,
 }
 
 impl AudioDeviceProfile {
     /// Creates a split input/output profile.
-    pub fn split(input_id: i32, output_id: i32) -> Self {
+    pub fn split(input_id: SoundDeviceId, output_id: SoundDeviceId) -> Self {
         Self {
             input_id,
             output_id,
@@ -26,7 +27,7 @@ impl AudioDeviceProfile {
     }
 
     /// Creates a duplex input/output profile.
-    pub fn duplex(input_id: i32, output_id: i32) -> Self {
+    pub fn duplex(input_id: SoundDeviceId, output_id: SoundDeviceId) -> Self {
         Self {
             input_id,
             output_id,
@@ -39,6 +40,7 @@ mod blocks;
 mod devices;
 
 /// View of raw audio block data.
+#[non_exhaustive]
 pub struct AudioBlockView<'a> {
     pub sample_rate: i32,
     pub channels: i32,
@@ -76,7 +78,15 @@ pub trait AudioBlockSink {
 }
 
 /// Sink backed by a callback.
+#[non_exhaustive]
 pub struct CallbackSink<F>(pub F);
+
+impl<F> CallbackSink<F> {
+    /// Creates a new callback sink.
+    pub fn new(callback: F) -> Self {
+        Self(callback)
+    }
+}
 
 impl<F> AudioBlockSink for CallbackSink<F>
 where

@@ -5,6 +5,7 @@ use crate::utils::ToTT;
 use teamtalk_sys as ffi;
 
 /// Configuration for per-user media recording.
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub struct UserRecordingOptions {
     pub folder: String,
@@ -52,7 +53,7 @@ impl Client {
         unsafe {
             ffi::api().TT_SetUserMediaStorageDir(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 folder.tt().as_ptr(),
                 file_vars.tt().as_ptr(),
                 format,
@@ -72,7 +73,7 @@ impl Client {
         unsafe {
             ffi::api().TT_SetUserMediaStorageDirEx(
                 self.ptr.0,
-                user_id.0,
+                user_id.raw(),
                 folder.tt().as_ptr(),
                 file_vars.tt().as_ptr(),
                 format,

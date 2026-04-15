@@ -19,13 +19,7 @@ fn make_context<'a>(
     message: &'a teamtalk::Message,
     store: &'a mut MemoryStateStore,
 ) -> Context<'a> {
-    Context {
-        client,
-        event: Event::TextMessage,
-        message,
-        command: None,
-        state: store,
-    }
+    Context::new(client, Event::TextMessage, message, None, store)
 }
 
 fn text_message(text: &str) -> teamtalk::Message {

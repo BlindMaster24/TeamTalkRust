@@ -33,6 +33,7 @@ fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
 }
 
 /// Options for multipart text sending.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SendTextOptions {
     /// Additional retry attempts for the first chunk only.
@@ -126,11 +127,11 @@ fn text_message_for_target(target: MessageTarget) -> ffi::TextMessage {
     match target {
         MessageTarget::User(id) => {
             msg.nMsgType = ffi::TextMsgType::MSGTYPE_USER;
-            msg.nToUserID = id.0;
+            msg.nToUserID = id.raw();
         }
         MessageTarget::Channel(id) => {
             msg.nMsgType = ffi::TextMsgType::MSGTYPE_CHANNEL;
-            msg.nChannelID = id.0;
+            msg.nChannelID = id.raw();
         }
         MessageTarget::Broadcast => {
             msg.nMsgType = ffi::TextMsgType::MSGTYPE_BROADCAST;
@@ -140,6 +141,7 @@ fn text_message_for_target(target: MessageTarget) -> ffi::TextMessage {
 }
 
 /// Stored login parameters for automatic login.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct LoginParams {
     pub nickname: String,
