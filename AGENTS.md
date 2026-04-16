@@ -7,7 +7,7 @@
 - `TEAMTALK_DLL/` stores downloaded SDK runtime files, import/static libs, `TeamTalk.h`, and `Documentation/` (git-ignored); `qtTeamTalk/` is the upstream Qt client source.
 - `docs/` contains user guides; `README.md` links to docs and entry points.
 
-## Current Module Baseline (post-decomposition)
+## Current Module Baseline
 - `client` is directory-first:
   - `src/client/core/` for runtime lifecycle, polling, reconnect state/recovery, and debug internals.
   - `src/client/connection/` for connect/reconnect/auto-reconnect/keep-alive concerns.
@@ -15,17 +15,30 @@
   - `src/client/hooks/` for registration, dispatch pipeline, and hook types.
   - `src/client/recording/synced/` for synced recording session/writer/helpers.
   - `src/client/users/` for account/auth plus moderation/text/subscription APIs.
+  - `src/client/desktop.rs` for desktop sharing, input translation, and cursor operations; routes through `TeamTalkBackend` with safe `DesktopWindowView` accessor on guard types.
+  - `src/client/video.rs` for video capture and transmission; routes through `TeamTalkBackend` with safe `VideoFrameView` accessor on guard types.
+  - `src/client/media.rs` for media file streaming, local playback, and palette queries; routes through `TeamTalkBackend`.
+  - `src/client/files.rs` for channel file listing; routes through `TeamTalkBackend`.
+  - `src/client/recorder.rs` (feature-gated `mock`) for `EventRecorder`/`EventReplayer`/`RecordedEvent` with serde roundtrip support.
+  - `src/client/backend.rs` defines `TeamTalkBackend` trait with both `#[cfg(feature = "mock")]` (public + sealed) and `#[cfg(not(feature = "mock"))]` (pub(crate)) blocks that must stay in sync.
+  - `src/client/backend_mock.rs` provides `MockBackend` with stub implementations and `push_raw_message` for injecting test events.
 - `types` is directory-first:
   - `src/types/entities/` for high-level domain entities and conversion surfaces.
   - focused modules (`audio.rs`, `channels.rs`, `users.rs`, `server.rs`, etc.) for cohesive type groups.
 - `dispatch` is split into `src/dispatch/{mod,types,source,dispatcher}.rs`.
 - `loader` is split into `src/loader/{mod,versions,download}.rs`.
+- `extensions` provides plugin infrastructure:
+  - `src/extensions/plugins.rs` for `TeamTalkPlugin` trait, `PluginFlow`, `PluginError`, and `PluginManager` (register, load, dispatch, unload).
 - `bot/router` is split into `src/bot/router/{mod,builder,dispatch,help,helpers}.rs`.
 - `bot` currently includes:
   - `src/bot/fsm.rs` for dialog/session state, timeout policy, metadata, and flow helpers.
   - `src/bot/middleware.rs` for function middleware, guards, and rate limiting.
   - `src/bot/permissions.rs` for rights-based permission presets on top of TeamTalk account rights.
-  - `src/bot/storage.rs` plus Redis/SQLite adapters for bot state backends.
+  - `src/bot/storage.rs` plus Redis/SQLite adapters for bot state backends; StateStore v2 adds `exists`, `set_with_ttl`, `keys`, `remove_prefix`, `get_many`, `set_many` with TTL support in Memory (Instant+Entry), Redis (SCAN/SETEX), and SQLite (expires_at column).
+  - `src/bot/scheduler.rs` for sync job scheduling with named jobs and `every_named`/`after` variants.
+  - `src/bot/scheduler_async.rs` (feature-gated `async`) for `AsyncScheduler` with tokio and futures runtime integration.
+  - `src/bot/runtime_async.rs` integrates `tokio::select!` and `futures::select!` into the async bot run loop.
+- `events.rs` includes `FfiError` enum for typed FFI failure classification; `Error::Ffi` variant exposes it in the public error surface.
 
 ## Module Structure Guidelines (for this repo)
 - Prefer small, focused modules; split files when a module grows beyond ~400-600 lines or mixes multiple responsibilities.
@@ -571,13 +584,13 @@
 - Keep public APIs deterministic; avoid time-based side effects unless explicitly configured.
 
 ## Feature Flags
-- `dispatch`: event dispatcher wrapper for deterministic event routing.
-- `async`: async client wrapper backed by `futures`.
+- `dispatch`: event dispatcher wrapper for deterministic event routing; `FfiError` enum for typed FFI failure classification.
+- `async`: async client wrapper backed by `futures` and `futures-timer`.
 - `logging`: tracing hook for client events.
-- `mock`: in-memory test client built on `dispatch`.
+- `mock`: in-memory test client built on `dispatch`; includes `EventRecorder`/`EventReplayer` for capture-replay testing.
 - `offline`: disable SDK downloads; require a pre-populated `TEAMTALK_DLL/`.
 - `scripts`: Lua scripting support for extensions.
-- `plugins`: native plugin loading for extensions.
+- `plugins`: native plugin loading via `TeamTalkPlugin` trait, `PluginFlow`, and `PluginManager`.
 - `tls-native`: system TLS via the native OS backend (default).
 - `tls-rustls`: pure Rust TLS for builds without OpenSSL.
 
@@ -692,10 +705,17 @@
   - `crates/teamtalk/tests/bot_scene_integration.rs`
   - `crates/teamtalk/tests/bot_middleware_guards.rs`
   - `crates/teamtalk/tests/bot_state_json.rs`
+  - `crates/teamtalk/tests/bot_state_v2.rs`
+- Mock-based client module tests:
+  - `crates/teamtalk/tests/desktop_client_tests.rs`
+  - `crates/teamtalk/tests/video_client_tests.rs`
+  - `crates/teamtalk/tests/media_client_tests.rs`
+  - `crates/teamtalk/tests/event_replay_tests.rs`
 - Matching examples for this surface include:
   - `crates/teamtalk/examples/bot_dialog.rs`
   - `crates/teamtalk/examples/bot_macros.rs`
   - `crates/teamtalk/examples/bot_permissions.rs`
+  - `crates/teamtalk/examples/plugin_loader.rs`
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commit style: `feat:`, `fix:`, `docs:`, `chore:`.
