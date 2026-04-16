@@ -1,64 +1,41 @@
+use super::scheduler::JobErrorPolicy;
 use super::storage::StateStore;
 use crate::client::Client;
 use crate::events::Result;
 use std::time::{Duration, Instant};
 
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum JobErrorPolicy {
-    KeepRunning,
-    Disable,
-}
+type AsyncJob = dyn FnMut(&Client, &mut dyn StateStore) -> Result<()> + Send;
 
-type Job = dyn FnMut(&Client, &mut dyn StateStore) -> Result<()> + Send;
-
-struct ScheduledJob {
+#[cfg(feature = "async")]
+struct AsyncScheduledJob {
     name: String,
     interval: Duration,
     next_run: Instant,
     enabled: bool,
     one_shot: bool,
     on_error: JobErrorPolicy,
-    job: Box<Job>,
+    job: Box<AsyncJob>,
 }
 
+#[cfg(feature = "async")]
 #[derive(Default)]
-pub struct Scheduler {
-    jobs: Vec<ScheduledJob>,
-    next_id: usize,
+pub struct AsyncScheduler {
+    jobs: Vec<AsyncScheduledJob>,
 }
 
-impl Scheduler {
+#[cfg(feature = "async")]
+impl AsyncScheduler {
     #[allow(clippy::must_use_candidate)]
     pub fn new() -> Self {
         Self::default()
     }
 
-    fn auto_name(&mut self) -> String {
-        let name = format!("job_{}", self.next_id);
-        self.next_id += 1;
-        name
-    }
-
-    pub fn every<F>(&mut self, interval: Duration, on_error: JobErrorPolicy, job: F)
+    pub fn every<F>(&mut self, name: &str, interval: Duration, on_error: JobErrorPolicy, job: F)
     where
         F: FnMut(&Client, &mut dyn StateStore) -> Result<()> + Send + 'static,
     {
-        let name = self.auto_name();
-        self.every_named(&name, interval, on_error, job);
-    }
-
-    pub fn every_named<F>(
-        &mut self,
-        name: &str,
-        interval: Duration,
-        on_error: JobErrorPolicy,
-        job: F,
-    ) where
-        F: FnMut(&Client, &mut dyn StateStore) -> Result<()> + Send + 'static,
-    {
         let safe_interval = interval.max(Duration::from_millis(10));
-        self.jobs.push(ScheduledJob {
+        self.jobs.push(AsyncScheduledJob {
             name: name.to_owned(),
             interval: safe_interval,
             next_run: Instant::now() + safe_interval,
@@ -74,7 +51,7 @@ impl Scheduler {
         F: FnMut(&Client, &mut dyn StateStore) -> Result<()> + Send + 'static,
     {
         let safe_delay = delay.max(Duration::from_millis(10));
-        self.jobs.push(ScheduledJob {
+        self.jobs.push(AsyncScheduledJob {
             name: name.to_owned(),
             interval: safe_delay,
             next_run: Instant::now() + safe_delay,
@@ -121,7 +98,6 @@ impl Scheduler {
             if !job.enabled || now < job.next_run {
                 continue;
             }
-
             let result = (job.job)(client, state);
             if job.one_shot {
                 job.enabled = false;

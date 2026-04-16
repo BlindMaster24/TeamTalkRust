@@ -46,14 +46,17 @@ pub use bot::{
     StateStore, UnknownCommandPolicy, parse_command,
 };
 #[cfg(all(feature = "bot", feature = "async"))]
-pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
+pub use bot::{AsyncBot, AsyncBotBuilder, AsyncBotConfig, AsyncScheduler};
 pub use client::audio::AudioDeviceProfile;
 pub use client::audio::{
     AudioBlockSink, AudioBlockSubscription, AudioBlockView, CallbackSink, UdpSink, WriterSink,
 };
 pub use client::desktop::DesktopWindowGuard;
+pub use client::desktop::DesktopWindowView;
 pub use client::files::FileTransferHandle;
 pub use client::media::MediaVideoFrameGuard;
+#[cfg(feature = "mock")]
+pub use client::recorder::{EventRecorder, EventReplayer, RecordedEvent};
 pub use client::recording::{
     RecordSession, RecordingOptions, RecordingSampleFormat, RecordingSession, RecordingTarget,
     SilencePolicy, SyncedUserRecording, SyncedUserRecordingBus, SyncedUserRecordingOptions,
@@ -61,6 +64,7 @@ pub use client::recording::{
 };
 pub use client::users::{LoginParams, SendTextOptions};
 pub use client::video::VideoFrameGuard;
+pub use client::video::VideoFrameView;
 pub use client::{
     Client, ClientCommands, ClientEvent, ClientEvents, ClientHealth, ClientHooks, ClientInfo,
     ClientManager, ClientRegistry, EventContext, EventData, EventSubscriptionId, Message,
@@ -73,7 +77,7 @@ pub use dispatch::{
     ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher,
     EventContext as DispatchEventContext, ReconnectSettings,
 };
-pub use events::{ConnectionState, Error, Event, Result};
+pub use events::{ConnectionState, Error, Event, FfiError, Result};
 #[cfg(feature = "mock")]
 pub use mock::{MockClient, MockMessage, MockUserBuilder};
 #[cfg(feature = "bot-macros")]

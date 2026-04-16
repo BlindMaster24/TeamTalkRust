@@ -2,13 +2,14 @@ use super::{Bot, BotBuilder, BotConfig, MemoryStateStore, Router, Scheduler, Sta
 use crate::client::Client;
 use crate::events::Result;
 
-/// High-level bot entrypoint that wires router/scheduler/state into a runtime.
-///
-/// This struct helps build one bot definition and run it with a sync or async
-/// runtime without repeating the same wiring code.
+#[cfg(feature = "async")]
+use super::AsyncScheduler;
+
 pub struct BotApp {
     router: Router,
     scheduler: Scheduler,
+    #[cfg(feature = "async")]
+    async_scheduler: AsyncScheduler,
     state: Box<dyn StateStore>,
     config: BotConfig,
 }
@@ -18,6 +19,8 @@ impl Default for BotApp {
         Self {
             router: Router::new(),
             scheduler: Scheduler::new(),
+            #[cfg(feature = "async")]
+            async_scheduler: AsyncScheduler::new(),
             state: Box::new(MemoryStateStore::new()),
             config: BotConfig::default(),
         }
@@ -42,6 +45,13 @@ impl BotApp {
         self
     }
 
+    #[cfg(feature = "async")]
+    #[must_use]
+    pub fn with_async_scheduler(mut self, scheduler: AsyncScheduler) -> Self {
+        self.async_scheduler = scheduler;
+        self
+    }
+
     #[must_use]
     pub fn with_state_store(mut self, store: impl StateStore + 'static) -> Self {
         self.state = Box::new(store);
@@ -54,7 +64,6 @@ impl BotApp {
         self
     }
 
-    /// Builds a sync bot runtime.
     pub fn into_bot(self, client: Client) -> Bot {
         BotBuilder::new(client)
             .with_router(self.router)
@@ -64,7 +73,6 @@ impl BotApp {
             .build()
     }
 
-    /// Builds and runs a sync bot runtime.
     pub fn run_sync(self, client: Client) -> Result<()> {
         let mut bot = self.into_bot(client);
         bot.run()
@@ -75,7 +83,7 @@ impl BotApp {
     pub fn into_async_bot(self, client: crate::async_api::AsyncClient) -> super::AsyncBot {
         super::AsyncBotBuilder::new(client)
             .with_router(self.router)
-            .with_scheduler(self.scheduler)
+            .with_scheduler(self.async_scheduler)
             .with_boxed_state_store(self.state)
             .with_config(super::AsyncBotConfig)
             .build()

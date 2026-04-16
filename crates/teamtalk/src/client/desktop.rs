@@ -3,7 +3,56 @@ use super::Client;
 use crate::types::{DesktopInput, UserId};
 use teamtalk_sys as ffi;
 
-/// Guard around a desktop window acquired from the SDK.
+pub struct DesktopWindowView<'a> {
+    inner: &'a ffi::DesktopWindow,
+}
+
+impl<'a> DesktopWindowView<'a> {
+    #[must_use]
+    pub fn width(&self) -> i32 {
+        self.inner.nWidth
+    }
+
+    #[must_use]
+    pub fn height(&self) -> i32 {
+        self.inner.nHeight
+    }
+
+    #[must_use]
+    pub fn bitmap_format(&self) -> ffi::BitmapFormat {
+        self.inner.bmpFormat
+    }
+
+    #[must_use]
+    pub fn bytes_per_line(&self) -> i32 {
+        self.inner.nBytesPerLine
+    }
+
+    #[must_use]
+    pub fn session_id(&self) -> i32 {
+        self.inner.nSessionID
+    }
+
+    #[must_use]
+    pub fn protocol(&self) -> ffi::DesktopProtocol {
+        self.inner.nProtocol
+    }
+
+    #[must_use]
+    pub fn frame_buffer(&self) -> Option<&'a [u8]> {
+        if self.inner.frameBuffer.is_null() || self.inner.nFrameBufferSize == 0 {
+            None
+        } else {
+            Some(unsafe {
+                std::slice::from_raw_parts(
+                    self.inner.frameBuffer as *const u8,
+                    self.inner.nFrameBufferSize as usize,
+                )
+            })
+        }
+    }
+}
+
 pub struct DesktopWindowGuard<'a> {
     client: &'a Client,
     ptr: *mut ffi::DesktopWindow,
@@ -16,44 +65,62 @@ impl DesktopWindowGuard<'_> {
     }
 
     #[must_use]
+    pub fn view(&self) -> DesktopWindowView<'_> {
+        DesktopWindowView {
+            inner: unsafe { &*self.ptr },
+        }
+    }
+
+    #[must_use]
     pub fn as_ptr(&self) -> *mut ffi::DesktopWindow {
         self.ptr
     }
 }
 
 impl Client {
-    /// Closes a desktop window session.
     pub fn close_desktop_window(&self) -> bool {
-        unsafe { ffi::api().TT_CloseDesktopWindow(self.ptr.0) == 1 }
+        self.backend().close_desktop_window(self.ptr.0)
     }
 
-    /// Sends mouse cursor position to the desktop sharer.
     pub fn send_desktop_cursor_position(&self, x: u16, y: u16) -> bool {
-        unsafe { ffi::api().TT_SendDesktopCursorPosition(self.ptr.0, x, y) == 1 }
+        self.backend()
+            .send_desktop_cursor_position(self.ptr.0, x, y)
     }
 
-    /// Sends keyboard or mouse input to the desktop sharer.
     pub fn send_desktop_input(&self, user_id: UserId, input: &ffi::DesktopInput) -> bool {
-        unsafe { ffi::api().TT_SendDesktopInput(self.ptr.0, user_id.raw(), input, 1) == 1 }
+        self.backend()
+            .send_desktop_input(self.ptr.0, user_id.raw(), input, 1)
     }
 
-    /// Sends a batch of keyboard or mouse input packets to the desktop sharer.
+    pub fn close_desktop_window_result(&self) -> crate::events::Result<()> {
+        self.bool_to_result(self.close_desktop_window())
+    }
+
+    pub fn send_desktop_cursor_position_result(&self, x: u16, y: u16) -> crate::events::Result<()> {
+        self.bool_to_result(self.send_desktop_cursor_position(x, y))
+    }
+
+    pub fn send_desktop_input_result(
+        &self,
+        user_id: UserId,
+        input: &ffi::DesktopInput,
+    ) -> crate::events::Result<()> {
+        self.bool_to_result(self.send_desktop_input(user_id, input))
+    }
+
     pub fn send_desktop_inputs(&self, user_id: UserId, inputs: &[DesktopInput]) -> bool {
         if inputs.is_empty() || inputs.len() > ffi::TT_DESKTOPINPUT_MAX as usize {
             return false;
         }
         let raw_inputs: Vec<_> = inputs.iter().map(DesktopInput::to_ffi).collect();
-        unsafe {
-            ffi::api().TT_SendDesktopInput(
-                self.ptr.0,
-                user_id.raw(),
-                raw_inputs.as_ptr(),
-                raw_inputs.len() as i32,
-            ) == 1
-        }
+        self.backend().send_desktop_input(
+            self.ptr.0,
+            user_id.raw(),
+            raw_inputs.as_ptr(),
+            raw_inputs.len() as i32,
+        )
     }
 
-    /// Converts desktop input packets using the platform translation helper.
     pub fn desktop_input_key_translate(
         &self,
         translate: ffi::TTKeyTranslate,
@@ -64,14 +131,12 @@ impl Client {
         }
         let raw_inputs: Vec<_> = inputs.iter().map(DesktopInput::to_ffi).collect();
         let mut translated = vec![ffi::DesktopInput::default(); raw_inputs.len()];
-        let count = unsafe {
-            ffi::api().TT_DesktopInput_KeyTranslate(
-                translate,
-                raw_inputs.as_ptr(),
-                translated.as_mut_ptr(),
-                raw_inputs.len() as i32,
-            )
-        };
+        let count = self.backend().desktop_input_key_translate(
+            translate,
+            raw_inputs.as_ptr(),
+            translated.as_mut_ptr(),
+            raw_inputs.len() as i32,
+        );
         if count < 0 {
             return None;
         }
@@ -79,38 +144,35 @@ impl Client {
         Some(translated.into_iter().map(DesktopInput::from).collect())
     }
 
-    /// Executes desktop input packets locally through the SDK helper.
     pub fn execute_desktop_input(&self, inputs: &[DesktopInput]) -> i32 {
         if inputs.is_empty() || inputs.len() > ffi::TT_DESKTOPINPUT_MAX as usize {
             return -1;
         }
         let raw_inputs: Vec<_> = inputs.iter().map(DesktopInput::to_ffi).collect();
-        unsafe { ffi::api().TT_DesktopInput_Execute(raw_inputs.as_ptr(), raw_inputs.len() as i32) }
+        self.backend()
+            .execute_desktop_input(raw_inputs.as_ptr(), raw_inputs.len() as i32)
     }
 
-    /// Sends a desktop window frame to other users.
     pub fn send_desktop_window(
         &self,
         window: &ffi::DesktopWindow,
         bitmap_format: ffi::BitmapFormat,
     ) -> i32 {
-        unsafe { ffi::api().TT_SendDesktopWindow(self.ptr.0, window, bitmap_format) }
+        self.backend()
+            .send_desktop_window(self.ptr.0, window, bitmap_format)
     }
 
     #[cfg(windows)]
-    /// Returns the active desktop window handle.
     pub fn get_desktop_active_hwnd(&self) -> ffi::HWND {
         unsafe { ffi::api().TT_Windows_GetDesktopActiveHWND() }
     }
 
     #[cfg(windows)]
-    /// Returns the desktop root window handle.
     pub fn get_desktop_hwnd(&self) -> ffi::HWND {
         unsafe { ffi::api().TT_Windows_GetDesktopHWND() }
     }
 
     #[cfg(windows)]
-    /// Returns a desktop window handle by index.
     pub fn get_desktop_window_hwnd(&self, index: i32) -> Option<ffi::HWND> {
         let mut hwnd = std::ptr::null_mut();
         let ok = unsafe { ffi::api().TT_Windows_GetDesktopWindowHWND(index, &raw mut hwnd) == 1 };
@@ -118,8 +180,6 @@ impl Client {
     }
 
     #[cfg(windows)]
-    /// Returns shareable window metadata for a window handle.
-    ///
     /// # Safety
     /// `hwnd` must be a valid live window handle.
     pub unsafe fn get_share_window(&self, hwnd: ffi::HWND) -> Option<ffi::ShareWindow> {
@@ -129,8 +189,6 @@ impl Client {
     }
 
     #[cfg(windows)]
-    /// Sends a desktop window directly from a Win32 window handle.
-    ///
     /// # Safety
     /// `hwnd` must be a valid window handle for the current process and remain valid
     /// for the duration of the SDK call.
@@ -146,8 +204,6 @@ impl Client {
     }
 
     #[cfg(windows)]
-    /// Paints the current desktop frame for a user to a Win32 device context.
-    ///
     /// # Safety
     /// `hdc` must be a valid device context for the full duration of the call.
     pub unsafe fn paint_desktop_window(
@@ -173,8 +229,6 @@ impl Client {
     }
 
     #[cfg(windows)]
-    /// Paints a cropped desktop frame for a user to a Win32 device context.
-    ///
     /// # Safety
     /// `hdc` must be a valid device context for the full duration of the call.
     #[allow(clippy::too_many_arguments)]
@@ -208,15 +262,13 @@ impl Client {
         }
     }
 
-    /// Acquires a desktop window update bitmap.
     pub fn acquire_user_desktop_window(&self, user_id: UserId) -> Option<*mut ffi::DesktopWindow> {
-        unsafe {
-            let ptr = ffi::api().TT_AcquireUserDesktopWindow(self.ptr.0, user_id.raw());
-            if ptr.is_null() { None } else { Some(ptr) }
-        }
+        let ptr = self
+            .backend()
+            .acquire_user_desktop_window(self.ptr.0, user_id.raw());
+        if ptr.is_null() { None } else { Some(ptr) }
     }
 
-    /// Acquires a desktop window update bitmap and releases it automatically on drop.
     pub fn acquire_user_desktop_window_guard(
         &self,
         user_id: UserId,
@@ -225,20 +277,17 @@ impl Client {
             .map(|ptr| DesktopWindowGuard { client: self, ptr })
     }
 
-    /// Acquires a desktop window update bitmap converted to a specific bitmap format.
     pub fn acquire_user_desktop_window_ex(
         &self,
         user_id: UserId,
         bitmap_format: ffi::BitmapFormat,
     ) -> Option<*mut ffi::DesktopWindow> {
-        unsafe {
-            let ptr =
-                ffi::api().TT_AcquireUserDesktopWindowEx(self.ptr.0, user_id.raw(), bitmap_format);
-            if ptr.is_null() { None } else { Some(ptr) }
-        }
+        let ptr =
+            self.backend()
+                .acquire_user_desktop_window_ex(self.ptr.0, user_id.raw(), bitmap_format);
+        if ptr.is_null() { None } else { Some(ptr) }
     }
 
-    /// Acquires a desktop window update bitmap in a specific format and releases it on drop.
     pub fn acquire_user_desktop_window_guard_ex(
         &self,
         user_id: UserId,
@@ -249,15 +298,14 @@ impl Client {
     }
 
     #[allow(clippy::missing_safety_doc)]
-    /// Releases a previously acquired desktop window.
-    ///
     /// # Safety
     /// `window` must be a valid pointer returned by `acquire_user_desktop_window`.
     pub unsafe fn release_user_desktop_window(&self, window: *mut ffi::DesktopWindow) -> bool {
         if window.is_null() {
             return false;
         }
-        unsafe { ffi::api().TT_ReleaseUserDesktopWindow(self.ptr.0, window) == 1 }
+        self.backend()
+            .release_user_desktop_window(self.ptr.0, window)
     }
 }
 

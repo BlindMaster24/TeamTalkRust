@@ -54,25 +54,26 @@ impl Client {
     /// Returns files available in a channel.
     pub fn get_channel_files(&self, channel_id: ChannelId) -> Vec<RemoteFile> {
         let mut count: i32 = 0;
-        unsafe {
-            ffi::api().TT_GetChannelFiles(
-                self.ptr.0,
-                channel_id.raw(),
-                std::ptr::null_mut(),
-                &raw mut count,
-            );
-            let mut files = vec![std::mem::zeroed::<ffi::RemoteFile>(); count as usize];
-            if ffi::api().TT_GetChannelFiles(
-                self.ptr.0,
-                channel_id.raw(),
-                files.as_mut_ptr(),
-                &raw mut count,
-            ) == 1
-            {
-                files.into_iter().map(RemoteFile::from).collect()
-            } else {
-                vec![]
-            }
+        self.backend().get_channel_files(
+            self.ptr.0,
+            channel_id.raw(),
+            std::ptr::null_mut(),
+            &raw mut count,
+        );
+        if count <= 0 {
+            return vec![];
+        }
+        let mut files = vec![unsafe { std::mem::zeroed::<ffi::RemoteFile>() }; count as usize];
+        if self.backend().get_channel_files(
+            self.ptr.0,
+            channel_id.raw(),
+            files.as_mut_ptr(),
+            &raw mut count,
+        ) == 1
+        {
+            files.into_iter().map(RemoteFile::from).collect()
+        } else {
+            vec![]
         }
     }
 

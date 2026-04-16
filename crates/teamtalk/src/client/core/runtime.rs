@@ -298,6 +298,16 @@ impl Client {
             message: self.get_error_message(code),
         }
     }
+
+    pub(crate) fn bool_to_result(&self, success: bool) -> crate::events::Result<()> {
+        if success {
+            Ok(())
+        } else {
+            Err(crate::events::Error::Ffi(
+                crate::events::FfiError::BoolFalse,
+            ))
+        }
+    }
 }
 
 fn kicked_next_state(source: i32) -> ConnectionState {

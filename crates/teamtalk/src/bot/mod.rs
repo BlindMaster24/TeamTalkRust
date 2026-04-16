@@ -14,6 +14,8 @@ mod storage;
 
 #[cfg(feature = "async")]
 mod runtime_async;
+#[cfg(feature = "async")]
+mod scheduler_async;
 
 pub use app::BotApp;
 pub use args::Args;
@@ -37,3 +39,5 @@ pub use storage::{MemoryStateStore, StateStore};
 
 #[cfg(feature = "async")]
 pub use runtime_async::{AsyncBot, AsyncBotBuilder, AsyncBotConfig};
+#[cfg(feature = "async")]
+pub use scheduler_async::AsyncScheduler;

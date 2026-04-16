@@ -183,6 +183,121 @@ pub trait TeamTalkBackend: sealed::Sealed + Send + Sync {
     fn do_ping(&self, ptr: *mut ffi::TTInstance) -> i32;
     fn query_max_payload(&self, ptr: *mut ffi::TTInstance, user_id: UserId) -> bool;
     fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn close_desktop_window(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn send_desktop_cursor_position(&self, ptr: *mut ffi::TTInstance, x: u16, y: u16) -> bool;
+    fn send_desktop_input(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        input: *const ffi::DesktopInput,
+        count: i32,
+    ) -> bool;
+    fn send_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: &ffi::DesktopWindow,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> i32;
+    fn acquire_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::DesktopWindow;
+    fn acquire_user_desktop_window_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> *mut ffi::DesktopWindow;
+    fn release_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: *mut ffi::DesktopWindow,
+    ) -> bool;
+    fn desktop_input_key_translate(
+        &self,
+        translate: ffi::TTKeyTranslate,
+        input: *const ffi::DesktopInput,
+        output: *mut ffi::DesktopInput,
+        count: i32,
+    ) -> i32;
+    fn execute_desktop_input(&self, input: *const ffi::DesktopInput, count: i32) -> i32;
+    fn get_video_capture_devices(
+        &self,
+        devices: *mut ffi::VideoCaptureDevice,
+        count: *mut i32,
+    ) -> i32;
+    fn init_video_capture_device(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        device_id: *const ffi::TTCHAR,
+        format: *const ffi::VideoFormat,
+    ) -> bool;
+    fn close_video_capture_device(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn start_video_transmission(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn stop_video_transmission(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn acquire_video_frame(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> *mut ffi::VideoFrame;
+    fn release_video_frame(&self, ptr: *mut ffi::TTInstance, frame: *mut ffi::VideoFrame) -> bool;
+    fn get_media_file_info(
+        &self,
+        file_path: *const ffi::TTCHAR,
+        info: *mut ffi::MediaFileInfo,
+    ) -> bool;
+    fn get_palette_color(&self, bitmap_format: ffi::BitmapFormat, index: i32) -> *mut u8;
+    fn start_streaming_media_file_to_channel_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn start_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn update_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn stop_streaming_media_file_to_channel(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn init_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> i32;
+    fn update_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        session_id: i32,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> bool;
+    fn stop_local_playback(&self, ptr: *mut ffi::TTInstance, session_id: i32) -> bool;
+    fn acquire_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::VideoFrame;
+    fn release_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        frame: *mut ffi::VideoFrame,
+    ) -> bool;
+    fn get_channel_files(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        files: *mut ffi::RemoteFile,
+        count: *mut i32,
+    ) -> i32;
 }
 
 #[cfg(not(feature = "mock"))]
@@ -355,6 +470,121 @@ pub(crate) trait TeamTalkBackend: Send + Sync {
     fn do_ping(&self, ptr: *mut ffi::TTInstance) -> i32;
     fn query_max_payload(&self, ptr: *mut ffi::TTInstance, user_id: UserId) -> bool;
     fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32;
+    fn close_desktop_window(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn send_desktop_cursor_position(&self, ptr: *mut ffi::TTInstance, x: u16, y: u16) -> bool;
+    fn send_desktop_input(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        input: *const ffi::DesktopInput,
+        count: i32,
+    ) -> bool;
+    fn send_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: &ffi::DesktopWindow,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> i32;
+    fn acquire_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::DesktopWindow;
+    fn acquire_user_desktop_window_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> *mut ffi::DesktopWindow;
+    fn release_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: *mut ffi::DesktopWindow,
+    ) -> bool;
+    fn desktop_input_key_translate(
+        &self,
+        translate: ffi::TTKeyTranslate,
+        input: *const ffi::DesktopInput,
+        output: *mut ffi::DesktopInput,
+        count: i32,
+    ) -> i32;
+    fn execute_desktop_input(&self, input: *const ffi::DesktopInput, count: i32) -> i32;
+    fn get_video_capture_devices(
+        &self,
+        devices: *mut ffi::VideoCaptureDevice,
+        count: *mut i32,
+    ) -> i32;
+    fn init_video_capture_device(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        device_id: *const ffi::TTCHAR,
+        format: *const ffi::VideoFormat,
+    ) -> bool;
+    fn close_video_capture_device(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn start_video_transmission(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn stop_video_transmission(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn acquire_video_frame(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> *mut ffi::VideoFrame;
+    fn release_video_frame(&self, ptr: *mut ffi::TTInstance, frame: *mut ffi::VideoFrame) -> bool;
+    fn get_media_file_info(
+        &self,
+        file_path: *const ffi::TTCHAR,
+        info: *mut ffi::MediaFileInfo,
+    ) -> bool;
+    fn get_palette_color(&self, bitmap_format: ffi::BitmapFormat, index: i32) -> *mut u8;
+    fn start_streaming_media_file_to_channel_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn start_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn update_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool;
+    fn stop_streaming_media_file_to_channel(&self, ptr: *mut ffi::TTInstance) -> bool;
+    fn init_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> i32;
+    fn update_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        session_id: i32,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> bool;
+    fn stop_local_playback(&self, ptr: *mut ffi::TTInstance, session_id: i32) -> bool;
+    fn acquire_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::VideoFrame;
+    fn release_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        frame: *mut ffi::VideoFrame,
+    ) -> bool;
+    fn get_channel_files(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        files: *mut ffi::RemoteFile,
+        count: *mut i32,
+    ) -> i32;
 }
 
 pub(crate) struct FfiBackend;
@@ -893,6 +1123,207 @@ impl TeamTalkBackend for FfiBackend {
 
     fn do_quit(&self, ptr: *mut ffi::TTInstance) -> i32 {
         unsafe { ffi::api().TT_DoQuit(ptr) }
+    }
+
+    fn close_desktop_window(&self, ptr: *mut ffi::TTInstance) -> bool {
+        unsafe { ffi::api().TT_CloseDesktopWindow(ptr) == 1 }
+    }
+
+    fn send_desktop_cursor_position(&self, ptr: *mut ffi::TTInstance, x: u16, y: u16) -> bool {
+        unsafe { ffi::api().TT_SendDesktopCursorPosition(ptr, x, y) == 1 }
+    }
+
+    fn send_desktop_input(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        input: *const ffi::DesktopInput,
+        count: i32,
+    ) -> bool {
+        unsafe { ffi::api().TT_SendDesktopInput(ptr, user_id, input, count) == 1 }
+    }
+
+    fn send_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: &ffi::DesktopWindow,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> i32 {
+        unsafe { ffi::api().TT_SendDesktopWindow(ptr, window, bitmap_format) }
+    }
+
+    fn acquire_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::DesktopWindow {
+        unsafe { ffi::api().TT_AcquireUserDesktopWindow(ptr, user_id) }
+    }
+
+    fn acquire_user_desktop_window_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+        bitmap_format: ffi::BitmapFormat,
+    ) -> *mut ffi::DesktopWindow {
+        unsafe { ffi::api().TT_AcquireUserDesktopWindowEx(ptr, user_id, bitmap_format) }
+    }
+
+    fn release_user_desktop_window(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        window: *mut ffi::DesktopWindow,
+    ) -> bool {
+        unsafe { ffi::api().TT_ReleaseUserDesktopWindow(ptr, window) == 1 }
+    }
+
+    fn desktop_input_key_translate(
+        &self,
+        translate: ffi::TTKeyTranslate,
+        input: *const ffi::DesktopInput,
+        output: *mut ffi::DesktopInput,
+        count: i32,
+    ) -> i32 {
+        unsafe { ffi::api().TT_DesktopInput_KeyTranslate(translate, input, output, count) }
+    }
+
+    fn execute_desktop_input(&self, input: *const ffi::DesktopInput, count: i32) -> i32 {
+        unsafe { ffi::api().TT_DesktopInput_Execute(input, count) }
+    }
+
+    fn get_video_capture_devices(
+        &self,
+        devices: *mut ffi::VideoCaptureDevice,
+        count: *mut i32,
+    ) -> i32 {
+        unsafe { ffi::api().TT_GetVideoCaptureDevices(devices, count) }
+    }
+
+    fn init_video_capture_device(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        device_id: *const ffi::TTCHAR,
+        format: *const ffi::VideoFormat,
+    ) -> bool {
+        unsafe { ffi::api().TT_InitVideoCaptureDevice(ptr, device_id, format) == 1 }
+    }
+
+    fn close_video_capture_device(&self, ptr: *mut ffi::TTInstance) -> bool {
+        unsafe { ffi::api().TT_CloseVideoCaptureDevice(ptr) == 1 }
+    }
+
+    fn start_video_transmission(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        codec: *const ffi::VideoCodec,
+    ) -> bool {
+        unsafe { ffi::api().TT_StartVideoCaptureTransmission(ptr, codec) == 1 }
+    }
+
+    fn stop_video_transmission(&self, ptr: *mut ffi::TTInstance) -> bool {
+        unsafe { ffi::api().TT_StopVideoCaptureTransmission(ptr) == 1 }
+    }
+
+    fn acquire_video_frame(&self, ptr: *mut ffi::TTInstance, user_id: i32) -> *mut ffi::VideoFrame {
+        unsafe { ffi::api().TT_AcquireUserVideoCaptureFrame(ptr, user_id) }
+    }
+
+    fn release_video_frame(&self, ptr: *mut ffi::TTInstance, frame: *mut ffi::VideoFrame) -> bool {
+        unsafe { ffi::api().TT_ReleaseUserVideoCaptureFrame(ptr, frame) == 1 }
+    }
+
+    fn get_media_file_info(
+        &self,
+        file_path: *const ffi::TTCHAR,
+        info: *mut ffi::MediaFileInfo,
+    ) -> bool {
+        unsafe { ffi::api().TT_GetMediaFileInfo(file_path, info) == 1 }
+    }
+
+    fn get_palette_color(&self, bitmap_format: ffi::BitmapFormat, index: i32) -> *mut u8 {
+        unsafe { ffi::api().TT_Palette_GetColorTable(bitmap_format, index) }
+    }
+
+    fn start_streaming_media_file_to_channel_ex(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool {
+        unsafe {
+            ffi::api().TT_StartStreamingMediaFileToChannelEx(ptr, file_path, playback, codec) == 1
+        }
+    }
+
+    fn start_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        codec: *const ffi::VideoCodec,
+    ) -> bool {
+        unsafe { ffi::api().TT_StartStreamingMediaFileToChannel(ptr, file_path, codec) == 1 }
+    }
+
+    fn update_streaming_media_file_to_channel(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        playback: *const ffi::MediaFilePlayback,
+        codec: *const ffi::VideoCodec,
+    ) -> bool {
+        unsafe { ffi::api().TT_UpdateStreamingMediaFileToChannel(ptr, playback, codec) == 1 }
+    }
+
+    fn stop_streaming_media_file_to_channel(&self, ptr: *mut ffi::TTInstance) -> bool {
+        unsafe { ffi::api().TT_StopStreamingMediaFileToChannel(ptr) == 1 }
+    }
+
+    fn init_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        file_path: *const ffi::TTCHAR,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> i32 {
+        unsafe { ffi::api().TT_InitLocalPlayback(ptr, file_path, playback) }
+    }
+
+    fn update_local_playback(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        session_id: i32,
+        playback: *const ffi::MediaFilePlayback,
+    ) -> bool {
+        unsafe { ffi::api().TT_UpdateLocalPlayback(ptr, session_id, playback) == 1 }
+    }
+
+    fn stop_local_playback(&self, ptr: *mut ffi::TTInstance, session_id: i32) -> bool {
+        unsafe { ffi::api().TT_StopLocalPlayback(ptr, session_id) == 1 }
+    }
+
+    fn acquire_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        user_id: i32,
+    ) -> *mut ffi::VideoFrame {
+        unsafe { ffi::api().TT_AcquireUserMediaVideoFrame(ptr, user_id) }
+    }
+
+    fn release_user_media_video_frame(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        frame: *mut ffi::VideoFrame,
+    ) -> bool {
+        unsafe { ffi::api().TT_ReleaseUserMediaVideoFrame(ptr, frame) == 1 }
+    }
+
+    fn get_channel_files(
+        &self,
+        ptr: *mut ffi::TTInstance,
+        channel_id: i32,
+        files: *mut ffi::RemoteFile,
+        count: *mut i32,
+    ) -> i32 {
+        unsafe { ffi::api().TT_GetChannelFiles(ptr, channel_id, files, count) }
     }
 }
 

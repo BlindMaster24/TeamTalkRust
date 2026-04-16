@@ -237,6 +237,19 @@ pub enum Error {
     IoError { message: String },
     #[error("Operation timed out")]
     Timeout,
+    #[error("FFI error: {0}")]
+    Ffi(#[from] FfiError),
+}
+
+#[non_exhaustive]
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum FfiError {
+    #[error("SDK error {code}: {message}")]
+    SdkError { code: i32, message: String },
+    #[error("operation returned false")]
+    BoolFalse,
+    #[error("null pointer returned")]
+    NullPointer,
 }
 
 /// Convenience result type for `TeamTalk` operations.

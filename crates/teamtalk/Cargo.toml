@@ -11,10 +11,10 @@ homepage = "https://github.com/BlindMaster24/TeamTalkRust"
 [features]
 default = ["tls-native", "state"]
 dispatch = []
-async = ["dep:futures"]
+async = ["dep:futures", "dep:futures-timer"]
 async-tokio = ["async", "dep:tokio"]
 logging = ["dep:tracing"]
-mock = ["dispatch"]
+mock = ["dispatch", "dep:serde", "dep:serde_json"]
 offline = []
 scripts = ["dep:mlua"]
 plugins = ["dep:libloading"]
@@ -36,7 +36,8 @@ reqwest = { version = "0.13.2", default-features = false, features = ["blocking"
 sevenz-rust2 = "0.20.2"
 bitflags = "2.9"
 futures = { version = "0.3", optional = true }
-tokio = { version = "1.52", features = ["rt", "sync", "time"], optional = true }
+futures-timer = { version = "3.0", optional = true }
+tokio = { version = "1.52", features = ["rt", "sync", "time", "macros"], optional = true }
 tracing = { version = "0.1.44", optional = true }
 mlua = { version = "0.11.6", features = ["lua54", "vendored"], optional = true }
 libloading = { version = "0.9.0", optional = true }
