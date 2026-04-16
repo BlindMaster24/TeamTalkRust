@@ -15,8 +15,12 @@ ServerProperties {
     max_desktop_tx: 0,
     max_total_tx: 0,
     auto_save: true,
-    tcp_port: 0,
-    udp_port: 0,
+    tcp_port: Port(
+        0,
+    ),
+    udp_port: Port(
+        0,
+    ),
     user_timeout: 0,
     version: "",
     protocol_version: "",

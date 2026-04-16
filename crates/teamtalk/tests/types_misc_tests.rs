@@ -60,7 +60,7 @@ fn banned_user_from_ffi() {
     assert_eq!(user.username, "user");
     assert_eq!(user.ban_time, "now");
     assert_eq!(user.owner, "owner");
-    assert_eq!(user.ban_types, BanType::IP_ADDR | BanType::USERNAME);
+    assert_eq!(user.ban_types, BanType::CHANNEL | BanType::USERNAME);
 }
 
 #[test]
