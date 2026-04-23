@@ -20,8 +20,9 @@ subtle drift over time:
 * version numbers inside `teamtalk = { version = "X.Y.Z", ... }` snippets
   fall behind the crate version;
 * Cargo feature names change but old names linger in the docs;
-* paths such as [developer.md](./developer.md) are renamed and the old
-  references are never updated;
+* filenames such as `developer.md` (since renamed to
+  [dev.md](./dev.md)) get referenced by stale docs long after the
+  underlying file moves;
 * the "Current Module Baseline" section in `AGENTS.md` stops reflecting
   the real source tree;
 * code snippets copy-pasted from `examples/` drift from the real file.
