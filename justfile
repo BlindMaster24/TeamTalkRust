@@ -196,6 +196,32 @@ version-sync:
 version-sync:
     ./scripts/update-version.ps1
 
+# Detect drift between Rust source and external Markdown docs.
+docs-sync:
+    uv run --project tools/docs-sync docs-sync check
+
+# Detect drift but exit 0 regardless of findings (migration aid).
+docs-sync-warn:
+    uv run --project tools/docs-sync docs-sync check --warn-only
+
+# Apply automatic docs-sync fixes (versions/snippets).
+docs-sync-fix:
+    uv run --project tools/docs-sync docs-sync fix
+
+# Write full docs-sync report to target/docs-sync.{txt,md,json}.
+docs-sync-report:
+    uv run --project tools/docs-sync docs-sync check --format all --report target/docs-sync --warn-only
+
+# Run the docs-sync tool's own test suite.
+docs-sync-test:
+    uv run --project tools/docs-sync pytest
+
+# Lint + type-check the docs-sync tool itself.
+docs-sync-lint:
+    uv run --project tools/docs-sync ruff check .
+    uv run --project tools/docs-sync ruff format --check .
+    uv run --project tools/docs-sync mypy .
+
 # =========================
 # Dependencies
 # =========================

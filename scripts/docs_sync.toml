@@ -1,0 +1,43 @@
+# docs-sync configuration (see tools/docs-sync/README.md).
+
+[sources]
+cargo_manifest = "crates/teamtalk/Cargo.toml"
+workspace_root = "."
+
+[docs]
+include = ["docs/**/*.md", "README.md", "AGENTS.md"]
+# Historical snapshots: migration guides and the release changelog are
+# intentionally allowed to reference older versions/features.
+exclude = [
+    "docs/changelog.md",
+    "docs/migrations/**/*.md",
+]
+
+[versions]
+enabled = true
+
+[features]
+enabled = true
+
+[module_tree]
+enabled = true
+agents_md = "AGENTS.md"
+baseline_heading = "Current Module Baseline"
+source_roots = [
+    "crates/teamtalk/src",
+    "crates/teamtalk-sys/src",
+    "crates/teamtalk-macros/src",
+]
+
+[file_refs]
+enabled = true
+prefixes = [
+    "crates/",
+    "docs/",
+    "scripts/",
+    "examples/",
+    "tools/",
+]
+
+[snippets]
+enabled = true

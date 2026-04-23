@@ -13,3 +13,15 @@ plan_requirements_scan.md
 target/teamtalk-coverage-audit.json
 target/teamtalk-coverage-audit.md
 target/teamtalk-coverage-audit.txt
+
+# Python / uv
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+tools/*/.venv/
