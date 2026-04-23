@@ -1,6 +1,6 @@
 //! User management APIs.
 use super::Client;
-pub(super) use super::guards::can_issue_logged_in_command;
+use super::guards::can_issue_logged_in_command;
 use crate::types::{
     ChannelId, CommandId, MessageTarget, Subscriptions, TT_STRLEN, User, UserAccount, UserId,
     UserStatistics, UserStatus,
