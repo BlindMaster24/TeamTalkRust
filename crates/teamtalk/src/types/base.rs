@@ -416,8 +416,11 @@ impl StreamTypes {
     pub const CHANNEL_MSG: Self = Self(64);
     /// Local media file playback audio stream.
     pub const LOCAL_MEDIAPLAYBACK_AUDIO: Self = Self(128);
-    /// Classroom default: voice + media file + desktop + desktop input
-    /// (value `95` from TeamTalk).
+    /// Classroom default mask (`95`): voice + video capture + media file
+    /// audio + media file video + desktop + channel msg.
+    ///
+    /// Note that `DESKTOP_INPUT` (bit `32`) is intentionally not part of
+    /// this composition.
     pub const CLASSROOM_ALL: Self = Self(95);
 
     /// Creates an empty mask.
