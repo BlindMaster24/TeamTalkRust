@@ -55,6 +55,21 @@ def test_report_text_is_plain_ascii() -> None:
     assert "README.md:32" in text
 
 
+def test_report_markdown_is_plain_ascii() -> None:
+    """Regression: the Markdown report must be pure 7-bit ASCII on every
+    code path so that screen readers render it verbatim. Previously the
+    ``OK`` line used a U+2014 em dash.
+    """
+    empty = Report()
+    empty.scanned_files = 2
+    assert empty.to_markdown().isascii()
+
+    populated = Report()
+    populated.scanned_files = 1
+    populated.add(_finding())
+    assert populated.to_markdown().isascii()
+
+
 def test_report_markdown_escapes_pipes() -> None:
     report = Report()
     report.add(_finding(message="a | b"))

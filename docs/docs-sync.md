@@ -2,8 +2,8 @@
 
 `docs-sync` is a self-contained Python 3.13 tool that detects — and
 optionally repairs — drift between the Rust source code of this repository
-and the Markdown documentation under [`docs/`](./), the root
-[`README.md`](../README.md), and [`AGENTS.md`](../AGENTS.md).
+and the Markdown documentation under [the docs folder](./), the root
+[README](../README.md), and [AGENTS.md](../AGENTS.md).
 
 It is packaged as an independent [uv](https://docs.astral.sh/uv/) project
 under [`tools/docs-sync/`](../tools/docs-sync/), uses
@@ -20,7 +20,7 @@ subtle drift over time:
 * version numbers inside `teamtalk = { version = "X.Y.Z", ... }` snippets
   fall behind the crate version;
 * Cargo feature names change but old names linger in the docs;
-* paths such as ``` `docs/developer.md` ``` are renamed and the old
+* paths such as [developer.md](./developer.md) are renamed and the old
   references are never updated;
 * the "Current Module Baseline" section in `AGENTS.md` stops reflecting
   the real source tree;
@@ -64,30 +64,32 @@ and is individually togglable via `scripts/docs_sync.toml`.
 
 Scans every included Markdown file for `teamtalk = "X.Y.Z"` and
 `teamtalk = { version = "X.Y.Z", ... }` and compares the value against the
-`[package].version` field of `crates/teamtalk/Cargo.toml`. Mismatches are
-reported as errors. Historical snapshots (the release changelog and the
-`docs/migrations/**` guides) are excluded by default so references to
-older versions are allowed there.
+`[package].version` field of the top-level crate manifest
+([Cargo.toml](../crates/teamtalk/Cargo.toml)). Mismatches are reported as
+errors. Historical snapshots (the release changelog and the
+[migrations](./migrations/) guides) are excluded by default so references
+to older versions are allowed there.
 
 ### `features` — unknown feature names
 
-Reads the `[features]` table of `crates/teamtalk/Cargo.toml` and flags any
+Reads the `[features]` table of the top-level crate
+[Cargo.toml](../crates/teamtalk/Cargo.toml) and flags any
 `features = [...]` array in a docs snippet that mentions a name which is
 not defined in the manifest.
 
 ### `module_tree` — `AGENTS.md` baseline freshness
 
-Parses the `## Current Module Baseline` section of `AGENTS.md`, extracts
-inline-code paths starting with `src/` or `crates/`, and verifies every
-path exists under the configured source roots. Missing paths surface as
-warnings.
+Parses the `## Current Module Baseline` section of
+[AGENTS.md](../AGENTS.md), extracts inline-code paths starting with
+workspace-relative prefixes such as `src/` or the crate roots, and
+verifies every path exists under the configured source roots. Missing
+paths surface as warnings.
 
 ### `file_refs` — dead inline-code path references
 
-Scans inline code spans (``` `crates/…/file.rs` ```, ``` `docs/foo.md`
-```, ``` `scripts/bar.sh` ```) across all included docs and flags paths
-that no longer exist on disk. Anchor fragments (`#section`) are stripped
-before the existence check.
+Scans inline code spans that look like workspace paths across all
+included docs and flags paths that no longer exist on disk. Anchor
+fragments (`#section`) are stripped before the existence check.
 
 ### `snippets` — embedded source-region sync (auto-fixable)
 
