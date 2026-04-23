@@ -1,6 +1,6 @@
 use super::super::Client;
 use crate::events::{Error, Result};
-use crate::types::{AudioCodec, ChannelId};
+use crate::types::{AudioCodec, ChannelId, StreamTypes};
 use teamtalk_sys as ffi;
 
 impl Client {
@@ -29,16 +29,24 @@ impl Client {
     }
 
     /// Starts recording a set of stream types.
+    ///
+    /// `stream_types` accepts both a raw `u32` bitmask and any
+    /// [`StreamTypes`] combination via the `Into<StreamTypes>` bound.
     #[must_use]
     pub fn start_recording_streams(
         &self,
-        stream_types: u32,
+        stream_types: impl Into<StreamTypes>,
         codec: &AudioCodec,
         file_path: &str,
         format: ffi::AudioFileFormat,
     ) -> bool {
-        self.backend()
-            .start_recording_streams(self.ptr.0, stream_types, codec, file_path, format)
+        self.backend().start_recording_streams(
+            self.ptr.0,
+            stream_types.into().raw(),
+            codec,
+            file_path,
+            format,
+        )
     }
 
     /// Stops recording a muxed audio file.

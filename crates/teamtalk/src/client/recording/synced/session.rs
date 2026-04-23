@@ -1,9 +1,10 @@
 use super::writer::{AudioBlockGuard, UserTrack};
 use super::{
     Arc, AudioBlockView, Client, Duration, Error, Event, HashMap, Instant, Message,
-    RecordingSampleFormat, Result, UnpoisonedMutex, User, UserId, ffi, fs, is_synced_bus_event,
+    RecordingSampleFormat, Result, UnpoisonedMutex, User, UserId, fs, is_synced_bus_event,
     should_warn_missing_audio_subscriptions, synced_audio_subscription_mask,
 };
+use crate::types::StreamTypes;
 
 #[non_exhaustive]
 #[derive(Clone, Debug)]
@@ -19,7 +20,9 @@ pub struct SyncedUserRecordingOptions {
     pub folder: String,
     pub file_vars: String,
     pub format: RecordingSampleFormat,
-    pub stream_types: u32,
+    /// Mask of stream kinds to capture. Defaults to
+    /// [`StreamTypes::VOICE`].
+    pub stream_types: StreamTypes,
     pub tick_interval: Duration,
     pub subscribe_audio: bool,
     pub default_sample_rate: Option<i32>,
@@ -33,7 +36,7 @@ impl SyncedUserRecordingOptions {
             folder: folder.into(),
             file_vars: "user-%user_id%-%username%".to_string(),
             format: RecordingSampleFormat::PcmS16Le,
-            stream_types: ffi::StreamType::STREAMTYPE_VOICE as u32,
+            stream_types: StreamTypes::VOICE,
             tick_interval: Duration::from_millis(250),
             subscribe_audio: true,
             default_sample_rate: None,
@@ -54,9 +57,13 @@ impl SyncedUserRecordingOptions {
         self
     }
 
+    /// Sets the mask of stream kinds to capture.
+    ///
+    /// Accepts both a raw `u32` bitmask and any [`StreamTypes`]
+    /// combination via the `Into<StreamTypes>` bound.
     #[must_use]
-    pub fn with_stream_types(mut self, types: u32) -> Self {
-        self.stream_types = types;
+    pub fn with_stream_types(mut self, types: impl Into<StreamTypes>) -> Self {
+        self.stream_types = types.into();
         self
     }
 
@@ -205,7 +212,7 @@ impl SyncedUserRecordingSession {
         if self.options.subscribe_audio {
             let _ = client.subscribe(user_id, synced_audio_subscription_mask());
         }
-        let _ = client.enable_audio_block_event(user_id, self.options.stream_types, true);
+        let _ = client.enable_audio_block_event(user_id, self.options.stream_types.raw(), true);
 
         if let Err(err) = self.drain_pending_blocks(client, user_id) {
             self.stop_user(client, user_id);
@@ -215,7 +222,7 @@ impl SyncedUserRecordingSession {
     }
 
     fn stop_user(&mut self, client: &Client, user_id: UserId) {
-        let _ = client.enable_audio_block_event(user_id, self.options.stream_types, false);
+        let _ = client.enable_audio_block_event(user_id, self.options.stream_types.raw(), false);
         if self.options.subscribe_audio {
             let _ = client.unsubscribe(user_id, synced_audio_subscription_mask());
         }
@@ -230,7 +237,8 @@ impl SyncedUserRecordingSession {
     }
 
     fn on_audio_block(&mut self, client: &Client, user_id: UserId) -> Result<()> {
-        let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id) else {
+        let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types.raw(), user_id)
+        else {
             return Ok(());
         };
         let guard = AudioBlockGuard::new(client, ptr);
@@ -253,7 +261,9 @@ impl SyncedUserRecordingSession {
     }
 
     fn drain_pending_blocks(&mut self, client: &Client, user_id: UserId) -> Result<()> {
-        while let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id) {
+        while let Some(ptr) =
+            client.acquire_user_audio_block(self.options.stream_types.raw(), user_id)
+        {
             let guard = AudioBlockGuard::new(client, ptr);
             let block = unsafe { &*guard.ptr() };
             let Some(view) = AudioBlockView::from_block(block) else {

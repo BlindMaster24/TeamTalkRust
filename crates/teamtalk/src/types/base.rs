@@ -379,3 +379,133 @@ impl std::ops::BitOrAssign for UserRights {
         self.0 |= rhs.0;
     }
 }
+
+/// Typed bit-mask of TeamTalk media stream kinds.
+///
+/// Wraps the raw `u32` bitmask accepted by the TeamTalk SDK for
+/// `StreamType_*` flags (voice, video capture, media file audio/video,
+/// desktop/desktop-input, channel text, and local media playback). The
+/// newtype exists so that callers cannot accidentally pass an
+/// unrelated `u32` to stream-typed APIs, and so that combinations can
+/// be expressed with the standard bit operators.
+///
+/// Constants mirror the FFI `StreamType::STREAMTYPE_*` values so a
+/// direct conversion to/from the raw bitmask is lossless. See
+/// [`Self::raw`] / [`Self::from_raw`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct StreamTypes(pub(crate) u32);
+
+impl StreamTypes {
+    /// Empty stream-type mask (no streams selected).
+    pub const NONE: Self = Self(0);
+    /// Voice stream.
+    pub const VOICE: Self = Self(1);
+    /// Video capture stream.
+    pub const VIDEO_CAPTURE: Self = Self(2);
+    /// Media file audio stream.
+    pub const MEDIAFILE_AUDIO: Self = Self(4);
+    /// Media file video stream.
+    pub const MEDIAFILE_VIDEO: Self = Self(8);
+    /// Desktop sharing stream.
+    pub const DESKTOP: Self = Self(16);
+    /// Desktop input events stream.
+    pub const DESKTOP_INPUT: Self = Self(32);
+    /// Combined media file (audio + video).
+    pub const MEDIAFILE: Self = Self(12);
+    /// Channel text messages stream.
+    pub const CHANNEL_MSG: Self = Self(64);
+    /// Local media file playback audio stream.
+    pub const LOCAL_MEDIAPLAYBACK_AUDIO: Self = Self(128);
+    /// Classroom default: voice + media file + desktop + desktop input
+    /// (value `95` from TeamTalk).
+    pub const CLASSROOM_ALL: Self = Self(95);
+
+    /// Creates an empty mask.
+    #[must_use]
+    pub const fn empty() -> Self {
+        Self::NONE
+    }
+
+    /// Creates a mask from a raw bit pattern.
+    ///
+    /// Accepts any `u32`; bits outside the defined `STREAMTYPE_*`
+    /// values are preserved and round-trip through [`Self::raw`] so
+    /// callers reading a mask from an event can inspect it without
+    /// truncation.
+    #[must_use]
+    pub const fn from_raw(raw: u32) -> Self {
+        Self(raw)
+    }
+
+    /// Returns the raw bit pattern accepted by the SDK.
+    #[must_use]
+    pub const fn raw(self) -> u32 {
+        self.0
+    }
+
+    /// Returns `true` if any of the bits in `other` are set in `self`.
+    #[must_use]
+    pub const fn contains_any(self, other: Self) -> bool {
+        (self.0 & other.0) != 0
+    }
+
+    /// Returns `true` if all bits in `other` are set in `self`.
+    #[must_use]
+    pub const fn contains_all(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+
+    /// Returns `true` if the mask is empty.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl std::ops::BitOr for StreamTypes {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitOrAssign for StreamTypes {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl std::ops::BitAnd for StreamTypes {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl std::ops::BitAndAssign for StreamTypes {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0 &= rhs.0;
+    }
+}
+
+impl std::ops::Not for StreamTypes {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
+
+impl From<u32> for StreamTypes {
+    fn from(raw: u32) -> Self {
+        Self(raw)
+    }
+}
+
+impl From<StreamTypes> for u32 {
+    fn from(value: StreamTypes) -> Self {
+        value.0
+    }
+}

@@ -1,4 +1,4 @@
-use crate::types::{AudioCodec, ChannelId};
+use crate::types::{AudioCodec, ChannelId, StreamTypes};
 use std::time::Duration;
 use teamtalk_sys as ffi;
 
@@ -19,7 +19,9 @@ pub enum RecordingTarget {
     CurrentChannel,
     /// Record muxed streams using a specific codec.
     Streams {
-        stream_types: u32,
+        /// Mask of stream kinds to include in the recording. Use
+        /// [`StreamTypes::VOICE`], [`StreamTypes::MEDIAFILE`], etc.
+        stream_types: StreamTypes,
         codec: AudioCodec,
     },
     /// Record muxed audio using a specific codec.
