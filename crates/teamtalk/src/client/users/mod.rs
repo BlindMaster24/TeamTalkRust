@@ -141,12 +141,18 @@ fn text_message_for_target(target: MessageTarget) -> ffi::TextMessage {
 }
 
 /// Stored login parameters for automatic login.
+///
+/// The `password` field is a [`SecretString`], so its in-memory
+/// buffer is zeroised on drop and does not leak through `Debug`
+/// or `Display`. Use [`SecretString::expose_secret`] to retrieve
+/// the cleartext password when passing it to an FFI call; keep
+/// the borrow as narrow as possible.
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub struct LoginParams {
     pub nickname: String,
     pub username: String,
-    pub password: String,
+    pub password: crate::types::SecretString,
     pub client_name: String,
 }
 
@@ -154,7 +160,7 @@ impl LoginParams {
     pub fn new(
         nickname: impl Into<String>,
         username: impl Into<String>,
-        password: impl Into<String>,
+        password: impl Into<crate::types::SecretString>,
         client_name: impl Into<String>,
     ) -> Self {
         Self {

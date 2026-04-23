@@ -127,7 +127,7 @@ impl Client {
         let cmd_id = self.login(
             &params.nickname,
             &params.username,
-            &params.password,
+            params.password.expose_secret(),
             &params.client_name,
         );
         if cmd_id.is_ok() {
