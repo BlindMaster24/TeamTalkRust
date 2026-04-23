@@ -197,8 +197,6 @@ impl Subscription {
         let user = message.user();
         let text = message.text();
 
-        // Discriminant filter is already satisfied by the bucket in
-        // `EventBus::dispatch`, so it is not re-checked here.
         if let Some(user_id) = self.user_id {
             let match_user = user
                 .as_ref()
