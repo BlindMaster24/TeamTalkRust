@@ -91,7 +91,7 @@ class Report:
     def to_markdown(self) -> str:
         """Render the report as a Markdown summary for PR comments."""
         if not self.findings:
-            return f"# docs-sync\n\nOK — {self.scanned_files} file(s) scanned.\n"
+            return f"# docs-sync\n\nOK -- {self.scanned_files} file(s) scanned.\n"
         sections: dict[str, list[Finding]] = {}
         for f in self.findings:
             sections.setdefault(f.checker, []).append(f)

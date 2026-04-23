@@ -13,13 +13,17 @@ from docs_sync.report import Finding, Severity
 if TYPE_CHECKING:
     from docs_sync.config import Config
 
-# Matches ``teamtalk = "X.Y.Z"`` or ``teamtalk = { version = "X.Y.Z", ...``.
+# Matches ``teamtalk = "X.Y.Z"`` or ``teamtalk = { version = "X.Y.Z", ...``
+# where ``X.Y.Z`` is a concrete numeric semver string (optionally with a
+# ``-prerelease`` or ``+build`` tail). Literal placeholders such as
+# ``"X.Y.Z"`` in prose are intentionally not matched.
+_SEMVER = r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?"
 _PATTERN = re.compile(
-    r"""
+    rf"""
     \bteamtalk\s*=\s*
     (?:
-        "(?P<plain>[^"]+)"
-      | \{\s*[^}]*? version\s*=\s*"(?P<nested>[^"]+)"
+        "(?P<plain>{_SEMVER})"
+      | \{{\s*[^}}]*? version\s*=\s*"(?P<nested>{_SEMVER})"
     )
     """,
     re.VERBOSE,
