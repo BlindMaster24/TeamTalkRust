@@ -77,7 +77,7 @@ pub use dispatch::{
     ClientConfig, ConnectParamsOwned, DispatchFlow, Dispatcher,
     EventContext as DispatchEventContext, ReconnectSettings,
 };
-pub use events::{ConnectionState, Error, Event, FfiError, Result};
+pub use events::{ConnectionState, Error, Event, FfiError, Result, SdkErrorCode};
 #[cfg(feature = "mock")]
 pub use mock::{MockClient, MockMessage, MockUserBuilder};
 #[cfg(feature = "bot-macros")]
