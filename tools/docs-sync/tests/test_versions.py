@@ -115,6 +115,26 @@ def test_exclude_honors_migration_docs(
     assert run(cfg) == []
 
 
+def test_literal_placeholder_is_ignored(
+    make_workspace: Callable[[dict[str, str]], Path],
+    make_config: Callable[[Path], Config],
+) -> None:
+    """Regression: documentation using ``"X.Y.Z"`` as a literal placeholder
+    must not be rewritten. Only concrete numeric semver strings are
+    considered.
+    """
+    root, cfg = _prepare(
+        make_workspace,
+        make_config,
+        'prose using `teamtalk = "X.Y.Z"` as a placeholder\n'
+        'and `teamtalk = { version = "X.Y.Z", ... }` too\n',
+    )
+    assert run(cfg) == []
+    assert fix(cfg) == 0
+    after = (root / "docs/bot.md").read_text(encoding="utf-8")
+    assert "X.Y.Z" in after
+
+
 def test_fix_handles_multiple_matches_on_one_line(
     make_workspace: Callable[[dict[str, str]], Path],
     make_config: Callable[[Path], Config],
