@@ -11,7 +11,7 @@ Use either approach or both together.
 
 ```toml
 [dependencies]
-teamtalk = { version = "1.2.0", features = ["scripts", "plugins"] }
+teamtalk = { version = "6.0.0", features = ["scripts", "plugins"] }
 ```
 
 ## Lua Scripts
