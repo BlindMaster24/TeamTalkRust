@@ -1,0 +1,55 @@
+name: docs-sync
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: docs-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "tools/docs-sync/uv.lock"
+
+      - name: Pin Python
+        run: uv python install 3.13
+
+      - name: Sync docs-sync tool (including dev group)
+        run: uv sync --project tools/docs-sync --all-groups --frozen
+
+      - name: Lint (ruff)
+        working-directory: tools/docs-sync
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type-check (mypy strict)
+        working-directory: tools/docs-sync
+        run: uv run mypy .
+
+      - name: Tool unit tests
+        working-directory: tools/docs-sync
+        run: uv run pytest -q
+
+      - name: Run docs-sync against the repo (warn-only during bootstrap)
+        run: uv run --project tools/docs-sync docs-sync check --warn-only --format all --report target/docs-sync
+
+      - name: Upload docs-sync report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-sync-report
+          path: target/docs-sync.*
+          if-no-files-found: warn
+          retention-days: 30

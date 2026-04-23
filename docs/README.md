@@ -15,6 +15,7 @@ Start here:
 - Extensions: [extensions.md](extensions.md)
 - Changelog: [changelog.md](changelog.md)
 - Developer Notes: [dev.md](dev.md)
+- Docs <-> Code Sync: [docs-sync.md](docs-sync.md)
 - Examples: [crates/teamtalk/examples](../crates/teamtalk/examples/)
 
 API reference:

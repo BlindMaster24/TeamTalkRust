@@ -12,3 +12,8 @@ pre-commit:
       run: cargo doc --no-deps --all-features
     doc-links:
       run: scripts/check-doc-links.sh
+    docs-sync:
+      # Warn-only during bootstrap so historical drift does not block commits.
+      # Flip to ``check`` (without ``--warn-only``) once the existing drift
+      # has been fixed (see docs/docs-sync.md).
+      run: uv run --project tools/docs-sync docs-sync check --warn-only
