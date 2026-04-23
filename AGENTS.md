@@ -102,7 +102,7 @@
   3. Map each requirement to Rust wrapper entry points in `crates/teamtalk/src/client/`.
   4. Verify wrapper behavior and state transitions in code (not only method names).
   5. Verify tests exist for the behavior in `crates/teamtalk/tests/`.
-  6. Verify user docs reflect behavior (`README.md`, `docs/getting-started.md`, `docs/features.md`, `docs/configuration.md`, `docs/developer.md`, `docs/changelog.md`).
+  6. Verify user docs reflect behavior (`README.md`, `docs/getting-started.md`, `docs/features.md`, `docs/configuration.md`, `docs/dev.md`, `docs/changelog.md`).
   7. Record gaps as: missing API, wrong behavior, missing tests, missing docs, or unclear error surface.
 - Commands to use during audit:
   - `rg -n "<TT_FunctionName|keyword>" TEAMTALK_DLL/TeamTalk.h`
@@ -596,16 +596,16 @@
 
 ## Documentation Guidelines
 - Keep user-facing documentation in `README.md` and `docs/`.
-- Put contributor-only guidance in `docs/developer.md`.
+- Put contributor-only guidance in `docs/dev.md`.
 - When adding a feature, update:
   - `crates/teamtalk/Cargo.toml` for feature flags.
   - `docs/features.md` for the feature list.
   - `README.md` only if onboarding or default usage changes.
-  - `docs/developer.md` if module layout or behavior changes.
-  - `docs/developer.md` if new tests or commands are required.
+  - `docs/dev.md` if module layout or behavior changes.
+  - `docs/dev.md` if new tests or commands are required.
   - `docs/README.md` if new docs pages are added or removed.
 - When removing a feature or doc page, delete its entry from `docs/README.md` and `docs/features.md`.
-- Keep user docs free of implementation details; put internal mechanics in `docs/developer.md`.
+- Keep user docs free of implementation details; put internal mechanics in `docs/dev.md`.
 - Keep inline `docs/...` or `crates/...` paths out of prose; use Markdown links.
 - Use neutral, direct language; avoid subjective or marketing terms like "production".
 - Keep paragraphs short (1-3 sentences) and prefer lists for steps.
@@ -640,7 +640,7 @@
 - `docs/getting-started.md`: onboarding flow with a minimal working example.
 - `docs/features.md`: user-facing feature list and how to enable features.
 - `docs/configuration.md`: runtime setup, SDK binaries, networking, TLS usage.
-- `docs/developer.md`: contributor guidance, testing commands, architecture notes, doc build steps.
+- `docs/dev.md`: contributor guidance, testing commands, architecture notes, doc build steps.
 
 ## Required Prompts
 - Ask before adding new docs pages outside `docs/`.
