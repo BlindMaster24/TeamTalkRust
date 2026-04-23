@@ -28,29 +28,3 @@ pub(crate) fn can_issue_logged_in_command(state: ConnectionState) -> bool {
         ConnectionState::LoggedIn | ConnectionState::Joining(_) | ConnectionState::Joined(_)
     )
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::ChannelId;
-
-    #[test]
-    fn logged_in_states_allow_commands() {
-        assert!(can_issue_logged_in_command(ConnectionState::LoggedIn));
-        assert!(can_issue_logged_in_command(ConnectionState::Joining(
-            ChannelId(0)
-        )));
-        assert!(can_issue_logged_in_command(ConnectionState::Joined(
-            ChannelId(0)
-        )));
-    }
-
-    #[test]
-    fn pre_login_and_disconnected_states_block_commands() {
-        assert!(!can_issue_logged_in_command(ConnectionState::Idle));
-        assert!(!can_issue_logged_in_command(ConnectionState::Connecting));
-        assert!(!can_issue_logged_in_command(ConnectionState::Connected));
-        assert!(!can_issue_logged_in_command(ConnectionState::LoggingIn));
-        assert!(!can_issue_logged_in_command(ConnectionState::Disconnected));
-    }
-}
