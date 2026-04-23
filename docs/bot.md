@@ -8,7 +8,7 @@ Enable it in `Cargo.toml`:
 
 ```toml
 [dependencies]
-teamtalk = { version = "4.0.0", features = ["bot"] }
+teamtalk = { version = "6.0.0", features = ["bot"] }
 ```
 
 ## Core Building Blocks
