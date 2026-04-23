@@ -107,6 +107,61 @@ impl Client {
             .and_then(|(event, msg)| msg.data().map(|data| (event, msg, data)))
     }
 
+    /// Polls until a pending command issued as `cmd_id` terminates (the SDK
+    /// emits either [`Event::CmdSuccess`] or [`Event::CmdError`] for it) or
+    /// `timeout_ms` elapses. Non-terminal events are handed to `on_event`
+    /// so callers can accumulate associated data (for example `BannedUser`
+    /// entries while waiting for the closing `CmdSuccess` of a `list_bans`
+    /// request).
+    ///
+    /// Error mapping:
+    /// * `cmd_id` already rejected (`CommandId::ZERO`) before polling starts
+    ///   -> `Error::CommandFailed { code: 0, message: "<context> rejected in current state" }`;
+    /// * terminal `CmdError` for `cmd_id` ->
+    ///   `Error::CommandFailed { code: msg.source(), message: "<context> failed" }`;
+    /// * `timeout_ms` reached without a terminal event -> `Error::Timeout`.
+    ///
+    /// The predicate only matches terminal events tied to `cmd_id`, so the
+    /// final `(Event, Message)` from `poll_until` is always either
+    /// `CmdSuccess` or `CmdError`.
+    pub(crate) fn poll_command_completion<F>(
+        &self,
+        cmd_id: crate::types::CommandId,
+        timeout_ms: i32,
+        error_context: &str,
+        mut on_event: F,
+    ) -> Result<(), crate::events::Error>
+    where
+        F: FnMut(Event, &Message),
+    {
+        if !cmd_id.is_ok() {
+            return Err(crate::events::Error::CommandFailed {
+                code: 0,
+                message: format!("{error_context} rejected in current state"),
+            });
+        }
+        match self.poll_until(timeout_ms, |event, msg| {
+            let terminal =
+                msg.command_id() == cmd_id && matches!(event, Event::CmdSuccess | Event::CmdError);
+            if !terminal {
+                on_event(event, msg);
+            }
+            terminal
+        }) {
+            Some((Event::CmdSuccess, _)) => Ok(()),
+            Some((Event::CmdError, msg)) => Err(crate::events::Error::CommandFailed {
+                code: msg.source(),
+                message: format!("{error_context} failed"),
+            }),
+            None => Err(crate::events::Error::Timeout),
+            Some((_, _)) => {
+                unreachable!(
+                    "poll_until predicate restricts terminal event to Cmd{{Success,Error}}"
+                )
+            }
+        }
+    }
+
     /// Polls until a specific event arrives or the timeout expires.
     pub fn poll_until_event(&self, event: Event, timeout_ms: i32) -> Option<Message> {
         self.wait_for(event, timeout_ms)

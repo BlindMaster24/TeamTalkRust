@@ -48,63 +48,20 @@ impl Client {
         timeout_ms: i32,
     ) -> crate::events::Result<Vec<UserAccount>> {
         let cmd_id = self.list_user_accounts(index, count);
-        if !cmd_id.is_ok() {
-            return Err(crate::events::Error::CommandFailed {
-                code: 0,
-                message: "user account list command rejected in current state".to_string(),
-            });
-        }
         let mut accounts = Vec::new();
-        if timeout_ms < 0 {
-            loop {
-                if let Some((event, message)) = self.poll(50) {
-                    match event {
-                        crate::events::Event::UserAccount => {
-                            if let Some(account) = message.account() {
-                                accounts.push(account);
-                            }
-                        }
-                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                            return Ok(accounts);
-                        }
-                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                            return Err(crate::events::Error::CommandFailed {
-                                code: message.source(),
-                                message: "user account list command failed".to_string(),
-                            });
-                        }
-                        _ => {}
-                    }
+        self.poll_command_completion(
+            cmd_id,
+            timeout_ms,
+            "user account list command",
+            |event, message| {
+                if matches!(event, crate::events::Event::UserAccount)
+                    && let Some(account) = message.account()
+                {
+                    accounts.push(account);
                 }
-            }
-        }
-
-        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
-        loop {
-            let wait_ms = wait_slice(deadline);
-            if wait_ms <= 0 {
-                return Err(crate::events::Error::Timeout);
-            }
-            if let Some((event, message)) = self.poll(wait_ms) {
-                match event {
-                    crate::events::Event::UserAccount => {
-                        if let Some(account) = message.account() {
-                            accounts.push(account);
-                        }
-                    }
-                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                        return Ok(accounts);
-                    }
-                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                        return Err(crate::events::Error::CommandFailed {
-                            code: message.source(),
-                            message: "user account list command failed".to_string(),
-                        });
-                    }
-                    _ => {}
-                }
-            }
-        }
+            },
+        )?;
+        Ok(accounts)
     }
 
     /// Creates a user account.

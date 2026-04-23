@@ -29,52 +29,7 @@ impl Client {
         cmd_id: CommandId,
         timeout_ms: i32,
     ) -> Result<(), crate::events::Error> {
-        if !cmd_id.is_ok() {
-            return Err(crate::events::Error::CommandFailed {
-                code: 0,
-                message: "command rejected in current state".to_string(),
-            });
-        }
-        if timeout_ms < 0 {
-            loop {
-                if let Some((event, message)) = self.poll(50) {
-                    match event {
-                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                            return Ok(());
-                        }
-                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                            return Err(crate::events::Error::CommandFailed {
-                                code: message.source(),
-                                message: "command failed".to_string(),
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-
-        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
-        loop {
-            let wait_ms = wait_slice(deadline);
-            if wait_ms <= 0 {
-                return Err(crate::events::Error::Timeout);
-            }
-            if let Some((event, message)) = self.poll(wait_ms) {
-                match event {
-                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                        return Ok(());
-                    }
-                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                        return Err(crate::events::Error::CommandFailed {
-                            code: message.source(),
-                            message: "command failed".to_string(),
-                        });
-                    }
-                    _ => {}
-                }
-            }
-        }
+        self.poll_command_completion(cmd_id, timeout_ms, "command", |_, _| {})
     }
 
     /// Returns current server properties.
@@ -123,63 +78,15 @@ impl Client {
         timeout_ms: i32,
     ) -> Result<Vec<crate::types::BannedUser>, crate::events::Error> {
         let cmd_id = self.list_bans(channel_id, index, count);
-        if !cmd_id.is_ok() {
-            return Err(crate::events::Error::CommandFailed {
-                code: 0,
-                message: "ban list command rejected in current state".to_string(),
-            });
-        }
         let mut items = Vec::new();
-        if timeout_ms < 0 {
-            loop {
-                if let Some((event, message)) = self.poll(50) {
-                    match event {
-                        crate::events::Event::BannedUser => {
-                            if let Some(entry) = message.banned_user() {
-                                items.push(entry);
-                            }
-                        }
-                        crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                            return Ok(items);
-                        }
-                        crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                            return Err(crate::events::Error::CommandFailed {
-                                code: message.source(),
-                                message: "ban list command failed".to_string(),
-                            });
-                        }
-                        _ => {}
-                    }
-                }
+        self.poll_command_completion(cmd_id, timeout_ms, "ban list command", |event, message| {
+            if matches!(event, crate::events::Event::BannedUser)
+                && let Some(entry) = message.banned_user()
+            {
+                items.push(entry);
             }
-        }
-
-        let deadline = Instant::now() + Duration::from_millis(timeout_ms as u64);
-        loop {
-            let wait_ms = wait_slice(deadline);
-            if wait_ms <= 0 {
-                return Err(crate::events::Error::Timeout);
-            }
-            if let Some((event, message)) = self.poll(wait_ms) {
-                match event {
-                    crate::events::Event::BannedUser => {
-                        if let Some(entry) = message.banned_user() {
-                            items.push(entry);
-                        }
-                    }
-                    crate::events::Event::CmdSuccess if cmd_id == message.command_id() => {
-                        return Ok(items);
-                    }
-                    crate::events::Event::CmdError if cmd_id == message.command_id() => {
-                        return Err(crate::events::Error::CommandFailed {
-                            code: message.source(),
-                            message: "ban list command failed".to_string(),
-                        });
-                    }
-                    _ => {}
-                }
-            }
-        }
+        })?;
+        Ok(items)
     }
 
     /// Updates server properties.
