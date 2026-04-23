@@ -185,6 +185,18 @@ impl Client {
         self.update_state_for_event(event, &message);
     }
 
+    /// Synchronously dispatches `event` through the subscription bus
+    /// (used by integration tests to exercise
+    /// [`Client::on_event`] / [`Client::on_any`] without running the
+    /// full poll loop).
+    #[cfg(feature = "mock")]
+    pub fn mock_dispatch_bus_for_tests(&self, event: Event, source: i32) {
+        let mut raw = unsafe { std::mem::zeroed::<ffi::TTMessage>() };
+        raw.nSource = source;
+        let message = Message::from_raw(event, raw);
+        self.dispatch_bus(event, &message);
+    }
+
     /// Sets the client name used for login.
     #[must_use]
     pub fn with_name(mut self, name: &str) -> Self {

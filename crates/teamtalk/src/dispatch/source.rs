@@ -30,17 +30,7 @@ impl EventSource for &Client {
 pub(super) type HandlerFn = Box<dyn for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send>;
 
 pub(super) struct HandlerEntry {
-    pub(super) event: Option<Event>,
     pub(super) handler: HandlerFn,
-}
-
-impl HandlerEntry {
-    pub(super) fn matches(&self, event: &Event) -> bool {
-        match &self.event {
-            Some(e) => mem::discriminant(e) == mem::discriminant(event),
-            None => true,
-        }
-    }
 }
 
 pub(super) struct ReconnectState {
