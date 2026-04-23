@@ -128,7 +128,7 @@ impl Client {
             let wait_ms = wait_slice(deadline);
             if wait_ms <= 0 {
                 return Err(crate::events::Error::timeout(
-                    crate::events::TimeoutKind::Command,
+                    crate::events::TimeoutKind::ServerConfig,
                 ));
             }
             if let Some((event, message)) = self.poll(wait_ms) {
@@ -167,7 +167,12 @@ impl Client {
                 message: "save server config command rejected in current state".to_string(),
             });
         }
-        self.wait_for_command(cmd_id, timeout_ms)
+        match self.wait_for_command(cmd_id, timeout_ms) {
+            Err(crate::events::Error::Timeout { .. }) => Err(crate::events::Error::timeout(
+                crate::events::TimeoutKind::ServerConfig,
+            )),
+            other => other,
+        }
     }
 
     /// Returns the root channel ID.
