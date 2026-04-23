@@ -88,6 +88,8 @@ ignore = [
     "S607",
     # ``assert`` is used in tests; fine.
     "S101",
+    # ruff's own formatter and COM812 conflict; follow the formatter.
+    "COM812",
 ]
 
 [tool.ruff.lint.per-file-ignores]

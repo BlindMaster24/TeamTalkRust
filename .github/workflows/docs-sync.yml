@@ -29,15 +29,18 @@ jobs:
         run: uv sync --project tools/docs-sync --all-groups --frozen
 
       - name: Lint (ruff)
+        working-directory: tools/docs-sync
         run: |
-          uv run --project tools/docs-sync ruff check .
-          uv run --project tools/docs-sync ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Type-check (mypy strict)
-        run: uv run --project tools/docs-sync mypy .
+        working-directory: tools/docs-sync
+        run: uv run mypy .
 
       - name: Tool unit tests
-        run: uv run --project tools/docs-sync pytest -q
+        working-directory: tools/docs-sync
+        run: uv run pytest -q
 
       - name: Run docs-sync against the repo (warn-only during bootstrap)
         run: uv run --project tools/docs-sync docs-sync check --warn-only --format all --report target/docs-sync
