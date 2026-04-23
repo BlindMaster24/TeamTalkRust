@@ -251,8 +251,13 @@ pub enum Error {
     },
     #[error("IO error: {message}")]
     IoError { message: String },
-    #[error("Operation timed out")]
-    Timeout,
+    #[error("Operation timed out: {kind}")]
+    Timeout {
+        /// Classification of which kind of operation hit the timeout,
+        /// so callers can branch on `Command` vs `Join` vs `Transfer`
+        /// etc. without string-matching on error messages.
+        kind: TimeoutKind,
+    },
     #[error("FFI error: {0}")]
     Ffi(#[from] FfiError),
 }
@@ -277,6 +282,79 @@ impl Error {
             Self::Ffi(FfiError::SdkError { code, .. }) => Some(SdkErrorCode::from(*code)),
             _ => None,
         }
+    }
+
+    /// Constructs an [`Error::Timeout`] with the given classification.
+    ///
+    /// Shorthand for `Error::Timeout { kind }` that keeps the call
+    /// sites readable (`Error::timeout(TimeoutKind::Command)`).
+    #[must_use]
+    pub const fn timeout(kind: TimeoutKind) -> Self {
+        Self::Timeout { kind }
+    }
+
+    /// Returns the [`TimeoutKind`] carried by an [`Error::Timeout`],
+    /// or [`None`] for any other variant.
+    #[must_use]
+    pub fn timeout_kind(&self) -> Option<TimeoutKind> {
+        if let Self::Timeout { kind } = *self {
+            Some(kind)
+        } else {
+            None
+        }
+    }
+}
+
+/// Categorises which blocking `*_and_wait` call hit its deadline.
+///
+/// Produced by [`Error::Timeout`] so callers can differentiate
+/// between, for example, a slow login from a slow file transfer
+/// without scraping the error message.
+///
+/// Marked `#[non_exhaustive]` so new kinds can be introduced in a
+/// minor release; callers must always include a `_ =>` arm.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TimeoutKind {
+    /// Generic command completion timeout (`wait_for_command`,
+    /// `list_*_and_wait`, `create_user_account_and_wait`, etc.).
+    Command,
+    /// TCP/UDP connect step timed out before `ConnectSuccess`.
+    Connect,
+    /// `login_and_wait` did not observe `MySelfLoggedIn` in time.
+    Login,
+    /// `join_channel_and_wait` did not reach `JoinedChannel`.
+    Join,
+    /// File transfer did not reach a terminal state in time.
+    Transfer,
+    /// `update_server_and_wait` / `save_server_config_and_wait`.
+    ServerConfig,
+    /// Timeout that does not fall into any of the categorised kinds
+    /// yet. Prefer adding a typed variant in a follow-up when the
+    /// call site is stable.
+    Other,
+}
+
+impl TimeoutKind {
+    /// Returns a short, stable, lower-snake-case name for this
+    /// variant (useful for structured logging and metrics).
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Command => "command",
+            Self::Connect => "connect",
+            Self::Login => "login",
+            Self::Join => "join",
+            Self::Transfer => "transfer",
+            Self::ServerConfig => "server_config",
+            Self::Other => "other",
+        }
+    }
+}
+
+impl std::fmt::Display for TimeoutKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
     }
 }
 

@@ -1,7 +1,7 @@
 //! File transfer APIs.
 use super::Client;
 use super::guards::can_issue_logged_in_command;
-use crate::events::{Error, Event, Result};
+use crate::events::{Error, Event, Result, TimeoutKind};
 use crate::types::{ChannelId, CommandId, FileId, RemoteFile, TransferId};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
@@ -157,7 +157,7 @@ impl Client {
         loop {
             let wait_ms = wait_slice(deadline);
             if wait_ms <= 0 {
-                return Err(Error::Timeout);
+                return Err(Error::timeout(TimeoutKind::Transfer));
             }
             if let Some((event, message)) = self.poll(wait_ms)
                 && matches!(event, Event::FileTransfer)
@@ -188,7 +188,7 @@ impl Client {
         loop {
             let wait_ms = wait_slice(deadline);
             if wait_ms <= 0 {
-                return Err(Error::Timeout);
+                return Err(Error::timeout(TimeoutKind::Transfer));
             }
             let transfer = self.wait_for_file_transfer(transfer_id, wait_ms)?;
             if transfer.is_terminal() {

@@ -97,7 +97,9 @@ impl Client {
         loop {
             let wait_ms = wait_slice(deadline);
             if wait_ms <= 0 {
-                return Err(crate::events::Error::Timeout);
+                return Err(crate::events::Error::timeout(
+                    crate::events::TimeoutKind::Login,
+                ));
             }
             if let Some((event, message)) = self.poll(wait_ms) {
                 match event {
