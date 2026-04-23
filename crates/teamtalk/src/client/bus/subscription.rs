@@ -1,15 +1,25 @@
-use super::{Client, Message};
+//! Subscription storage, filter matching, and the fluent builder surface.
+//!
+//! This module owns the in-memory event-bus state ([`EventBus`] and the
+//! per-subscription record [`Subscription`]) together with the public
+//! [`SubscriptionBuilder`] that callers use to register handlers through
+//! [`crate::client::Client::on_event`] / [`crate::client::Client::on_any`].
+
+use super::context::EventContext;
+use crate::client::{Client, Message};
 use crate::events::Event;
-use crate::types::{ChannelId, TextMessage, User, UserId};
+use crate::types::{ChannelId, UserId};
 use std::mem;
+use std::sync::atomic::Ordering;
 use teamtalk_sys as ffi;
 
 type Predicate = Box<dyn FnMut(&EventContext) -> bool + Send>;
 type Handler = Box<dyn FnMut(EventContext) + Send>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Identifier for an event subscription.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EventSubscriptionId(u64);
+
 /// Identifier for a subscription group.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EventSubscriptionGroup(String);
@@ -18,64 +28,6 @@ impl EventSubscriptionGroup {
     /// Creates a group identifier from a string.
     pub fn new(group: impl Into<String>) -> Self {
         Self(group.into())
-    }
-}
-
-/// Context for a dispatched client event.
-#[derive(Clone, Copy)]
-pub struct EventContext<'a> {
-    event: Event,
-    message: &'a Message,
-    client: &'a Client,
-}
-
-impl<'a> EventContext<'a> {
-    /// Returns the event.
-    #[must_use]
-    pub fn event(&self) -> Event {
-        self.event
-    }
-
-    /// Returns the raw message.
-    #[must_use]
-    pub fn message(&self) -> &'a Message {
-        self.message
-    }
-
-    /// Returns the client which emitted the event.
-    #[must_use]
-    pub fn client(&self) -> &'a Client {
-        self.client
-    }
-
-    /// Returns the user payload if present.
-    #[must_use]
-    pub fn user(&self) -> Option<User> {
-        self.message.user()
-    }
-
-    /// Returns the text payload if present.
-    #[must_use]
-    pub fn text(&self) -> Option<TextMessage> {
-        self.message.text()
-    }
-
-    /// Returns the source user id if present.
-    #[must_use]
-    pub fn user_id(&self) -> Option<UserId> {
-        self.message
-            .user()
-            .map(|user| user.id)
-            .or_else(|| self.message.text().map(|text| text.from_id))
-    }
-
-    /// Returns the channel id if present.
-    #[must_use]
-    pub fn channel_id(&self) -> Option<ChannelId> {
-        self.message
-            .user()
-            .map(|user| user.channel_id)
-            .or_else(|| self.message.text().map(|text| text.channel_id))
     }
 }
 
@@ -326,9 +278,7 @@ impl<'a> SubscriptionBuilder<'a> {
             predicate: self.predicate,
         };
         let id = self.client.bus.lock().subscribe(config, Box::new(handler));
-        self.client
-            .bus_revision
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.client.bus_revision.fetch_add(1, Ordering::Relaxed);
         id
     }
 }
