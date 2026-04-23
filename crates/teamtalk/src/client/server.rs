@@ -1,18 +1,10 @@
 //! Server management APIs.
 use super::Client;
+use super::guards::can_issue_logged_in_command;
 use crate::types::{ChannelId, CommandId, ServerProperties, User, UserId};
 use std::time::{Duration, Instant};
 #[cfg(windows)]
 use teamtalk_sys as ffi;
-
-fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
-    matches!(
-        state,
-        crate::events::ConnectionState::LoggedIn
-            | crate::events::ConnectionState::Joining(_)
-            | crate::events::ConnectionState::Joined(_)
-    )
-}
 
 fn wait_slice(deadline: Instant) -> i32 {
     deadline
