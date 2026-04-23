@@ -214,13 +214,13 @@ docs-sync-report:
 
 # Run the docs-sync tool's own test suite.
 docs-sync-test:
-    uv run --project tools/docs-sync pytest
+    cd tools/docs-sync && uv run pytest
 
 # Lint + type-check the docs-sync tool itself.
 docs-sync-lint:
-    uv run --project tools/docs-sync ruff check .
-    uv run --project tools/docs-sync ruff format --check .
-    uv run --project tools/docs-sync mypy .
+    cd tools/docs-sync && uv run ruff check .
+    cd tools/docs-sync && uv run ruff format --check .
+    cd tools/docs-sync && uv run mypy .
 
 # =========================
 # Dependencies

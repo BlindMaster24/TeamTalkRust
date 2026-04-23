@@ -98,9 +98,11 @@ def fix(config: Config) -> int:
         lines = original.splitlines(keepends=True)
         changed = False
         for idx, line in enumerate(lines):
-            # re-match to preserve surrounding formatting
+            # Rewrite right-to-left so earlier match offsets stay valid as
+            # we mutate ``new_line``. Matches are computed once on the
+            # original line and applied in reverse order.
             new_line = line
-            for match in list(_PATTERN.finditer(line)):
+            for match in reversed(list(_PATTERN.finditer(line))):
                 group_name = "plain" if match.group("plain") else "nested"
                 actual = match.group(group_name)
                 if actual == manifest.version:

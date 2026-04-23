@@ -113,3 +113,26 @@ def test_exclude_honors_migration_docs(
     )
     cfg = make_config(root)
     assert run(cfg) == []
+
+
+def test_fix_handles_multiple_matches_on_one_line(
+    make_workspace: Callable[[dict[str, str]], Path],
+    make_config: Callable[[Path], Config],
+) -> None:
+    """Regression: two matches on the same line must not corrupt output.
+
+    Earlier the offsets were computed on the original line but applied to
+    the progressively-mutated ``new_line``, so the second rewrite on a
+    line with a length-changing replacement would land in the wrong
+    place. Rewriting right-to-left keeps every match offset valid.
+    """
+    root, cfg = _prepare(
+        make_workspace,
+        make_config,
+        'teamtalk = "4.0.0" and teamtalk = "4.0.0"\n',
+    )
+    edits = fix(cfg)
+    assert edits == 2
+    after = (root / "docs/bot.md").read_text(encoding="utf-8")
+    assert after == 'teamtalk = "6.0.0" and teamtalk = "6.0.0"\n'
+    assert run(cfg) == []
