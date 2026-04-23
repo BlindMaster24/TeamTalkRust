@@ -253,11 +253,7 @@ impl SyncedUserRecordingSession {
     }
 
     fn drain_pending_blocks(&mut self, client: &Client, user_id: UserId) -> Result<()> {
-        loop {
-            let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id)
-            else {
-                break;
-            };
+        while let Some(ptr) = client.acquire_user_audio_block(self.options.stream_types, user_id) {
             let guard = AudioBlockGuard::new(client, ptr);
             let block = unsafe { &*guard.ptr() };
             let Some(view) = AudioBlockView::from_block(block) else {
