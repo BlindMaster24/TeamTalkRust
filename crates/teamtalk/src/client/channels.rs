@@ -1,5 +1,6 @@
 //! Channel management APIs.
 use super::Client;
+use super::guards::can_issue_logged_in_command;
 use crate::events::ConnectionState;
 use crate::types::{Channel, ChannelId, CommandId, UserId};
 use std::time::{Duration, Instant};
@@ -12,13 +13,6 @@ fn can_leave_channel_in_state(state: ConnectionState) -> bool {
     matches!(
         state,
         ConnectionState::Joining(_) | ConnectionState::Joined(_)
-    )
-}
-
-fn can_issue_logged_in_command(state: ConnectionState) -> bool {
-    matches!(
-        state,
-        ConnectionState::LoggedIn | ConnectionState::Joining(_) | ConnectionState::Joined(_)
     )
 }
 

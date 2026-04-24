@@ -1,18 +1,10 @@
 //! File transfer APIs.
 use super::Client;
+use super::guards::can_issue_logged_in_command;
 use crate::events::{Error, Event, Result};
 use crate::types::{ChannelId, CommandId, FileId, RemoteFile, TransferId};
 use std::time::{Duration, Instant};
 use teamtalk_sys as ffi;
-
-fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
-    matches!(
-        state,
-        crate::events::ConnectionState::LoggedIn
-            | crate::events::ConnectionState::Joining(_)
-            | crate::events::ConnectionState::Joined(_)
-    )
-}
 
 fn wait_slice(deadline: Instant) -> i32 {
     deadline

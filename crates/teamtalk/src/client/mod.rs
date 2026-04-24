@@ -15,6 +15,7 @@ pub mod core;
 pub mod desktop;
 pub mod encryption;
 pub mod files;
+pub(crate) mod guards;
 pub mod hooks;
 #[cfg(windows)]
 pub mod hotkeys;

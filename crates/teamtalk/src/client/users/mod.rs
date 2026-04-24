@@ -1,5 +1,6 @@
 //! User management APIs.
 use super::Client;
+use super::guards::can_issue_logged_in_command;
 use crate::types::{
     ChannelId, CommandId, MessageTarget, Subscriptions, TT_STRLEN, User, UserAccount, UserId,
     UserStatistics, UserStatus,
@@ -15,15 +16,6 @@ fn can_login_in_state(state: crate::events::ConnectionState) -> bool {
 }
 
 fn can_logout_in_state(state: crate::events::ConnectionState) -> bool {
-    matches!(
-        state,
-        crate::events::ConnectionState::LoggedIn
-            | crate::events::ConnectionState::Joining(_)
-            | crate::events::ConnectionState::Joined(_)
-    )
-}
-
-fn can_issue_logged_in_command(state: crate::events::ConnectionState) -> bool {
     matches!(
         state,
         crate::events::ConnectionState::LoggedIn
