@@ -31,7 +31,12 @@
   - `src/extensions/plugins.rs` for `TeamTalkPlugin` trait, `PluginFlow`, `PluginError`, and `PluginManager` (register, load, dispatch, unload).
 - `bot/router` is split into `src/bot/router/{mod,builder,dispatch,help,helpers}.rs`.
 - `bot` currently includes:
-  - `src/bot/fsm.rs` for dialog/session state, timeout policy, metadata, and flow helpers.
+  - `src/bot/fsm/` is directory-first:
+    - `src/bot/fsm/state.rs` for the `DialogState` record and its netstring encoding.
+    - `src/bot/fsm/status.rs` for `DialogStatus` and `DialogTimeoutPolicy` enums.
+    - `src/bot/fsm/flow.rs` for the declarative `DialogFlow` linear step sequence.
+    - `src/bot/fsm/machine.rs` for the `DialogMachine` mutating facade over `StateStore`.
+    - `src/bot/fsm/encoding.rs` for shared constants, netstring codec, and time helpers.
   - `src/bot/middleware.rs` for function middleware, guards, and rate limiting.
   - `src/bot/permissions.rs` for rights-based permission presets on top of TeamTalk account rights.
   - `src/bot/storage.rs` plus Redis/SQLite adapters for bot state backends; StateStore v2 adds `exists`, `set_with_ttl`, `keys`, `remove_prefix`, `get_many`, `set_many` with TTL support in Memory (Instant+Entry), Redis (SCAN/SETEX), and SQLite (expires_at column).
