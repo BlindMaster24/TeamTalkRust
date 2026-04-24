@@ -1,4 +1,8 @@
 //! Event and error types emitted by the `TeamTalk` client.
+mod sdk_error;
+
+pub use sdk_error::SdkErrorCode;
+
 use crate::types::ChannelId;
 use std::time::Duration;
 use teamtalk_sys as ffi;
@@ -220,7 +224,13 @@ pub enum Error {
     #[error("Init failed")]
     InitFailed,
     #[error("Command failed: {code} ({message})")]
-    CommandFailed { code: i32, message: String },
+    CommandFailed {
+        /// Raw SDK error code. Use [`Error::sdk_code`] to obtain a
+        /// typed [`SdkErrorCode`] view without losing unknown codes.
+        code: i32,
+        /// Human-readable error message from the SDK.
+        message: String,
+    },
     #[error("Connection failed")]
     ConnectFailed,
     #[error("Auth failed")]
@@ -232,13 +242,42 @@ pub enum Error {
     #[error("Missing login parameters")]
     MissingLoginParams,
     #[error("SDK Error: {code} ({message})")]
-    ClientError { code: i32, message: String },
+    ClientError {
+        /// Raw SDK error code. Use [`Error::sdk_code`] to obtain a
+        /// typed [`SdkErrorCode`] view without losing unknown codes.
+        code: i32,
+        /// Human-readable error message from the SDK.
+        message: String,
+    },
     #[error("IO error: {message}")]
     IoError { message: String },
     #[error("Operation timed out")]
     Timeout,
     #[error("FFI error: {0}")]
     Ffi(#[from] FfiError),
+}
+
+impl Error {
+    /// Returns the typed [`SdkErrorCode`] carried by
+    /// [`Error::CommandFailed`], [`Error::ClientError`], or
+    /// [`Error::Ffi`] (via [`FfiError::SdkError`]).
+    ///
+    /// Returns `None` for errors that do not originate from the
+    /// SDK integer code space (for example [`Error::Timeout`] or
+    /// [`Error::IoError`]). Unknown codes are still returned — they
+    /// map to [`SdkErrorCode::Unknown`], preserving the raw `i32`
+    /// so callers never silently lose information about a new or
+    /// out-of-range SDK code.
+    #[must_use]
+    pub fn sdk_code(&self) -> Option<SdkErrorCode> {
+        match self {
+            Self::CommandFailed { code, .. } | Self::ClientError { code, .. } => {
+                Some(SdkErrorCode::from(*code))
+            }
+            Self::Ffi(FfiError::SdkError { code, .. }) => Some(SdkErrorCode::from(*code)),
+            _ => None,
+        }
+    }
 }
 
 #[non_exhaustive]
