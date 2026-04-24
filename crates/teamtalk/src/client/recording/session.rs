@@ -2,7 +2,7 @@ use super::super::Client;
 use super::options::{RecordingOptions, RecordingTarget, segment_path};
 use crate::client::Message;
 use crate::events::{Error, Event, Result};
-use crate::types::{AudioCodec, ChannelId};
+use crate::types::{AudioCodec, ChannelId, StreamTypes};
 use std::fs;
 use std::time::Instant;
 
@@ -44,16 +44,19 @@ impl<'a> RecordingSession<'a> {
     }
 
     /// Starts a managed recording session for muxed streams.
+    ///
+    /// `stream_types` accepts both a raw `u32` bitmask and any
+    /// [`StreamTypes`] combination via the `Into<StreamTypes>` bound.
     pub fn start_streams(
         client: &'a Client,
-        stream_types: u32,
+        stream_types: impl Into<StreamTypes>,
         codec: AudioCodec,
         options: RecordingOptions,
     ) -> Result<Self> {
         let mut session = Self {
             client,
             target: RecordingTarget::Streams {
-                stream_types,
+                stream_types: stream_types.into(),
                 codec,
             },
             options,
