@@ -58,7 +58,7 @@ impl Client {
         Ok(self.login(
             &params.nickname,
             &params.username,
-            &params.password,
+            params.password.expose_secret(),
             &params.client_name,
         ))
     }
@@ -137,7 +137,7 @@ impl Client {
         self.login(
             &params.nickname,
             &params.username,
-            &params.password,
+            params.password.expose_secret(),
             &params.client_name,
         )
     }
