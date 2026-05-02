@@ -4,12 +4,20 @@
 //! per-subscription record [`Subscription`]) together with the public
 //! [`SubscriptionBuilder`] that callers use to register handlers through
 //! [`crate::client::Client::on_event`] / [`crate::client::Client::on_any`].
+//!
+//! Dispatch is indexed by `mem::Discriminant<Event>` so firing an event
+//! only touches subscriptions that can possibly match it (event-specific
+//! subscribers for this discriminant plus wildcard subscribers), instead
+//! of scanning every registered subscription. Insertion order is
+//! preserved across the specific-vs-wildcard partition by merging the
+//! two index lists on the fly.
 
 use super::context::EventContext;
 use crate::client::{Client, Message};
 use crate::events::Event;
 use crate::types::{ChannelId, UserId};
-use std::mem;
+use std::collections::HashMap;
+use std::mem::{self, Discriminant};
 use std::sync::atomic::Ordering;
 use teamtalk_sys as ffi;
 
@@ -35,6 +43,13 @@ impl EventSubscriptionGroup {
 pub(crate) struct EventBus {
     next_id: u64,
     subscriptions: Vec<Subscription>,
+    /// Indices into `subscriptions` keyed by the `Event` discriminant
+    /// the subscription is filtering on. Each inner `Vec<usize>` is
+    /// kept in ascending (insertion) order.
+    by_event: HashMap<Discriminant<Event>, Vec<usize>>,
+    /// Indices of subscriptions registered without an `event` filter
+    /// (wildcard). Kept in ascending (insertion) order.
+    any_indices: Vec<usize>,
 }
 
 #[derive(Default)]
@@ -57,9 +72,11 @@ impl EventBus {
     ) -> EventSubscriptionId {
         self.next_id += 1;
         let id = EventSubscriptionId(self.next_id);
+        let event_filter = config.event.as_ref().map(mem::discriminant);
+        let index = self.subscriptions.len();
         self.subscriptions.push(Subscription {
             id,
-            event: config.event,
+            event_filter,
             user_id: config.user_id,
             channel_id: config.channel_id,
             username: config.username,
@@ -69,24 +86,38 @@ impl EventBus {
             predicate: config.predicate,
             handler,
         });
+        match event_filter {
+            Some(d) => self.by_event.entry(d).or_default().push(index),
+            None => self.any_indices.push(index),
+        }
         id
     }
 
     pub(crate) fn unsubscribe(&mut self, id: EventSubscriptionId) -> bool {
         let before = self.subscriptions.len();
         self.subscriptions.retain(|sub| sub.id != id);
-        before != self.subscriptions.len()
+        if self.subscriptions.len() == before {
+            return false;
+        }
+        self.rebuild_indices();
+        true
     }
 
     pub(crate) fn clear(&mut self) {
         self.subscriptions.clear();
+        self.by_event.clear();
+        self.any_indices.clear();
     }
 
     pub(crate) fn unsubscribe_group(&mut self, group: &EventSubscriptionGroup) -> usize {
         let before = self.subscriptions.len();
         self.subscriptions
             .retain(|sub| sub.group.as_ref() != Some(group));
-        before.saturating_sub(self.subscriptions.len())
+        let removed = before.saturating_sub(self.subscriptions.len());
+        if removed > 0 {
+            self.rebuild_indices();
+        }
+        removed
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -94,7 +125,36 @@ impl EventBus {
     }
 
     pub(crate) fn dispatch(&mut self, client: &Client, event: Event, message: &Message) {
-        for sub in &mut self.subscriptions {
+        let d = mem::discriminant(&event);
+        let empty: Vec<usize> = Vec::new();
+        let specific: &[usize] = self.by_event.get(&d).unwrap_or(&empty);
+        let any: &[usize] = &self.any_indices;
+        let subs = &mut self.subscriptions;
+
+        let mut si = 0;
+        let mut ai = 0;
+        while si < specific.len() || ai < any.len() {
+            let pick = match (specific.get(si), any.get(ai)) {
+                (Some(&s), Some(&a)) => {
+                    if s <= a {
+                        si += 1;
+                        s
+                    } else {
+                        ai += 1;
+                        a
+                    }
+                }
+                (Some(&s), None) => {
+                    si += 1;
+                    s
+                }
+                (None, Some(&a)) => {
+                    ai += 1;
+                    a
+                }
+                (None, None) => break,
+            };
+            let sub = &mut subs[pick];
             if !sub.matches(client, event, message) {
                 continue;
             }
@@ -106,11 +166,22 @@ impl EventBus {
             (sub.handler)(ctx);
         }
     }
+
+    fn rebuild_indices(&mut self) {
+        self.by_event.clear();
+        self.any_indices.clear();
+        for (i, sub) in self.subscriptions.iter().enumerate() {
+            match sub.event_filter {
+                Some(d) => self.by_event.entry(d).or_default().push(i),
+                None => self.any_indices.push(i),
+            }
+        }
+    }
 }
 
 struct Subscription {
     id: EventSubscriptionId,
-    event: Option<Event>,
+    event_filter: Option<Discriminant<Event>>,
     user_id: Option<UserId>,
     channel_id: Option<ChannelId>,
     username: Option<String>,
@@ -126,11 +197,6 @@ impl Subscription {
         let user = message.user();
         let text = message.text();
 
-        if let Some(filter) = self.event
-            && mem::discriminant(&filter) != mem::discriminant(&event)
-        {
-            return false;
-        }
         if let Some(user_id) = self.user_id {
             let match_user = user
                 .as_ref()

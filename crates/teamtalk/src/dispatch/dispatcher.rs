@@ -1,9 +1,18 @@
 use super::source::{EventSource, HandlerEntry, ReconnectState};
 use super::{ClientConfig, DispatchFlow, Event, EventContext, Message};
+use std::collections::HashMap;
+use std::mem::{self, Discriminant};
 
 pub struct Dispatcher<S: EventSource> {
     source: S,
+    /// Registered handlers in insertion order. Index is stable for
+    /// the lifetime of the handler.
     handlers: Vec<HandlerEntry>,
+    /// Indices of event-specific handlers keyed by discriminant.
+    by_event: HashMap<Discriminant<Event>, Vec<usize>>,
+    /// Indices of wildcard (`event == None`) handlers in insertion
+    /// order.
+    any_indices: Vec<usize>,
     poll_timeout_ms: i32,
     reconnect: Option<ReconnectState>,
     stop: bool,
@@ -21,6 +30,8 @@ impl<S: EventSource> Dispatcher<S> {
         Self {
             source,
             handlers: Vec::new(),
+            by_event: HashMap::new(),
+            any_indices: Vec::new(),
             poll_timeout_ms: config.poll_timeout_ms,
             reconnect,
             stop: false,
@@ -42,10 +53,12 @@ impl<S: EventSource> Dispatcher<S> {
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
     {
+        let d = mem::discriminant(&event);
+        let index = self.handlers.len();
         self.handlers.push(HandlerEntry {
-            event: Some(event),
             handler: Box::new(handler),
         });
+        self.by_event.entry(d).or_default().push(index);
     }
 
     /// Adds a handler which receives all events.
@@ -53,10 +66,11 @@ impl<S: EventSource> Dispatcher<S> {
     where
         F: for<'a> FnMut(EventContext<'a>) -> DispatchFlow + Send + 'static,
     {
+        let index = self.handlers.len();
         self.handlers.push(HandlerEntry {
-            event: None,
             handler: Box::new(handler),
         });
+        self.any_indices.push(index);
     }
 
     /// Adds a handler and returns the dispatcher for chaining.
@@ -184,8 +198,37 @@ impl<S: EventSource> Dispatcher<S> {
             client,
         };
         let mut flow = DispatchFlow::Continue;
-        for handler in &mut self.handlers {
-            if handler.matches(&event) && (handler.handler)(ctx) == DispatchFlow::Stop {
+
+        let d = mem::discriminant(&event);
+        let empty: Vec<usize> = Vec::new();
+        let specific: &[usize] = self.by_event.get(&d).unwrap_or(&empty);
+        let any: &[usize] = &self.any_indices;
+        let handlers = &mut self.handlers;
+
+        let mut si = 0;
+        let mut ai = 0;
+        while si < specific.len() || ai < any.len() {
+            let idx = match (specific.get(si), any.get(ai)) {
+                (Some(&s), Some(&a)) => {
+                    if s <= a {
+                        si += 1;
+                        s
+                    } else {
+                        ai += 1;
+                        a
+                    }
+                }
+                (Some(&s), None) => {
+                    si += 1;
+                    s
+                }
+                (None, Some(&a)) => {
+                    ai += 1;
+                    a
+                }
+                (None, None) => break,
+            };
+            if (handlers[idx].handler)(ctx) == DispatchFlow::Stop {
                 flow = DispatchFlow::Stop;
             }
         }
