@@ -1,5 +1,84 @@
 # Changelog
 
+## [7.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v6.0.0...teamtalk-v7.0.0) - 2026-05-02
+
+### Breaking
+- [**breaking**] add BanType flags, Port newtype, typed Message source methods - BannedUser.ban_types is now BanType (bitflags) instead of u32.
+ServerProperties.tcp_port/udp_port are now Port(u16) instead of i32.
+- [**breaking**] add strong ID types, raw() accessors, and Display/From/PartialEq impls - TeamTalkBackend trait methods now take ChannelId, UserId,
+FileId, TransferId instead of i32. Bot FSM uses UserId instead of i32 for
+source_id. SoundDeviceId, HotkeyId, PlaybackSessionId replace raw i32 params.
+Accessing .0 on ID types in library code is replaced by .raw().
+
+- Add SoundDeviceId, HotkeyId, PlaybackSessionId newtypes
+- Replace i32 with typed IDs in TeamTalkBackend trait (21 methods)
+- Replace source_id: i32 with UserId in bot FSM (21 methods)
+- Add impl_id_type! macro providing raw(), From, PartialEq, Display for all 9 ID types
+- Replace .0 with .raw() on ID types across 19 library source files
+- Update MockBackend, FfiBackend, tests, and examples
+- [**breaking**] add #[non_exhaustive] to 57 public structs, remove dead deps - All public structs with pub fields are now #[non_exhaustive].
+Struct literal construction no longer works; use new() constructors instead.
+
+- Add #[non_exhaustive] to 57 public structs across types, client, bot, dispatch
+- Add new() constructors for structs previously constructed via struct literals
+- Remove unused dirs and evalexpr dependencies from Cargo.toml
+- Update all tests to use constructors instead of struct literals
+- [**breaking**] replace i32 with CommandId in command method return types - all command methods that previously returned i32
+now return CommandId. Use .is_ok(), .is_zero(), .raw() to inspect.
+Comparison with i32 is supported via PartialEq<i32>.
+- [**breaking**] add #[non_exhaustive] to 16 public enums - downstream match expressions on EventData,
+CommandPatternError, DialogStatus, DialogTimeoutPolicy,
+JobErrorPolicy, HandlerResult, UnknownCommandPolicy,
+RouteMatcher, WaitError, RecordingSampleFormat,
+RecordingTarget, SilencePolicy, DispatchFlow,
+UserPresence, UserGender, and MessageTarget must include
+a wildcard _ arm.
+- *(events)* [**breaking**] add #[non_exhaustive] to Event, Error, ConnectionState - downstream match expressions on Event, Error, or
+ConnectionState must include a wildcard _ arm. This prevents
+future variant additions from being semver-breaking.
+
+### Added
+- *(types)* introduce SecretString and use it for LoginParams password ([#56](https://github.com/BlindMaster24/TeamTalkRust/pull/56))
+- *(events)* add TimeoutKind to classify Error::Timeout by operation ([#55](https://github.com/BlindMaster24/TeamTalkRust/pull/55))
+- *(events)* add SdkErrorCode typed mapping for SDK error integers ([#54](https://github.com/BlindMaster24/TeamTalkRust/pull/54))
+- *(types)* add StreamTypes newtype for stream-kind bit masks ([#52](https://github.com/BlindMaster24/TeamTalkRust/pull/52))
+- *(backoff)* implement full-jitter in ExponentialBackoff jitter parameter ([#51](https://github.com/BlindMaster24/TeamTalkRust/pull/51))
+- expand TeamTalkBackend, add view accessors, typed FFI errors, event replay, Plugin API, StateStore v2, and async scheduler
+- *(client)* add file transfer tracking helpers
+- *(client)* add safer file and frame helpers
+
+### Changed
+- *(dispatch)* index Client event bus and Dispatcher by event discriminant ([#57](https://github.com/BlindMaster24/TeamTalkRust/pull/57))
+- *(types)* split media_common.rs by media domain ([#50](https://github.com/BlindMaster24/TeamTalkRust/pull/50))
+- *(client)* split hooks/builders.rs by event category ([#49](https://github.com/BlindMaster24/TeamTalkRust/pull/49))
+- *(bot)* split fsm.rs into fsm/{state,status,machine,flow,encoding} ([#48](https://github.com/BlindMaster24/TeamTalkRust/pull/48))
+- *(bot)* split storage.rs into storage/{memory,redis,sqlite,mod} ([#47](https://github.com/BlindMaster24/TeamTalkRust/pull/47))
+- *(client)* dedupe can_issue_logged_in_command into shared guards module ([#44](https://github.com/BlindMaster24/TeamTalkRust/pull/44))
+- *(client)* split bus.rs into bus/{context,subscription,mod} ([#46](https://github.com/BlindMaster24/TeamTalkRust/pull/46))
+- *(client)* extract poll_command_completion helper ([#45](https://github.com/BlindMaster24/TeamTalkRust/pull/45))
+- resolve all clippy pedantic warnings in teamtalk lib
+- replace once_cell with std::sync::OnceLock, remove unused dependency
+- replace Mutex unwrap_or_else poison pattern with UnpoisonedMutex<T>
+
+### Fixed
+- *(recording)* rewrite audio-block drain loop as while-let ([#40](https://github.com/BlindMaster24/TeamTalkRust/pull/40))
+- correct BanType assertion and Port snapshot in tests
+- *(ci)* gate server ffi import on windows
+
+### Dependencies
+- *(deps)* update rusqlite requirement from 0.38 to 0.39 ([#36](https://github.com/BlindMaster24/TeamTalkRust/pull/36))
+
+### Other
+- add 87 integration tests filling bot + dispatch + events coverage gaps ([#58](https://github.com/BlindMaster24/TeamTalkRust/pull/58))
+- Refresh dependency constraints to current compatible releases
+- add mock-based desktop, video, media, StateStore v2, and event replay tests
+- Reduce admin-event boilerplate in the client API
+
+## [0.1.3](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-macros-v0.1.2...teamtalk-macros-v0.1.3) - 2026-05-02
+
+### Dependencies
+- *(deps)* upgrade quote to 1.0.45 in teamtalk-macros
+
 ## [6.0.0](https://github.com/BlindMaster24/TeamTalkRust/compare/teamtalk-v5.0.0...teamtalk-v6.0.0) - 2026-03-10
 
 ### Changed
