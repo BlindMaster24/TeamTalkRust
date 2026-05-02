@@ -153,7 +153,9 @@ impl Client {
                 code: msg.source(),
                 message: format!("{error_context} failed"),
             }),
-            None => Err(crate::events::Error::Timeout),
+            None => Err(crate::events::Error::timeout(
+                crate::events::TimeoutKind::Command,
+            )),
             Some((_, _)) => {
                 unreachable!(
                     "poll_until predicate restricts terminal event to Cmd{{Success,Error}}"

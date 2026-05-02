@@ -145,7 +145,11 @@ fn error_sdk_code_on_ffi_sdk_error() {
 
 #[test]
 fn error_sdk_code_none_for_non_sdk_errors() {
-    assert!(Error::Timeout.sdk_code().is_none());
+    assert!(
+        Error::timeout(teamtalk::events::TimeoutKind::Command)
+            .sdk_code()
+            .is_none()
+    );
     assert!(Error::InitFailed.sdk_code().is_none());
     assert!(Error::ConnectFailed.sdk_code().is_none());
     assert!(Error::AuthFailed.sdk_code().is_none());
